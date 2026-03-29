@@ -291,18 +291,22 @@ export default function ProfilePage() {
 
       let result;
       if (existingProfile) {
+        console.log("Updating existing profile");
         result = await supabase
           .from('profiles')
           .update(profileData)
           .eq('id', user.id)
-          .select()
-          .single();
+          .select();
       } else {
+        console.log("Creating new profile with data:", profileData);
+        const insertData = {
+          ...profileData,
+          username: profileData.username || `user_${user.id.slice(0,8)}`
+        };
         result = await supabase
           .from('profiles')
-          .insert(profileData)
-          .select()
-          .single();
+          .insert(insertData)
+          .select();
       }
 
       const { data, error } = result;
@@ -316,6 +320,15 @@ export default function ProfilePage() {
         alert("Ошибка сохранения: " + error.message + "\nКод: " + error.code + "\nДетали: " + (error.details || error.hint || ""));
         throw error;
       }
+      
+      if (!data || data.length === 0) {
+        console.error("No data returned from save");
+        alert("Не удалось сохранить профиль. Попробуйте ещё раз.");
+        setLoading(false);
+        return;
+      }
+      
+      console.log("Profile saved successfully:", data[0]);
       
       await refreshProfile();
       setEditing(false);
