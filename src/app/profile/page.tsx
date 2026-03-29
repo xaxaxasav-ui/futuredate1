@@ -181,6 +181,9 @@ useEffect(() => {
   }, [user, profile, router, refreshProfile]);
 
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [inputName, setInputName] = useState("");
+  const [inputUsername, setInputUsername] = useState("");
+  
   useEffect(() => {
     if (profile && !initialLoadDone) {
       setEditData({
@@ -211,6 +214,8 @@ useEffect(() => {
         profile_visibility: profile.profile_visibility || "all",
         profile_blocked_users: profile.profile_blocked_users || [],
       });
+      setInputName(profile.full_name || "");
+      setInputUsername(profile.username || "");
       setInitialLoadDone(true);
     }
   }, [profile, initialLoadDone]);
@@ -640,17 +645,20 @@ useEffect(() => {
                 <div className="space-y-2 text-left">
                   <Input
                     placeholder="Ваше имя"
-                    value={editData.full_name}
+                    value={inputName}
                     onChange={(e) => {
-                      console.log("Typing:", e.target.value);
+                      setInputName(e.target.value);
                       setEditData({...editData, full_name: e.target.value});
                     }}
                     className="text-center"
                   />
                   <Input
                     placeholder="Username"
-                    value={editData.username}
-                    onChange={(e) => setEditData({...editData, username: e.target.value})}
+                    value={inputUsername}
+                    onChange={(e) => {
+                      setInputUsername(e.target.value);
+                      setEditData({...editData, username: e.target.value});
+                    }}
                     className="text-center"
                   />
                 </div>
