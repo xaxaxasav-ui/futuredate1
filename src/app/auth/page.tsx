@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 
 import { GlassCard } from "@/components/GlassCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,7 +25,7 @@ const COUNTRY_CODES = [
   { code: "+77", country: "Казахстан", mask: "(___) ___-__-__" },
 ];
 
-export default function AuthPage() {
+function AuthForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -423,3 +423,13 @@ export default function AuthPage() {
     </div>
   );
 }
+
+function AuthFormWithSuspense() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+      <AuthForm />
+    </Suspense>
+  );
+}
+
+export default AuthFormWithSuspense;
