@@ -1,0 +1,69 @@
+<svg width="800" height="800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f5e6d3"/>
+      <stop offset="100%" style="stop-color:#e8d4c0"/>
+    </linearGradient>
+    <linearGradient id="hairGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a3728"/>
+      <stop offset="100%" style="stop-color:#2d1f15"/>
+    </linearGradient>
+    <linearGradient id="lipGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e57373"/>
+      <stop offset="100%" style="stop-color:#c62828"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="800" fill="url(#bgGrad)"/>
+  
+  <!-- Hair back -->
+  <ellipse cx="400" cy="350" rx="220" ry="280" fill="url(#hairGrad)"/>
+  
+  <!-- Neck -->
+  <rect x="340" y="520" width="120" height="100" fill="#f5d0c5"/>
+  
+  <!-- Shoulders/Dress -->
+  <ellipse cx="400" cy="650" rx="200" ry="150" fill="#e91e63"/>
+  
+  <!-- Face -->
+  <ellipse cx="400" cy="380" rx="150" ry="180" fill="#fde8d8"/>
+  
+  <!-- Cheeks blush -->
+  <ellipse cx="300" cy="400" rx="30" ry="20" fill="#ffb6c1" opacity="0.5"/>
+  <ellipse cx="500" cy="400" rx="30" ry="20" fill="#ffb6c1" opacity="0.5"/>
+  
+  <!-- Eyes -->
+  <ellipse cx="340" cy="360" rx="25" ry="15" fill="#fff"/>
+  <ellipse cx="460" cy="360" rx="25" ry="15" fill="#fff"/>
+  
+  <!-- Pupils -->
+  <circle cx="345" cy="360" r="12" fill="#4a3728"/>
+  <circle cx="465" cy="360" r="12" fill="#4a3728"/>
+  
+  <!-- Eye shine -->
+  <circle cx="340" cy="355" r="4" fill="#fff"/>
+  <circle cx="460" cy="355" r="4" fill="#fff"/>
+  
+  <!-- Eyebrows -->
+  <path d="M 310 330 Q 340 320 370 335" stroke="#4a3728" stroke-width="4" fill="none"/>
+  <path d="M 430 335 Q 460 320 490 330" stroke="#4a3728" stroke-width="4" fill="none"/>
+  
+  <!-- Nose -->
+  <path d="M 400 370 L 395 400 Q 400 410 405 400 L 400 370" fill="#f5d0c5"/>
+  
+  <!-- Lips -->
+  <path d="M 370 430 Q 400 420 430 430 Q 400 450 370 430" fill="url(#lipGrad)"/>
+  <path d="M 370 430 Q 400 435 430 430" stroke="#c62828" stroke-width="1" fill="none"/>
+  
+  <!-- Hair front -->
+  <path d="M 250 250 Q 300 150 400 120 Q 500 150 550 250 Q 520 200 400 180 Q 280 200 250 250" fill="url(#hairGrad)"/>
+  
+  <!-- Hair strands -->
+  <path d="M 260 280 Q 280 200 400 150 Q 520 200 540 280" stroke="#3d2b1f" stroke-width="2" fill="none"/>
+  <path d="M 270 320 Q 350 220 450 220 Q 520 250 530 320" stroke="#3d2b1f" stroke-width="2" fill="none"/>
+  
+  <!-- Earrings -->
+  <circle cx="245" cy="400" r="8" fill="#ffd700"/>
+  <circle cx="555" cy="400" r="8" fill="#ffd700"/>
+</svg>

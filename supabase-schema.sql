@@ -1,0 +1,228 @@
+-- FutureDate AI Database Schema
+-- Run this in Supabase SQL Editor
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Drop existing tables if they exist (be careful - this deletes data)
+-- DROP TABLE IF EXISTS public.messages CASCADE;
+-- DROP TABLE IF EXISTS public.matches CASCADE;
+-- DROP TABLE IF EXISTS public.profiles CASCADE;
+
+-- Profiles table (updated with all fields)
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  username TEXT UNIQUE,
+  full_name TEXT,
+  avatar_url TEXT,
+  bio TEXT,
+  phone TEXT,
+  personality_vector JSONB,
+  traits TEXT[],
+  hobbies TEXT[],
+  talents TEXT[],
+  looking_for TEXT,
+  looking_for_gender TEXT,
+  looking_for_age_min INTEGER,
+  looking_for_age_max INTEGER,
+  looking_for_height_min INTEGER,
+  looking_for_height_max INTEGER,
+  preferences JSONB,
+  latitude FLOAT,
+  longitude FLOAT,
+  city TEXT,
+  birth_date DATE,
+  gender TEXT,
+  height INTEGER,
+  education TEXT,
+  occupation TEXT,
+  languages TEXT[],
+  relationship_status TEXT,
+  children TEXT,
+  smoking TEXT,
+  alcohol TEXT,
+  photos TEXT[],
+  photos_visibility TEXT DEFAULT 'all',
+  photos_blocked_users TEXT[],
+  profile_visibility TEXT DEFAULT 'all',
+  profile_blocked_users TEXT[],
+  views_count INTEGER DEFAULT 0,
+  likes_count INTEGER DEFAULT 0,
+  favorites_count INTEGER DEFAULT 0,
+  matches_count INTEGER DEFAULT 0,
+  assessment_results JSONB,
+  assessment_completed BOOLEAN DEFAULT FALSE,
+  is_verified BOOLEAN DEFAULT FALSE,
+  verification_photo TEXT,
+  verification_status TEXT DEFAULT 'pending',
+  role TEXT DEFAULT 'user',
+  is_banned BOOLEAN DEFAULT FALSE,
+  ban_reason TEXT,
+  banned_at TIMESTAMP WITH TIME ZONE,
+  referral_code TEXT UNIQUE,
+  referred_by UUID REFERENCES public.profiles(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Matches table
+CREATE TABLE IF NOT EXISTS public.matches (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  matched_user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  compatibility_score INTEGER,
+  status TEXT DEFAULT 'pending',
+  liked_at TIMESTAMP WITH TIME ZONE,
+  matched_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Messages table
+CREATE TABLE IF NOT EXISTS public.messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  match_id UUID REFERENCES public.matches(id) ON DELETE CASCADE,
+  sender_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Support tickets table
+CREATE TABLE IF NOT EXISTS public.support_tickets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',
+  admin_reply TEXT,
+  replied_at TIMESTAMP WITH TIME ZONE,
+  replied_by TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Site settings table
+CREATE TABLE IF NOT EXISTS public.site_settings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  key TEXT UNIQUE NOT NULL,
+  value TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Notifications table
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT,
+  from_user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  link TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.matches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for profiles
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Profiles are viewable by authenticated users" ON public.profiles;
+
+CREATE POLICY "Users can view own profile" ON public.profiles
+  FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON public.profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert own profile" ON public.profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Profiles are viewable by authenticated users" ON public.profiles
+  FOR SELECT TO authenticated USING (true);
+
+-- RLS Policies for matches
+DROP POLICY IF EXISTS "Users can view own matches" ON public.matches;
+DROP POLICY IF EXISTS "Users can create matches" ON public.matches;
+
+CREATE POLICY "Users can view own matches" ON public.matches
+  FOR SELECT USING (auth.uid() = user_id OR auth.uid() = matched_user_id);
+
+CREATE POLICY "Users can create matches" ON public.matches
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- RLS Policies for messages
+DROP POLICY IF EXISTS "Users can view messages in own matches" ON public.messages;
+DROP POLICY IF EXISTS "Users can send messages in own matches" ON public.messages;
+
+CREATE POLICY "Users can view messages in own matches" ON public.messages
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.matches m 
+      WHERE m.id = messages.match_id 
+      AND (m.user_id = auth.uid() OR m.matched_user_id = auth.uid())
+    )
+  );
+
+CREATE POLICY "Users can send messages in own matches" ON public.messages
+  FOR INSERT WITH CHECK (auth.uid() = sender_id);
+
+-- RLS Policies for support_tickets
+CREATE POLICY "Users can create support tickets" ON public.support_tickets
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can view own tickets" ON public.support_tickets
+  FOR SELECT USING (auth.uid() = user_id);
+
+-- Admin policies (for admin email access)
+CREATE POLICY "Admins can view all tickets" ON public.support_tickets
+  FOR SELECT TO authenticated USING (
+    auth.jwt()->>'email' IN ('admin@futuredate.ai', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
+  );
+
+CREATE POLICY "Admins can update tickets" ON public.support_tickets
+  FOR UPDATE TO authenticated USING (
+    auth.jwt()->>'email' IN ('admin@futuredate.ai', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
+  );
+
+-- Site settings policies
+CREATE POLICY "Anyone can read site settings" ON public.site_settings
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Admins can update site settings" ON public.site_settings
+  FOR ALL TO authenticated USING (
+    auth.jwt()->>'email' IN ('admin@futuredate.ai', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
+  );
+
+-- RLS for notifications
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own notifications" ON public.notifications
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create notifications" ON public.notifications
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own notifications" ON public.notifications
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Create indexes
+DROP INDEX IF EXISTS idx_matches_user_id;
+DROP INDEX IF EXISTS idx_matches_matched_user_id;
+DROP INDEX IF EXISTS idx_messages_match_id;
+DROP INDEX IF EXISTS idx_messages_created_at;
+
+CREATE INDEX idx_matches_user_id ON public.matches(user_id);
+CREATE INDEX idx_matches_matched_user_id ON public.matches(matched_user_id);
+CREATE INDEX idx_messages_match_id ON public.messages(match_id);
+CREATE INDEX idx_messages_created_at ON public.messages(created_at);
+CREATE INDEX idx_profiles_username ON public.profiles(username);
+CREATE INDEX idx_profiles_city ON public.profiles(city);
+CREATE INDEX idx_profiles_gender ON public.profiles(gender);
+
+-- Enable realtime for messages table
+ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;

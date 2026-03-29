@@ -1,0 +1,183 @@
+'use client';
+
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { supabase } from '@/lib/supabase';
+import { User, Session } from '@supabase/supabase-js';
+
+interface Profile {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  phone: string | null;
+  traits: string[] | null;
+  hobbies: string[] | null;
+  talents: string[] | null;
+  looking_for: string | null;
+  looking_for_gender: string | null;
+  looking_for_age_min: number | null;
+  looking_for_age_max: number | null;
+  looking_for_height_min: number | null;
+  looking_for_height_max: number | null;
+  preferences: Record<string, unknown> | null;
+  latitude: number | null;
+  longitude: number | null;
+  city: string | null;
+  birth_date: string | null;
+  gender: string | null;
+  height: number | null;
+  education: string | null;
+  occupation: string | null;
+  languages: string[] | null;
+  relationship_status: string | null;
+  children: string | null;
+  smoking: string | null;
+  alcohol: string | null;
+  photos: string[] | null;
+  photos_visibility: string | null;
+  photos_blocked_users: string[] | null;
+  profile_visibility: string | null;
+  profile_blocked_users: string[] | null;
+  views_count: number | null;
+  likes_count: number | null;
+  favorites_count: number | null;
+  matches_count: number | null;
+  assessment_results: Record<string, unknown> | null;
+  assessment_completed: boolean | null;
+  is_verified: boolean | null;
+  verification_photo: string | null;
+  verification_status: string | null;
+  created_at: string;
+}
+
+interface SupabaseContextType {
+  user: User | null;
+  session: Session | null;
+  profile: Profile | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+}
+
+const SupabaseContext = createContext<SupabaseContextType>({
+  user: null,
+  session: null,
+  profile: null,
+  loading: true,
+  signOut: async () => {},
+  refreshProfile: async () => {},
+});
+
+export function useSupabase() {
+  return useContext(SupabaseContext);
+}
+
+interface SupabaseProviderProps {
+  children: ReactNode;
+}
+
+export function SupabaseProvider({ children }: SupabaseProviderProps) {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.warn('Profile fetch error:', error.code, error.message);
+        if (error.message?.includes('Failed to fetch') || error.message?.includes('network') || !error.message) {
+          console.warn('Network error - Supabase may be unreachable, continuing without profile');
+          return;
+        }
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, creating new one...');
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({ id: userId, username: `user_${userId.slice(0,8)}` })
+            .select()
+            .single();
+          
+          if (createError) {
+            console.error('Profile create error:', createError.code, createError.message);
+            setProfile(null);
+            return;
+          }
+          console.log('Profile created:', newProfile);
+          setProfile(newProfile);
+          return;
+        }
+        if (error.code === '42P01') {
+          console.error('Table profiles does not exist!');
+          return;
+        }
+      }
+      setProfile(data);
+    } catch (err: any) {
+      console.warn('Fetch profile exception:', err?.message || err);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  };
+
+  useEffect(() => {
+    const initSupabase = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        }
+      } catch (err) {
+        console.warn('Supabase init error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initSupabase();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        await fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+      }
+      
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    setProfile(null);
+  };
+
+  return (
+    <SupabaseContext.Provider value={{ user, session, profile, loading, signOut, refreshProfile }}>
+      {children}
+    </SupabaseContext.Provider>
+  );
+}

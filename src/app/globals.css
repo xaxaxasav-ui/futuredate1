@@ -1,0 +1,88 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 200 10% 10%;
+    --foreground: 0 0% 98%;
+    --card: 200 10% 12%;
+    --card-foreground: 0 0% 98%;
+    --popover: 200 10% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 192 100% 63%;
+    --primary-foreground: 200 10% 10%;
+    --secondary: 188 94% 48%;
+    --secondary-foreground: 200 10% 10%;
+    --muted: 200 10% 15%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 188 94% 48%;
+    --accent-foreground: 200 10% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 200 10% 20%;
+    --input: 200 10% 20%;
+    --ring: 192 100% 63%;
+    --radius: 1rem;
+  }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 200 10% 10%;
+    --card: 0 0% 98%;
+    --card-foreground: 200 10% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 10% 10%;
+    --primary: 192 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 188 94% 48%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 200 5% 90%;
+    --muted-foreground: 200 5% 35%;
+    --accent: 188 94% 48%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 200 5% 80%;
+    --input: 200 5% 80%;
+    --ring: 192 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground selection:bg-primary/30;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-headline tracking-tight;
+  }
+}
+
+.glass {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)];
+}
+
+.glass-dark {
+  @apply bg-black/40 backdrop-blur-xl border border-white/5 shadow-2xl;
+}
+
+.neo-glow {
+  box-shadow: 0 0 15px theme('colors.primary.DEFAULT'), 0 0 30px theme('colors.primary.DEFAULT') / 0.2;
+}
+
+.text-glow {
+  text-shadow: 0 0 10px theme('colors.primary.DEFAULT');
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

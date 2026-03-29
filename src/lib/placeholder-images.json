@@ -1,0 +1,34 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-futuristic",
+      "description": "Futuristic couple in a neon-lit cyberpunk city",
+      "imageUrl": "/images/hero.svg",
+      "imageHint": "cyberpunk couple"
+    },
+    {
+      "id": "avatar-1",
+      "description": "User avatar 1",
+      "imageUrl": "/images/avatar-1.svg",
+      "imageHint": "portrait person"
+    },
+    {
+      "id": "avatar-2",
+      "description": "User avatar 2",
+      "imageUrl": "/images/alex.svg",
+      "imageHint": "portrait person"
+    },
+    {
+      "id": "avatar-3",
+      "description": "User avatar 3",
+      "imageUrl": "/images/alex.svg",
+      "imageHint": "portrait person"
+    },
+    {
+      "id": "avatar-4",
+      "description": "User avatar 4",
+      "imageUrl": "/images/alex.svg",
+      "imageHint": "portrait person"
+    }
+  ]
+}

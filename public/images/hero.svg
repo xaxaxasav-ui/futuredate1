@@ -1,0 +1,14 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="400" cy="250" r="80" fill="#e94560" opacity="0.8"/>
+  <circle cx="340" cy="320" r="60" fill="#e94560" opacity="0.6"/>
+  <circle cx="460" cy="320" r="60" fill="#e94560" opacity="0.6"/>
+  <text x="400" y="450" font-family="Arial" font-size="24" fill="#fff" text-anchor="middle">Будущее знакомств</text>
+  <text x="400" y="480" font-family="Arial" font-size="14" fill="#aaa" text-anchor="middle">AI Dating Platform</text>
+</svg>
