@@ -287,7 +287,7 @@ export default function ProfilePage() {
         .from('profiles')
         .select('id')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       let result;
       if (existingProfile) {
