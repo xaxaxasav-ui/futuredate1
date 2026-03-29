@@ -843,7 +843,7 @@ export default function ProfilePage() {
                         <Label className="text-muted-foreground">Биография</Label>
                         <p className="font-medium">
                           {profile?.bio 
-                            ? profile.bio.replace(/ИИ_АНАЛИЗ_START.+?ИИ_АНАЛИЗ_END/g, '').trim() || "Не указано"
+                            ? profile.bio.replace(/🎯?ИИ_АНАЛИЗ_START.+?ИИ_АНАЛИЗ_END/g, '').trim() || "Не указано"
                             : "Не указано"}
                         </p>
                       </div>
