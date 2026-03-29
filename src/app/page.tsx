@@ -97,7 +97,7 @@ export default function Home() {
                     </span>
                   </div>
                   <p className="text-xs font-medium">
-                    {isLoggedIn ? 'ИИ нашёл для вас идеальное совпадение' : 'Алекс на 98% совместим'}
+                    {isLoggedIn ? 'ИИ нашёл для вас идеальное совпадение' : 'Света на 98% совместима'}
                   </p>
                 </div>
               </div>
