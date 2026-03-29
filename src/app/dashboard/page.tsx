@@ -13,35 +13,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { createNotification } from "@/lib/notifications";
 
-const MOCK_MATCHES = [
-  {
-    id: "1",
-    name: "Елена",
-    age: 26,
-    score: 98,
-    bio: "Цифровой художник и энтузиаст синтвейва. Ищу кого-то для исследования виртуальных миров.",
-    traits: ["Творческая", "Интроверт", "Технофил"],
-    avatar: PlaceHolderImages[1].imageUrl
-  },
-  {
-    id: "2",
-    name: "Маркус",
-    age: 29,
-    score: 94,
-    bio: "Исследователь квантовых вычислений днем, звездочет ночью. Давай поговорим о мультивселенной.",
-    traits: ["Аналитик", "Мечтатель", "Спокойный"],
-    avatar: PlaceHolderImages[2].imageUrl
-  },
-  {
-    id: "3",
-    name: "Саша",
-    age: 24,
-    score: 89,
-    bio: "Био-хакер и городской садовод. Верю, что будущее за зеленью и неоном.",
-    traits: ["Активная", "Оптимистка", "Эко-сознательная"],
-    avatar: PlaceHolderImages[3].imageUrl
-  }
-];
+const MOCK_MATCHES = [];
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useSupabase();
