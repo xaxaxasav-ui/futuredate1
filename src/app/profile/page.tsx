@@ -174,17 +174,15 @@ export default function ProfilePage() {
     profile_blocked_users: [] as string[],
   });
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/auth");
-    }
-    if (user) {
+useEffect(() => {
+    if (user && !profile) {
       refreshProfile();
     }
-  }, [authLoading, user, router, refreshProfile]);
+  }, [user, profile, router, refreshProfile]);
 
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   useEffect(() => {
-    if (profile) {
+    if (profile && !initialLoadDone) {
       setEditData({
         full_name: profile.full_name || "",
         bio: profile.bio || "",
@@ -213,8 +211,9 @@ export default function ProfilePage() {
         profile_visibility: profile.profile_visibility || "all",
         profile_blocked_users: profile.profile_blocked_users || [],
       });
+      setInitialLoadDone(true);
     }
-  }, [profile]);
+  }, [profile, initialLoadDone]);
 
   useEffect(() => {
     const saveGeolocation = async () => {
@@ -253,10 +252,9 @@ export default function ProfilePage() {
       console.log("Profile data:", editData);
       
       const profileData = {
-        id: user.id,
         full_name: editData.full_name,
         bio: editData.bio,
-        username: editData.username,
+        username: editData.username || `user_${user.id.slice(0,8)}`,
         hobbies: editData.hobbies,
         talents: editData.talents,
         looking_for: editData.looking_for,
@@ -283,11 +281,15 @@ export default function ProfilePage() {
         updated_at: new Date().toISOString(),
       };
 
-      const { data: existingProfile } = await supabase
+      console.log("Saving profile for user:", user.id, "data:", profileData);
+
+      const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('id')
         .eq('id', user.id)
         .maybeSingle();
+
+      console.log("Existing profile check:", { existingProfile, checkError });
 
       let result;
       if (existingProfile) {
@@ -300,12 +302,12 @@ export default function ProfilePage() {
       } else {
         console.log("Creating new profile with data:", profileData);
         const insertData = {
-          ...profileData,
-          username: profileData.username || `user_${user.id.slice(0,8)}`
+          id: user.id,
+          ...profileData
         };
         result = await supabase
           .from('profiles')
-          .insert(insertData)
+          .upsert(insertData)
           .select();
       }
 
@@ -639,7 +641,10 @@ export default function ProfilePage() {
                   <Input
                     placeholder="Ваше имя"
                     value={editData.full_name}
-                    onChange={(e) => setEditData({...editData, full_name: e.target.value})}
+                    onChange={(e) => {
+                      console.log("Typing:", e.target.value);
+                      setEditData({...editData, full_name: e.target.value});
+                    }}
                     className="text-center"
                   />
                   <Input
