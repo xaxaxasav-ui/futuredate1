@@ -986,11 +986,11 @@ export default function AdminPage() {
                   />
                 </div>
                 <div>
-                  <Label>Роль</Label>
+                  <Label className="text-foreground">Роль</Label>
                   <select 
                     value={editData.role}
                     onChange={(e) => setEditData({...editData, role: e.target.value})}
-                    className="glass w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white"
+                    className="glass w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground"
                   >
                     <option value="user">Пользователь</option>
                     <option value="admin">Админ</option>
