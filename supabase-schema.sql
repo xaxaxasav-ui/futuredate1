@@ -181,12 +181,12 @@ CREATE POLICY "Users can view own tickets" ON public.support_tickets
 -- Admin policies (for admin email access)
 CREATE POLICY "Admins can view all tickets" ON public.support_tickets
   FOR SELECT TO authenticated USING (
-    auth.jwt()->>'email' IN ('admin@futuredate.ai', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
+    auth.jwt()->>'email' IN ('admin@date-future.ru', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
   );
 
 CREATE POLICY "Admins can update tickets" ON public.support_tickets
   FOR UPDATE TO authenticated USING (
-    auth.jwt()->>'email' IN ('admin@futuredate.ai', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
+    auth.jwt()->>'email' IN ('admin@date-future.ru', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
   );
 
 -- Site settings policies
@@ -195,7 +195,7 @@ CREATE POLICY "Anyone can read site settings" ON public.site_settings
 
 CREATE POLICY "Admins can update site settings" ON public.site_settings
   FOR ALL TO authenticated USING (
-    auth.jwt()->>'email' IN ('admin@futuredate.ai', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
+    auth.jwt()->>'email' IN ('admin@date-future.ru', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
   );
 
 -- RLS for notifications

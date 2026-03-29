@@ -15,7 +15,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { getUnreadCount } from "@/lib/notifications";
 
 const ADMIN_EMAILS = [
-  "admin@futuredate.ai",
+  "admin@date-future.ru",
   "admin@свидание-будущего.рф",
   "statnihx@mail.ru"
 ];

@@ -158,7 +158,7 @@ export default function SupportPage() {
               <Mail className="w-6 h-6 text-primary" />
             </div>
             <h3 className="font-bold mb-2">Email</h3>
-            <p className="text-sm text-muted-foreground">support@futuredate.ai</p>
+            <p className="text-sm text-muted-foreground">support@date-future.ru</p>
           </GlassCard>
 
           <GlassCard className="p-6 text-center">
