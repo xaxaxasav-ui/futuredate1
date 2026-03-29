@@ -23,7 +23,8 @@ export const metadata: Metadata = {
   title: 'Свидание будущего AI | Знакомства будущего',
   description: 'Испытайте новое поколение знакомств с динамической оценкой личности с помощью ИИ и иммерсивными виртуальными свиданиями.',
   icons: {
-    icon: '/images/alex.svg',
+    icon: '/images/favicon.svg',
+    apple: '/images/favicon.svg',
   },
 };
 
