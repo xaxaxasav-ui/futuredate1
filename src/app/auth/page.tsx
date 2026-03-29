@@ -38,6 +38,15 @@ function AuthForm() {
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberEmail");
+    if (savedEmail) {
+      setLoginEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
@@ -88,6 +97,11 @@ function AuthForm() {
     setIsLoading(true);
     try {
       console.log("Attempting sign in with:", loginEmail);
+      if (rememberMe) {
+        localStorage.setItem("rememberEmail", loginEmail);
+      } else {
+        localStorage.removeItem("rememberEmail");
+      }
       const { error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password: loginPassword,
@@ -230,6 +244,16 @@ function AuthForm() {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox 
+                    id="remember-me" 
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  />
+                  <label htmlFor="remember-me" className="text-sm text-muted-foreground cursor-pointer">
+                    Запомнить меня
+                  </label>
                 </div>
                 <Button 
                   type="submit" 
