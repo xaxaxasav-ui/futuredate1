@@ -146,9 +146,9 @@ export default function DashboardPage() {
                 <Sparkles className="w-4 h-4 mr-2" /> AI Анализ
               </Button>
             </Link>
-            <Button variant="outline" className="glass rounded-full">
-              <Filter className="w-4 h-4 mr-2" /> Настроить векторы
-            </Button>
+<Button variant="outline" className="glass rounded-full" onClick={() => alert('Функция "Настроить векторы" скоро будет доступна!')}>
+                <Filter className="w-4 h-4 mr-2" /> Настроить векторы
+              </Button>
           </div>
         </header>
 
