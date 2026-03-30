@@ -357,19 +357,28 @@ export default function AdminPage() {
     if (!selectedProfile) return;
     
     try {
-      await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           full_name: editData.full_name,
           username: editData.username,
           role: editData.role,
         })
-        .eq('id', selectedProfile.id);
+        .eq('id', selectedProfile.id)
+        .select();
       
+      if (error) {
+        alert("Ошибка сохранения: " + error.message);
+        console.error("Update error:", error);
+        return;
+      }
+      
+      alert("Сохранено успешно!");
       setEditModalOpen(false);
       fetchData();
     } catch (error) {
       console.error("Error updating profile:", error);
+      alert("Ошибка: " + error);
     }
   };
 
