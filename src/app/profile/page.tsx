@@ -817,14 +817,14 @@ useEffect(() => {
           </div>
 
           <div className="md:col-span-2">
-            <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="info">Обо мне</TabsTrigger>
-                <TabsTrigger value="details">Анкета</TabsTrigger>
-                <TabsTrigger value="ai">ИИ Анализ</TabsTrigger>
-                <TabsTrigger value="photos">Фото</TabsTrigger>
-                <TabsTrigger value="interests">Интересы</TabsTrigger>
-                <TabsTrigger value="settings">Настройки</TabsTrigger>
+            <Tabs defaultValue="info" className="w-full" style={{ position: 'relative', zIndex: 1 }}>
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+                <TabsTrigger value="info" className="touch-action-manipulation">Обо мне</TabsTrigger>
+                <TabsTrigger value="details" className="touch-action-manipulation">Анкета</TabsTrigger>
+                <TabsTrigger value="ai" className="touch-action-manipulation">ИИ Анализ</TabsTrigger>
+                <TabsTrigger value="photos" className="touch-action-manipulation">Фото</TabsTrigger>
+                <TabsTrigger value="interests" className="touch-action-manipulation">Интересы</TabsTrigger>
+                <TabsTrigger value="settings" className="touch-action-manipulation">Настройки</TabsTrigger>
               </TabsList>
 
               <TabsContent value="info" className="space-y-6 mt-6">
