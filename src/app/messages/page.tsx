@@ -247,13 +247,13 @@ export default function MessagesPage() {
     <div className="min-h-screen relative pt-24 pb-6 px-6 overflow-hidden">
       
       
-      <div className="max-w-7xl mx-auto h-[calc(100vh-140px)] flex gap-6">
-        <GlassCard className="w-80 flex flex-col p-0">
-          <div className="p-6 border-b border-white/5 space-y-4">
-            <h2 className="text-xl font-bold font-headline">Чаты</h2>
+      <div className="max-w-7xl mx-auto h-[calc(100vh-140px)] relative flex gap-2 md:gap-6">
+        <GlassCard className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 flex-col p-0 absolute md:relative z-10 md:z-0 h-full`}>
+          <div className="p-3 md:p-6 border-b border-white/5 space-y-3">
+            <h2 className="text-lg md:text-xl font-bold font-headline">Чаты</h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Поиск сигналов..." className="glass pl-10 h-10 rounded-full" />
+              <Input placeholder="Поиск..." className="glass pl-10 h-10 rounded-full" />
             </div>
           </div>
           <ScrollArea className="flex-1">
@@ -294,25 +294,30 @@ export default function MessagesPage() {
           </ScrollArea>
         </GlassCard>
 
-        <GlassCard className="flex-1 flex flex-col p-0">
+        <GlassCard className={`${activeChat ? 'flex' : 'hidden md:flex'} flex-1 flex-col p-0 absolute md:relative z-20 md:z-0 w-full h-full`}>
           {!activeChat ? (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <p>Нет чатов. Начните общение с понравившимся пользователем!</p>
             </div>
           ) : (
           <>
-            <div className="p-4 border-b border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
+<div className="p-3 md:p-4 border-b border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button onClick={() => setActiveChat(null)} className="md:hidden p-1">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                </button>
                 <Avatar className="w-10 h-10">
                   <AvatarImage src={activeChat.avatar} />
                   <AvatarFallback>{activeChat?.name[0]}</AvatarFallback>
-              </Avatar>
-              <div>
-                <h3 className="font-bold font-headline text-lg">{activeChat?.name}</h3>
-                <span className="text-[10px] text-primary uppercase font-bold tracking-widest flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" /> В резонансе
-                </span>
+                </Avatar>
+                <div>
+                  <h3 className="font-bold font-headline text-base md:text-lg">{activeChat?.name}</h3>
+                  <span className="text-[10px] text-primary uppercase font-bold tracking-widest flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" /> В резонансе
+                  </span>
+                </div>
               </div>
+            </div>
             </div>
             <div className="relative">
               <Button variant="ghost" size="icon" className="rounded-full h-12 w-12 hover:bg-white/20 active:bg-white/30" onClick={() => setMenuOpen(!menuOpen)}>
