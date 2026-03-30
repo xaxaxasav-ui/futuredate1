@@ -4,7 +4,7 @@
 
 ## О приложении
 
-**Свидание будущего AI** — это современная платформа знакомств, использующая технологии искусственного интеллекта для создания более глубоких иMeaningful связей между людьми.
+**Свидание будущего AI** — это современная платформа знакомств, использующая технологии искусственного интеллекта для создания более глубоких и осмысленных связей между людьми.
 
 ### Основные функции
 
@@ -47,8 +47,8 @@
 
 ```bash
 # Клонирование репозитория
-git clone https://github.com/xaxaxasav-ui/date-future.git
-cd date-future
+git clone https://github.com/xaxaxasav-ui/futuredate1.git
+cd futuredate1
 
 # Установка зависимостей
 npm install
@@ -57,13 +57,13 @@ npm install
 npm run dev
 ```
 
-Откройте http://localhost:9002
+Откройте http://localhost:3000
 
 ## Настройка Supabase
 
 1. Создайте проект на [supabase.com](https://supabase.com)
 2. Выполните SQL из файла `supabase-schema.sql` в SQL Editor
-3. Добавьте URL и ключ в `src/lib/supabase.ts`
+3. Добавьте URL и ключ в переменные окружения Vercel
 
 ## Для кого это приложение
 
