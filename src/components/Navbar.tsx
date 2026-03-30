@@ -209,21 +209,20 @@ export function Navbar() {
           ))}
           <div className="relative">
             <button 
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-xs ${
-                MORE_MENU.some(n => pathname === n.href) ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'
-              }`}
-              onClick={() => setMoreOpen(!moreOpen)}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-xs active:bg-primary/30 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+              onClick={() => { console.log('Menu clicked!'); setMoreOpen(!moreOpen); }}
               type="button"
               aria-label="Открыть меню"
+              style={{ touchAction: 'manipulation' }}
             >
-              <Menu className={`w-7 h-7 ${moreOpen ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+              <Menu className={`w-7 h-7 ${moreOpen ? 'text-primary' : ''}`} />
               <span>Ещё</span>
             </button>
             {moreOpen && (
-              <div className={`fixed inset-0 z-[90]`} onClick={() => setMoreOpen(false)} />
+              <div className={`fixed inset-0 z-[999]`} onClick={() => setMoreOpen(false)} />
             )}
             {moreOpen && (
-              <div className={`absolute bottom-full right-0 mb-2 w-56 rounded-xl border overflow-hidden shadow-xl z-[100] ${theme === 'dark' ? 'bg-black border-white/10' : 'bg-white border-black/10'}`}>
+              <div className={`absolute bottom-full right-0 mb-2 w-64 rounded-xl border-2 border-primary overflow-hidden shadow-2xl z-[1000] ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
                 <div className="py-2">
                   {MORE_MENU.map((item) => (
                     <Link
