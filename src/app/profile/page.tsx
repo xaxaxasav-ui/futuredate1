@@ -188,7 +188,7 @@ useEffect(() => {
     if (profile && !initialLoadDone) {
       setEditData({
         full_name: profile.full_name || "",
-        bio: profile.bio || "",
+        bio: profile.bio ? profile.bio.replace(/🎯?ИИ_АНАЛИЗ_START.+?ИИ_АНАЛИЗ_END/g, '').trim() : "",
         username: profile.username || "",
         hobbies: profile.hobbies || [],
         talents: profile.talents || [],
