@@ -103,7 +103,7 @@ export function Navbar() {
                 </button>
                 
                 {moreOpen && (
-                  <div className={`absolute top-full right-0 mt-2 w-60 rounded-xl border overflow-hidden shadow-xl z-50 ${theme === 'dark' ? 'bg-black border-white/10' : 'bg-white border-black/10'}`}>
+                  <div className={`absolute top-full right-0 mt-2 w-60 rounded-xl border overflow-hidden shadow-xl z-[70] ${theme === 'dark' ? 'bg-black border-white/10' : 'bg-white border-black/10'}`}>
                     <div className="py-2">
                       {MORE_MENU.map((item) => (
                         <Link
@@ -191,7 +191,7 @@ export function Navbar() {
         </div>
       </div>
 
-      <div className={`md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-md border-t z-[60] px-2 py-2 ${theme === 'dark' ? 'bg-black/90 border-white/10' : 'bg-white/90 border-black/10'}`}>
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-md border-t z-[65] px-2 py-2 ${theme === 'dark' ? 'bg-black/90 border-white/10' : 'bg-white/90 border-black/10'}`}>
         <div className="flex items-center justify-around">
           {MAIN_TABS.map((item) => (
             <Link
@@ -211,11 +211,12 @@ export function Navbar() {
             className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs ${
               MORE_MENU.some(n => pathname === n.href) ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'
             }`}
-            onClick={() => setMoreOpen(!moreOpen)}
+            onClick={() => { console.log('Menu clicked'); setMoreOpen(!moreOpen); }}
             type="button"
+            aria-label="Открыть меню"
           >
-            <Menu className={`w-6 h-6 ${MORE_MENU.some(n => pathname === n.href) ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
-            <span className={MORE_MENU.some(n => pathname === n.href) ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}>Ещё</span>
+            <Menu className={`w-6 h-6 ${moreOpen ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+            <span className={moreOpen ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}>Ещё</span>
           </button>
         </div>
       </div>
