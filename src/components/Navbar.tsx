@@ -207,18 +207,57 @@ export function Navbar() {
               {item.label}
             </Link>
           ))}
-          <button 
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-xs z-[80] relative ${
-              MORE_MENU.some(n => pathname === n.href) ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'
-            }`}
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMoreOpen(!moreOpen); }}
-            onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); setMoreOpen(!moreOpen); }}
-            type="button"
-            aria-label="Открыть меню"
-          >
-            <Menu className={`w-7 h-7 ${moreOpen ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
-            <span className={moreOpen ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}>Ещё</span>
-          </button>
+          <div className="relative">
+            <button 
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-xs ${
+                MORE_MENU.some(n => pathname === n.href) ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}
+              onClick={() => setMoreOpen(!moreOpen)}
+              type="button"
+              aria-label="Открыть меню"
+            >
+              <Menu className={`w-7 h-7 ${moreOpen ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+              <span>Ещё</span>
+            </button>
+            {moreOpen && (
+              <div className={`fixed inset-0 z-[90]`} onClick={() => setMoreOpen(false)} />
+            )}
+            {moreOpen && (
+              <div className={`absolute bottom-full right-0 mb-2 w-56 rounded-xl border overflow-hidden shadow-xl z-[100] ${theme === 'dark' ? 'bg-black border-white/10' : 'bg-white border-black/10'}`}>
+                <div className="py-2">
+                  {MORE_MENU.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center justify-between px-4 py-3 text-sm transition-colors ${
+                        theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'
+                      }`}
+                      onClick={() => setMoreOpen(false)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <item.icon className="w-5 h-5" />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge && unreadCount > 0 && (
+                        <Badge variant="destructive" className="h-5 px-1.5 text-xs">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </Badge>
+                      )}
+                    </Link>
+                  ))}
+                  <button
+                    onClick={() => { handleSignOut(); setMoreOpen(false); }}
+                    className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors text-red-500 w-full text-left ${
+                      theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <LogOut className="w-5 h-5" />
+                    Выйти
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </nav>
