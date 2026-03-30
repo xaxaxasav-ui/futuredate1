@@ -818,13 +818,13 @@ useEffect(() => {
 
           <div className="md:col-span-2">
             <Tabs defaultValue="info" className="w-full" style={{ position: 'relative', zIndex: 1 }}>
-              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-                <TabsTrigger value="info" className="touch-action-manipulation">Обо мне</TabsTrigger>
-                <TabsTrigger value="details" className="touch-action-manipulation">Анкета</TabsTrigger>
-                <TabsTrigger value="ai" className="touch-action-manipulation">ИИ Анализ</TabsTrigger>
-                <TabsTrigger value="photos" className="touch-action-manipulation">Фото</TabsTrigger>
-                <TabsTrigger value="interests" className="touch-action-manipulation">Интересы</TabsTrigger>
-                <TabsTrigger value="settings" className="touch-action-manipulation">Настройки</TabsTrigger>
+              <TabsList className="flex flex-wrap justify-center gap-1">
+                <TabsTrigger value="info" className="text-xs px-2 py-1">Обо мне</TabsTrigger>
+                <TabsTrigger value="details" className="text-xs px-2 py-1">Анкета</TabsTrigger>
+                <TabsTrigger value="ai" className="text-xs px-2 py-1">ИИ</TabsTrigger>
+                <TabsTrigger value="photos" className="text-xs px-2 py-1">Фото</TabsTrigger>
+                <TabsTrigger value="interests" className="text-xs px-2 py-1">Интересы</TabsTrigger>
+                <TabsTrigger value="settings" className="text-xs px-2 py-1">Настройки</TabsTrigger>
               </TabsList>
 
               <TabsContent value="info" className="space-y-6 mt-6">
