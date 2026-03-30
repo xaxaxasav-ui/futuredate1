@@ -383,12 +383,17 @@ export default function AdminPage() {
         .select();
       
       if (error) {
-        alert("Ошибка сохранения: " + error.message);
+        alert("Ошибка сохранения: " + error.message + "\nКод: " + error.code);
         console.error("Update error:", error);
         return;
       }
       
-      alert("Сохранено успешно!");
+      if (data && data.length > 0) {
+        alert("Сохранено! Роль: " + data[0].role);
+      } else {
+        alert("Сохранено (данные не вернулись)");
+      }
+      
       setEditModalOpen(false);
       fetchData();
     } catch (error) {
