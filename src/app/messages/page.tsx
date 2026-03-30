@@ -288,7 +288,7 @@ export default function MessagesPage() {
                     <p className="text-xs text-muted-foreground truncate">{chat.lastMsg}</p>
                   </div>
                 </button>
-              ))}
+              ))
               )}
             </div>
           </ScrollArea>
