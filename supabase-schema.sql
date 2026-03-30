@@ -172,6 +172,11 @@ CREATE POLICY "Users can send messages in own matches" ON public.messages
   FOR INSERT WITH CHECK (auth.uid() = sender_id);
 
 -- RLS Policies for support_tickets
+DROP POLICY IF EXISTS "Users can create support tickets" ON public.support_tickets;
+DROP POLICY IF EXISTS "Users can view own tickets" ON public.support_tickets;
+DROP POLICY IF EXISTS "Admins can view all tickets" ON public.support_tickets;
+DROP POLICY IF EXISTS "Admins can update tickets" ON public.support_tickets;
+
 CREATE POLICY "Users can create support tickets" ON public.support_tickets
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
@@ -190,6 +195,9 @@ CREATE POLICY "Admins can update tickets" ON public.support_tickets
   );
 
 -- Site settings policies
+DROP POLICY IF EXISTS "Anyone can read site settings" ON public.site_settings;
+DROP POLICY IF EXISTS "Admins can update site settings" ON public.site_settings;
+
 CREATE POLICY "Anyone can read site settings" ON public.site_settings
   FOR SELECT TO authenticated USING (true);
 
@@ -201,6 +209,10 @@ CREATE POLICY "Admins can update site settings" ON public.site_settings
 -- RLS for notifications
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Users can create notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
+
 CREATE POLICY "Users can view own notifications" ON public.notifications
   FOR SELECT USING (auth.uid() = user_id);
 
@@ -210,19 +222,14 @@ CREATE POLICY "Users can create notifications" ON public.notifications
 CREATE POLICY "Users can update own notifications" ON public.notifications
   FOR UPDATE USING (auth.uid() = user_id);
 
--- Create indexes
-DROP INDEX IF EXISTS idx_matches_user_id;
-DROP INDEX IF EXISTS idx_matches_matched_user_id;
-DROP INDEX IF EXISTS idx_messages_match_id;
-DROP INDEX IF EXISTS idx_messages_created_at;
-
-CREATE INDEX idx_matches_user_id ON public.matches(user_id);
-CREATE INDEX idx_matches_matched_user_id ON public.matches(matched_user_id);
-CREATE INDEX idx_messages_match_id ON public.messages(match_id);
-CREATE INDEX idx_messages_created_at ON public.messages(created_at);
-CREATE INDEX idx_profiles_username ON public.profiles(username);
-CREATE INDEX idx_profiles_city ON public.profiles(city);
-CREATE INDEX idx_profiles_gender ON public.profiles(gender);
+-- Create indexes (skip if already exists)
+CREATE INDEX IF NOT EXISTS idx_matches_user_id ON public.matches(user_id);
+CREATE INDEX IF NOT EXISTS idx_matches_matched_user_id ON public.matches(matched_user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_match_id ON public.messages(match_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON public.messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
+CREATE INDEX IF NOT EXISTS idx_profiles_city ON public.profiles(city);
+CREATE INDEX IF NOT EXISTS idx_profiles_gender ON public.profiles(gender);
 
 -- Enable realtime for messages table
-ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;

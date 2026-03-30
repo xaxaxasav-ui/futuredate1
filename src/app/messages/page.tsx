@@ -222,12 +222,16 @@ export default function MessagesPage() {
     await supabase.from('messages').delete().eq('match_id', activeChat.id);
     await supabase.from('matches').delete().eq('id', activeChat.id);
     
+    const remainingChats = chats.filter(chat => chat.id !== activeChat.id);
+    setChats(remainingChats);
+    setMessages([]);
     setShowDeleteDialog(false);
     setMenuOpen(false);
-    setChats(prev => prev.filter(chat => chat.id !== activeChat.id));
-    setMessages([]);
-    if (chats.length > 0) {
-      setActiveChat(chats[0]);
+    
+    if (remainingChats.length > 0) {
+      setActiveChat(remainingChats[0]);
+    } else {
+      setActiveChat(null);
     }
   };
 
