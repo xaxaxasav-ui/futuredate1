@@ -74,9 +74,10 @@ function checkProhibitedContent(text: string): { isProhibited: boolean; reason: 
 export default function MessagesPage() {
   const { user, loading: authLoading } = useSupabase();
   const router = useRouter();
-  const [chats, setChats] = useState<Chat[]>(MOCK_CHATS);
-  const [activeChat, setActiveChat] = useState<Chat>(MOCK_CHATS[0]);
-  const [messages, setMessages] = useState<ChatMessage[]>(DEFAULT_MESSAGES);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeChat, setActiveChat] = useState<Chat | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loadingChats, setLoadingChats] = useState(true);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -90,6 +91,42 @@ export default function MessagesPage() {
       window.location.href = "/auth";
     }
   }, [authLoading, user]);
+
+  useEffect(() => {
+    const loadChats = async () => {
+      if (!user) return;
+      try {
+        const { data: matches } = await supabase
+          .from('matches')
+          .select(`
+            id,
+            matched_profile:profiles!matches_matched_user_id_fkey(id, username, full_name, avatar_url)
+          `)
+          .or(`user_id.eq.${user.id},matched_user_id.eq.${user.id}`)
+          .eq('status', 'accepted');
+
+        if (matches && matches.length > 0) {
+          const loadedChats: Chat[] = matches.map((m: any) => ({
+            id: m.id,
+            name: m.matched_profile?.full_name || m.matched_profile?.username || 'Неизвестно',
+            lastMsg: 'Новые сообщения',
+            time: 'Сейчас',
+            avatar: m.matched_profile?.avatar_url || PlaceHolderImages[0].imageUrl,
+            online: Math.random() > 0.5
+          }));
+          setChats(loadedChats);
+          if (loadedChats.length > 0) {
+            setActiveChat(loadedChats[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading chats:", error);
+      } finally {
+        setLoadingChats(false);
+      }
+    };
+    loadChats();
+  }, [user]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -162,7 +199,7 @@ export default function MessagesPage() {
   };
 
   const handleBlockUser = async () => {
-    if (!user) return;
+    if (!user || !activeChat) return;
     
     const newBlockedUsers = [...blockedUsers, activeChat.id];
     setBlockedUsers(newBlockedUsers);
@@ -180,7 +217,7 @@ export default function MessagesPage() {
   };
 
   const handleDeleteChat = async () => {
-    if (!user) return;
+    if (!user || !activeChat) return;
     
     await supabase.from('messages').delete().eq('match_id', activeChat.id);
     await supabase.from('matches').delete().eq('id', activeChat.id);
@@ -217,11 +254,20 @@ export default function MessagesPage() {
           </div>
           <ScrollArea className="flex-1">
             <div className="p-2 space-y-1">
-              {chats.map((chat) => (
+              {loadingChats ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : chats.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Нет чатов</p>
+                </div>
+              ) : (
+              chats.map((chat) => (
                 <button 
                   key={chat.id} 
                   onClick={() => setActiveChat(chat)}
-                  className={`w-full flex items-center gap-4 p-3 rounded-xl transition-colors ${activeChat.id === chat.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-white/5'}`}
+                  className={`w-full flex items-center gap-4 p-3 rounded-xl transition-colors ${activeChat?.id === chat.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-white/5'}`}
                 >
                   <div className="relative">
                     <Avatar>
@@ -239,19 +285,26 @@ export default function MessagesPage() {
                   </div>
                 </button>
               ))}
+              )}
             </div>
           </ScrollArea>
         </GlassCard>
 
         <GlassCard className="flex-1 flex flex-col p-0">
-          <div className="p-4 border-b border-white/5 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-10 h-10">
-                <AvatarImage src={activeChat.avatar} />
-                <AvatarFallback>{activeChat.name[0]}</AvatarFallback>
+          {!activeChat ? (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <p>Нет чатов. Начните общение с понравившимся пользователем!</p>
+            </div>
+          ) : (
+          <>
+            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Avatar className="w-10 h-10">
+                  <AvatarImage src={activeChat.avatar} />
+                  <AvatarFallback>{activeChat?.name[0]}</AvatarFallback>
               </Avatar>
               <div>
-                <h3 className="font-bold font-headline text-lg">{activeChat.name}</h3>
+                <h3 className="font-bold font-headline text-lg">{activeChat?.name}</h3>
                 <span className="text-[10px] text-primary uppercase font-bold tracking-widest flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" /> В резонансе
                 </span>
@@ -321,6 +374,8 @@ export default function MessagesPage() {
               <span>⚠️ ЗАПРЕЩЕНО: ссылки, номера телефонов, почта, приглашения в другие мессенджеры (WhatsApp, Viber, Telegram). Нарушители банятся на 1 неделю!</span>
             </div>
           </div>
+          </>
+          )}
         </GlassCard>
       </div>
 
@@ -329,7 +384,7 @@ export default function MessagesPage() {
           <DialogHeader>
             <DialogTitle>Заблокировать пользователя</DialogTitle>
             <DialogDescription>
-              Вы уверены, что хотите заблокировать {activeChat.name}? Вы больше не будете видеть сообщения друг друга.
+              Вы уверены, что хотите заблокировать {activeChat?.name}? Вы больше не будете видеть сообщения друг друга.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-between">
@@ -350,7 +405,7 @@ export default function MessagesPage() {
           <DialogHeader>
             <DialogTitle>Удалить чат</DialogTitle>
             <DialogDescription>
-              Вы уверены, что хотите удалить весь чат с {activeChat.name}? Все сообщения будут удалены безвозвратно.
+              Вы уверены, что хотите удалить весь чат с {activeChat?.name}? Все сообщения будут удалены безвозвратно.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-between">
