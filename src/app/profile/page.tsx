@@ -818,13 +818,13 @@ useEffect(() => {
 
           <div className="md:col-span-2">
             <Tabs defaultValue="info" className="w-full" style={{ position: 'relative', zIndex: 1 }}>
-              <TabsList className="flex flex-wrap justify-center gap-1">
-                <TabsTrigger value="info" className="text-xs px-2 py-1">Обо мне</TabsTrigger>
-                <TabsTrigger value="details" className="text-xs px-2 py-1">Анкета</TabsTrigger>
-                <TabsTrigger value="ai" className="text-xs px-2 py-1">ИИ</TabsTrigger>
-                <TabsTrigger value="photos" className="text-xs px-2 py-1">Фото</TabsTrigger>
-                <TabsTrigger value="interests" className="text-xs px-2 py-1">Интересы</TabsTrigger>
-                <TabsTrigger value="settings" className="text-xs px-2 py-1">Настройки</TabsTrigger>
+              <TabsList className="flex w-full overflow-x-auto pb-2 gap-1">
+                <TabsTrigger value="info" className="text-xs px-3 py-2 flex-shrink-0">Обо мне</TabsTrigger>
+                <TabsTrigger value="details" className="text-xs px-3 py-2 flex-shrink-0">Анкета</TabsTrigger>
+                <TabsTrigger value="ai" className="text-xs px-3 py-2 flex-shrink-0">ИИ</TabsTrigger>
+                <TabsTrigger value="photos" className="text-xs px-3 py-2 flex-shrink-0">Фото</TabsTrigger>
+                <TabsTrigger value="interests" className="text-xs px-3 py-2 flex-shrink-0">Интересы</TabsTrigger>
+                <TabsTrigger value="settings" className="text-xs px-3 py-2 flex-shrink-0">Настройки</TabsTrigger>
               </TabsList>
 
               <TabsContent value="info" className="space-y-6 mt-6">
