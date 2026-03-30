@@ -7,7 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, Search, MoreVertical, Loader2, ShieldAlert } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
@@ -71,6 +79,10 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<ChatMessage[]>(DEFAULT_MESSAGES);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -123,6 +135,14 @@ export default function MessagesPage() {
     setInput("");
     setLoading(true);
 
+    if (user) {
+      await supabase.from('messages').insert({
+        match_id: activeChat.id,
+        sender_id: user.id,
+        content: input,
+      });
+    }
+
     setTimeout(() => {
       const responses = [
         "Это так интересно! Расскажи мне больше.",
@@ -139,6 +159,39 @@ export default function MessagesPage() {
       }]);
       setLoading(false);
     }, 1000);
+  };
+
+  const handleBlockUser = async () => {
+    if (!user) return;
+    
+    const newBlockedUsers = [...blockedUsers, activeChat.id];
+    setBlockedUsers(newBlockedUsers);
+    
+    await supabase.from('profiles').update({
+      profile_blocked_users: newBlockedUsers
+    }).eq('id', user.id);
+    
+    setShowBlockDialog(false);
+    setMenuOpen(false);
+    setChats(prev => prev.filter(chat => chat.id !== activeChat.id));
+    if (chats.length > 0) {
+      setActiveChat(chats[0]);
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (!user) return;
+    
+    await supabase.from('messages').delete().eq('match_id', activeChat.id);
+    await supabase.from('matches').delete().eq('id', activeChat.id);
+    
+    setShowDeleteDialog(false);
+    setMenuOpen(false);
+    setChats(prev => prev.filter(chat => chat.id !== activeChat.id));
+    setMessages([]);
+    if (chats.length > 0) {
+      setActiveChat(chats[0]);
+    }
   };
 
   if (authLoading) {
@@ -204,10 +257,28 @@ export default function MessagesPage() {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="rounded-full glass h-10 w-10">
-                <MoreVertical className="w-5 h-5" />
+            <div className="relative">
+              <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-white/10" onClick={() => setMenuOpen(!menuOpen)}>
+                <MoreVertical className="w-5 h-5 text-white" />
               </Button>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border overflow-hidden shadow-xl z-[100] bg-gray-900 border-gray-700">
+                  <button
+                    onClick={() => { setShowDeleteDialog(true); setMenuOpen(false); }}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-red-400 w-full text-left hover:bg-red-500/20"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Удалить чат
+                  </button>
+                  <button
+                    onClick={() => { setShowBlockDialog(true); setMenuOpen(false); }}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-red-400 w-full text-left hover:bg-red-500/20"
+                  >
+                    <Ban className="w-4 h-4" />
+                    Заблокировать
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -252,6 +323,48 @@ export default function MessagesPage() {
           </div>
         </GlassCard>
       </div>
+
+      <Dialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Заблокировать пользователя</DialogTitle>
+            <DialogDescription>
+              Вы уверены, что хотите заблокировать {activeChat.name}? Вы больше не будете видеть сообщения друг друга.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-between">
+            <Button variant="outline" onClick={() => setShowBlockDialog(false)}>
+              <X className="w-4 h-4 mr-2" />
+              Отмена
+            </Button>
+            <Button variant="destructive" onClick={handleBlockUser}>
+              <Ban className="w-4 h-4 mr-2" />
+              Заблокировать
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Удалить чат</DialogTitle>
+            <DialogDescription>
+              Вы уверены, что хотите удалить весь чат с {activeChat.name}? Все сообщения будут удалены безвозвратно.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-between">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              <X className="w-4 h-4 mr-2" />
+              Отмена
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteChat}>
+              <Trash2 className="w-4 h-4 mr-2" />
+              Удалить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
