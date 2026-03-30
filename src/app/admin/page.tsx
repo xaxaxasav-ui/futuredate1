@@ -185,6 +185,7 @@ export default function AdminPage() {
       let pendingCount = 0;
       let profilesData: any[] = [];
 
+      setDebugInfo(prev => prev + "\n1. Counting all profiles...");
       try {
         const { count, error } = await supabase
           .from('profiles')
@@ -198,26 +199,37 @@ export default function AdminPage() {
         setDebugInfo(prev => prev + `\nCount profiles exception: ${e.message}`);
       }
 
+      setDebugInfo(prev => prev + "\n2. Counting verified profiles...");
       try {
-        const { count } = await supabase
+        const { count, error } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
           .eq('is_verified', true);
+        if (error) {
+          setDebugInfo(prev => prev + `\nVerified error: ${error.message}`);
+        }
         verifiedCount = count || 0;
+        setDebugInfo(prev => prev + `\nVerified: ${verifiedCount}`);
       } catch (e: any) {
         setDebugInfo(prev => prev + `\nCount verified exception: ${e.message}`);
       }
 
+      setDebugInfo(prev => prev + "\n3. Counting pending...");
       try {
-        const { count } = await supabase
+        const { count, error } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
           .eq('verification_status', 'pending');
+        if (error) {
+          setDebugInfo(prev => prev + `\nPending error: ${error.message}`);
+        }
         pendingCount = count || 0;
+        setDebugInfo(prev => prev + `\nPending: ${pendingCount}`);
       } catch (e: any) {
         setDebugInfo(prev => prev + `\nCount pending exception: ${e.message}`);
       }
 
+      setDebugInfo(prev => prev + "\n4. Loading profiles list...");
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -233,6 +245,7 @@ export default function AdminPage() {
         setDebugInfo(prev => prev + `\nSelect profiles exception: ${e.message}`);
       }
 
+      setDebugInfo(prev => prev + "\n5. Setting state...");
       setProfiles(profilesData);
       setStats({
         totalUsers: totalCount,
@@ -240,11 +253,13 @@ export default function AdminPage() {
         pendingVerifications: pendingCount,
         totalMessages: 0
       });
+      setDebugInfo(prev => prev + "\nDone!");
     } catch (error: any) {
       console.error("Error fetching data:", error);
       setDebugInfo(prev => prev + `\nfetchData exception: ${error.message}`);
     } finally {
       setLoading(false);
+      setDebugInfo(prev => prev + "\nLoading set to false");
     }
   };
 
