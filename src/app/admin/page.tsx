@@ -125,13 +125,13 @@ export default function AdminPage() {
       }
       
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('site_settings')
           .select('*')
           .eq('key', 'background_image')
-          .single();
+          .maybeSingle();
         
-        if (data && data.value) {
+        if (!error && data && data.value) {
           setBgImageUrl(data.value);
           localStorage.setItem('site_background_image', data.value);
         }
