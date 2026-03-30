@@ -249,15 +249,15 @@ export default function MessagesPage() {
       
       <div className="max-w-7xl mx-auto h-[calc(100vh-140px)] relative flex gap-2 md:gap-6">
         <GlassCard className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 flex-col p-0 absolute md:relative z-10 md:z-0 h-full`}>
-          <div className="p-3 md:p-6 border-b border-white/5 space-y-3">
-            <h2 className="text-lg md:text-xl font-bold font-headline">Чаты</h2>
+          <div className="p-3 md:p-6 border-b border-white/5">
+            <h2 className="text-lg md:text-xl font-bold font-headline mb-3">Чаты</h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input placeholder="Поиск..." className="glass pl-10 h-10 rounded-full" />
             </div>
           </div>
           <ScrollArea className="flex-1">
-            <div className="p-2 space-y-1">
+            <div className="flex overflow-x-auto gap-2 p-2 pb-4">
               {loadingChats ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -271,22 +271,16 @@ export default function MessagesPage() {
                 <button 
                   key={chat.id} 
                   onClick={() => setActiveChat(chat)}
-                  className={`w-full flex items-center gap-4 p-3 rounded-xl transition-colors ${activeChat?.id === chat.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-white/5'}`}
+                  className={`flex-shrink-0 flex flex-col items-center gap-2 p-3 rounded-xl transition-colors w-20 ${activeChat?.id === chat.id ? 'bg-primary/20 border border-primary/30' : 'hover:bg-white/5'}`}
                 >
                   <div className="relative">
-                    <Avatar>
+                    <Avatar className="w-12 h-12">
                       <AvatarImage src={chat.avatar} />
-                      <AvatarFallback>{chat.name[0]}</AvatarFallback>
+                      <AvatarFallback className="text-sm">{chat.name[0]}</AvatarFallback>
                     </Avatar>
                     {chat.online && <span className="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-background" />}
                   </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="flex justify-between items-baseline">
-                      <span className="font-bold text-sm truncate">{chat.name}</span>
-                      <span className="text-[10px] text-muted-foreground uppercase">{chat.time}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">{chat.lastMsg}</p>
-                  </div>
+                  <span className="text-xs truncate w-full text-center">{chat.name.split(' ')[0]}</span>
                 </button>
               ))
               )}
