@@ -258,7 +258,7 @@ useEffect(() => {
       
       const profileData = {
         full_name: editData.full_name,
-        bio: editData.bio,
+        bio: editData.bio ? editData.bio.replace(/🎯?ИИ_АНАЛИЗ_START.+?ИИ_АНАЛИЗ_END/g, '').trim() : '',
         username: editData.username || `user_${user.id.slice(0,8)}`,
         hobbies: editData.hobbies,
         talents: editData.talents,
