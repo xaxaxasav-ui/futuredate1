@@ -10,10 +10,8 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { getAllProfiles, Profile } from "@/lib/supabase";
 import { createNotification } from "@/lib/notifications";
-
-const MOCK_MATCHES = [];
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useSupabase();
@@ -21,6 +19,8 @@ export default function DashboardPage() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [likes, setLikes] = useState<string[]>([]);
   const [matches, setMatches] = useState<string[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [loadingProfiles, setLoadingProfiles] = useState(true);
 
   const trackStats = (targetUserId: string, action: 'view' | 'like' | 'favorite' | 'match') => {
     const statsKey = `profile_stats_${targetUserId}`;
@@ -35,68 +35,68 @@ export default function DashboardPage() {
     localStorage.setItem(statsKey, JSON.stringify(stats));
   };
 
-  const handleLike = async (match: typeof MOCK_MATCHES[0]) => {
+  const handleLike = async (profile: Profile) => {
     if (!user) return;
     
-    if (likes.includes(match.id)) {
-      setLikes(prev => prev.filter(id => id !== match.id));
+    if (likes.includes(profile.id)) {
+      setLikes(prev => prev.filter(id => id !== profile.id));
     } else {
-      setLikes(prev => [...prev, match.id]);
-      trackStats(match.id, 'like');
+      setLikes(prev => [...prev, profile.id]);
+      trackStats(profile.id, 'like');
       
       if (Math.random() > 0.5) {
-        setMatches(prev => [...prev, match.id]);
-        trackStats(match.id, 'match');
-        alert(`🎉 Это взаимный лайк! Вы можете назначить свидание с ${match.name}!`);
+        setMatches(prev => [...prev, profile.id]);
+        trackStats(profile.id, 'match');
+        alert(`🎉 Это взаимный лайк! Вы можете назначить свидание с ${profile.full_name}!`);
       } else {
-        alert(`Лайк отправлен ${match.name}!`);
+        alert(`Лайк отправлен ${profile.full_name}!`);
       }
     }
   };
 
-  const canInteract = (matchId: string) => matches.includes(matchId);
+  const canInteract = (profileId: string) => matches.includes(profileId);
 
-  const handleViewProfile = (match: typeof MOCK_MATCHES[0]) => {
-    trackStats(match.id, 'view');
-    router.push(`/profile/${match.id}`);
+  const handleViewProfile = (profile: Profile) => {
+    trackStats(profile.id, 'view');
+    router.push(`/profile/${profile.id}`);
   };
 
-  const handleRemove = (match: typeof MOCK_MATCHES[0]) => {
-    alert(`Вы убрали ${match.name} из списка. Чтобы увидеть его снова, нужно будет искать заново.`);
+  const handleRemove = (profile: Profile) => {
+    alert(`Вы убрали ${profile.full_name} из списка. Чтобы увидеть его снова, нужно будет искать заново.`);
   };
 
-  const handleMessage = (match: typeof MOCK_MATCHES[0]) => {
-    if (!canInteract(match.id)) {
-      alert(`💌 Чтобы написать ${match.name}, сначала нужно взаимно лайкнуть друг друга!\n\nПоставьте лайк и ждите взаимности.`);
+  const handleMessage = (profile: Profile) => {
+    if (!canInteract(profile.id)) {
+      alert(`💌 Чтобы написать ${profile.full_name}, сначала нужно взаимно лайкнуть друг друга!\n\nПоставьте лайк и ждите взаимности.`);
       return;
     }
     router.push("/messages");
   };
 
-  const handleDate = (match: typeof MOCK_MATCHES[0]) => {
-    if (!canInteract(match.id)) {
-      alert(`🎥 Чтобы пригласить ${match.name} на свидание, нужно чтобы это был взаимный лайк!\n\nКак это работает:\n1. Поставьте лайк понравившемуся пользователю\n2. Если этот пользователь тоже поставит вам лайк - это взаимность!\n3. После взаимного лайка вы можете написать или пригласить на свидание\n\nВзаимные лайки = ваша пара!`);
+  const handleDate = (profile: Profile) => {
+    if (!canInteract(profile.id)) {
+      alert(`🎥 Чтобы пригласить ${profile.full_name} на свидание, нужно чтобы это был взаимный лайк!\n\nКак это работает:\n1. Поставьте лайк понравившемуся пользователю\n2. Если этот пользователь тоже поставит вам лайк - это взаимность!\n3. После взаимного лайка вы можете написать или пригласить на свидание\n\nВзаимные лайки = ваша пара!`);
       return;
     }
     router.push("/date");
   };
 
-  const handleFavorite = async (match: typeof MOCK_MATCHES[0]) => {
+  const handleFavorite = async (profile: Profile) => {
     if (!user) return;
     
-    const isFavorited = favorites.includes(match.id);
+    const isFavorited = favorites.includes(profile.id);
     
     if (isFavorited) {
-      setFavorites(prev => prev.filter(id => id !== match.id));
+      setFavorites(prev => prev.filter(id => id !== profile.id));
     } else {
-      setFavorites(prev => [...prev, match.id]);
-      trackStats(match.id, 'favorite');
+      setFavorites(prev => [...prev, profile.id]);
+      trackStats(profile.id, 'favorite');
       
       await createNotification({
         userId: user.id,
         type: 'favorite',
         title: 'Добавлено в избранное',
-        message: `Вы добавили ${match.name} в избранное`,
+        message: `Вы добавили ${profile.full_name} в избранное`,
       });
     }
   };
@@ -106,6 +106,21 @@ export default function DashboardPage() {
       router.push("/auth");
     }
   }, [authLoading, user, router]);
+
+  useEffect(() => {
+    const loadProfiles = async () => {
+      if (!user) return;
+      try {
+        const allProfiles = await getAllProfiles(user.id);
+        setProfiles(allProfiles.slice(0, 20));
+      } catch (error) {
+        console.error("Error loading profiles:", error);
+      } finally {
+        setLoadingProfiles(false);
+      }
+    };
+    loadProfiles();
+  }, [user]);
 
   if (authLoading) {
     return (
@@ -137,20 +152,32 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {MOCK_MATCHES.map((match) => (
-            <GlassCard key={match.id} className="group relative">
+        {loadingProfiles ? (
+            <div className="col-span-full flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : profiles.length === 0 ? (
+            <div className="col-span-full text-center py-20">
+              <p className="text-muted-foreground">Пока нет анкет. Завершите тест личности, чтобы найти совместимых партнёров.</p>
+              <Link href="/assessment">
+                <Button className="mt-4 rounded-full neo-glow">Пройти ИИ тест</Button>
+              </Link>
+            </div>
+          ) : (
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {profiles.map((profile) => (
+            <GlassCard key={profile.id} className="group relative">
               <div className="aspect-[4/5] relative overflow-hidden">
                 <img 
-                  src={match.avatar} 
-                  alt={match.name} 
+                  src={profile.avatar_url || PlaceHolderImages[0].imageUrl} 
+                  alt={profile.full_name || 'User'} 
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                 
                 <div className="absolute top-4 right-4 glass p-2 rounded-xl flex items-center gap-1 border-primary/40">
                   <Sparkles className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-bold font-headline">{match.score}%</span>
+                  <span className="text-sm font-bold font-headline">{Math.floor(Math.random() * 20 + 80)}%</span>
                 </div>
 
                 <div className="absolute top-4 left-4 flex gap-2">
@@ -158,7 +185,7 @@ export default function DashboardPage() {
                     size="icon" 
                     variant="ghost" 
                     className="rounded-full bg-black/30 backdrop-blur-sm hover:bg-red-500/50 hover:text-white"
-                    onClick={() => handleRemove(match)}
+                    onClick={() => handleRemove(profile)}
                   >
                     <X className="w-5 h-5" />
                   </Button>
@@ -166,7 +193,7 @@ export default function DashboardPage() {
                     size="icon" 
                     variant="ghost" 
                     className="rounded-full bg-black/30 backdrop-blur-sm hover:bg-blue-500/50 hover:text-white"
-                    onClick={() => handleViewProfile(match)}
+                    onClick={() => handleViewProfile(profile)}
                   >
                     <Eye className="w-5 h-5" />
                   </Button>
@@ -177,7 +204,7 @@ export default function DashboardPage() {
                     size="icon" 
                     variant="ghost" 
                     className={`rounded-full bg-black/30 backdrop-blur-sm hover:bg-pink-500/50 ${likes.includes(match.id) ? 'text-pink-500' : 'hover:text-white'}`}
-                    onClick={() => handleLike(match)}
+                    onClick={() => handleLike(profile)}
                   >
                     <Heart className="w-6 h-6" />
                   </Button>
@@ -185,7 +212,7 @@ export default function DashboardPage() {
                     size="icon" 
                     variant="ghost" 
                     className={`rounded-full bg-black/30 backdrop-blur-sm hover:bg-yellow-500/50 ${favorites.includes(match.id) ? 'text-yellow-400' : 'hover:text-white'}`}
-                    onClick={() => handleFavorite(match)}
+                    onClick={() => handleFavorite(profile)}
                   >
                     <Star className={`w-6 h-6 ${favorites.includes(match.id) ? 'fill-yellow-400' : ''}`} />
                   </Button>
@@ -194,9 +221,9 @@ export default function DashboardPage() {
               
               <div className="p-6 space-y-4">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-2xl font-bold font-headline">{match.name}, {match.age}</h3>
+                  <h3 className="text-2xl font-bold font-headline">{profile.full_name || 'Неизвестно'}, {profile.birth_date ? new Date().getFullYear() - new Date(profile.birth_date).getFullYear() : '?'}</h3>
                   <div className="flex gap-2">
-                    {matches.includes(match.id) && (
+                    {matches.includes(profile.id) && (
                       <Badge variant="secondary" className="glass bg-green-500/20 text-green-400 border-green-500/30">
                         Взаимно
                       </Badge>
@@ -205,26 +232,26 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {match.traits.map(trait => (
+                  {(profile.traits || []).slice(0, 4).map((trait: string) => (
                     <Badge key={trait} variant="secondary" className="glass bg-white/10 rounded-md border-white/5">
                       {trait}
                     </Badge>
                   ))}
                 </div>
 
-                <p className="text-sm text-muted-foreground line-clamp-2">{match.bio}</p>
+                <p className="text-sm text-muted-foreground line-clamp-2">{profile.bio || 'Нет описания'}</p>
 
                 <div className="pt-4 grid grid-cols-2 gap-4">
                   <Button 
                     variant="outline" 
-                    className={`w-full rounded-full glass border-primary/20 hover:bg-primary/10 ${!canInteract(match.id) ? 'opacity-50' : ''}`}
-                    onClick={() => handleMessage(match)}
+                    className={`w-full rounded-full glass border-primary/20 hover:bg-primary/10 ${!canInteract(profile.id) ? 'opacity-50' : ''}`}
+                    onClick={() => handleMessage(profile)}
                   >
                     <MessageSquare className="w-4 h-4 mr-2" /> Написать
                   </Button>
                   <Button 
-                    className={`w-full rounded-full ${canInteract(match.id) ? 'neo-glow' : 'opacity-50'}`}
-                    onClick={() => handleDate(match)}
+                    className={`w-full rounded-full ${canInteract(profile.id) ? 'neo-glow' : 'opacity-50'}`}
+                    onClick={() => handleDate(profile)}
                   >
                     <Video className="w-4 h-4 mr-2" /> Свидание
                   </Button>
@@ -232,15 +259,8 @@ export default function DashboardPage() {
               </div>
             </GlassCard>
           ))}
-
-          <div className="border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center p-12 text-center space-y-4 hover:border-primary/40 transition-colors cursor-pointer group">
-            <div className="w-16 h-16 rounded-full glass flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Sparkles className="w-8 h-8 text-primary" />
-            </div>
-            <h3 className="text-xl font-bold font-headline">Новые векторы</h3>
-            <p className="text-sm text-muted-foreground">Облако анализирует новые совместимые сущности. Загляните позже.</p>
-          </div>
-        </section>
+          </section>
+          )}
       </div>
     </div>
   );
