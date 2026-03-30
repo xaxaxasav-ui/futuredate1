@@ -1476,7 +1476,7 @@ useEffect(() => {
                             className={`p-3 rounded-lg border transition-all ${
                               isSelected 
                                 ? 'bg-primary/20 border-primary' 
-                                : 'glass border-white/10 hover:border-primary/50'
+                                : 'bg-muted/50 border-input hover:border-primary/50'
                             }`}
                           >
                             <Icon className={`w-5 h-5 mx-auto mb-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
@@ -1520,7 +1520,7 @@ useEffect(() => {
                             className={`py-1.5 px-3 rounded-full text-sm border transition-all ${
                               isSelected 
                                 ? 'bg-primary/20 border-primary text-primary' 
-                                : 'glass border-white/10 hover:border-primary/50'
+                                : 'bg-muted/50 border-input hover:border-primary/50'
                             }`}
                           >
                             {talent}
@@ -1543,7 +1543,7 @@ useEffect(() => {
                     <div className="space-y-3">
                       {profile?.looking_for && (
                         <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary" className="glass bg-white/10 py-2 px-3">
+                          <Badge variant="secondary" className="bg-muted/50 py-2 px-3">
                             <Heart className="w-3 h-3 mr-1" />
                             {profile.looking_for}
                           </Badge>
