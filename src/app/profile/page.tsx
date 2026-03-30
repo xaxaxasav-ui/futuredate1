@@ -818,7 +818,8 @@ useEffect(() => {
 
           <div className="md:col-span-2">
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+              <div className="overflow-x-auto pb-2 -mx-2 px-2">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 min-w-[500px] lg:min-w-0">
                 <TabsTrigger value="info" className="text-xs md:text-sm">Обо мне</TabsTrigger>
                 <TabsTrigger value="details" className="text-xs md:text-sm">Анкета</TabsTrigger>
                 <TabsTrigger value="ai" className="text-xs md:text-sm">ИИ Анализ</TabsTrigger>
@@ -826,6 +827,7 @@ useEffect(() => {
                 <TabsTrigger value="interests" className="text-xs md:text-sm">Интересы</TabsTrigger>
                 <TabsTrigger value="settings" className="text-xs md:text-sm">Настройки</TabsTrigger>
               </TabsList>
+            </div>
 
               <TabsContent value="info" className="space-y-6 mt-6">
                 <GlassCard className="p-6">
