@@ -132,6 +132,8 @@ DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Profiles are viewable by authenticated users" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can update all profiles" ON public.profiles;
 
 CREATE POLICY "Users can view own profile" ON public.profiles
   FOR SELECT USING (auth.uid() = id);
@@ -144,6 +146,16 @@ CREATE POLICY "Users can insert own profile" ON public.profiles
 
 CREATE POLICY "Profiles are viewable by authenticated users" ON public.profiles
   FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Admins can view all profiles" ON public.profiles
+  FOR SELECT TO authenticated USING (
+    auth.jwt()->>'email' IN ('admin@date-future.ru', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
+  );
+
+CREATE POLICY "Admins can update all profiles" ON public.profiles
+  FOR ALL TO authenticated USING (
+    auth.jwt()->>'email' IN ('admin@date-future.ru', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
+  );
 
 -- RLS Policies for matches
 DROP POLICY IF EXISTS "Users can view own matches" ON public.matches;
@@ -158,6 +170,7 @@ CREATE POLICY "Users can create matches" ON public.matches
 -- RLS Policies for messages
 DROP POLICY IF EXISTS "Users can view messages in own matches" ON public.messages;
 DROP POLICY IF EXISTS "Users can send messages in own matches" ON public.messages;
+DROP POLICY IF EXISTS "Admins can view all messages" ON public.messages;
 
 CREATE POLICY "Users can view messages in own matches" ON public.messages
   FOR SELECT USING (
@@ -170,6 +183,11 @@ CREATE POLICY "Users can view messages in own matches" ON public.messages
 
 CREATE POLICY "Users can send messages in own matches" ON public.messages
   FOR INSERT WITH CHECK (auth.uid() = sender_id);
+
+CREATE POLICY "Admins can view all messages" ON public.messages
+  FOR SELECT TO authenticated USING (
+    auth.jwt()->>'email' IN ('admin@date-future.ru', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
+  );
 
 -- RLS Policies for support_tickets
 DROP POLICY IF EXISTS "Users can create support tickets" ON public.support_tickets;
