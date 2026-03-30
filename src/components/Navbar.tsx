@@ -103,7 +103,7 @@ export function Navbar() {
                 </button>
                 
                 {moreOpen && (
-                  <div className={`absolute top-full right-0 mt-2 w-60 rounded-xl border overflow-hidden shadow-xl z-[70] ${theme === 'dark' ? 'bg-black border-white/10' : 'bg-white border-black/10'}`}>
+                  <div className={`absolute top-full right-0 mt-2 w-60 rounded-xl border overflow-hidden shadow-xl z-[100] ${theme === 'dark' ? 'bg-black border-white/10' : 'bg-white border-black/10'}`}>
                     <div className="py-2">
                       {MORE_MENU.map((item) => (
                         <Link
@@ -208,14 +208,15 @@ export function Navbar() {
             </Link>
           ))}
           <button 
-            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs ${
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-xs z-[80] relative ${
               MORE_MENU.some(n => pathname === n.href) ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'
             }`}
-            onClick={() => { console.log('Menu clicked'); setMoreOpen(!moreOpen); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMoreOpen(!moreOpen); }}
+            onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); setMoreOpen(!moreOpen); }}
             type="button"
             aria-label="Открыть меню"
           >
-            <Menu className={`w-6 h-6 ${moreOpen ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+            <Menu className={`w-7 h-7 ${moreOpen ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
             <span className={moreOpen ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}>Ещё</span>
           </button>
         </div>
