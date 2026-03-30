@@ -248,9 +248,9 @@ export default function MessagesPage() {
       
       
       <div className="max-w-7xl mx-auto h-[calc(100vh-140px)] flex gap-6">
-        <GlassCard className="w-80 hidden md:flex flex-col p-0">
+        <GlassCard className="w-80 flex flex-col p-0">
           <div className="p-6 border-b border-white/5 space-y-4">
-            <h2 className="text-xl font-bold font-headline">Трансляции</h2>
+            <h2 className="text-xl font-bold font-headline">Чаты</h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input placeholder="Поиск сигналов..." className="glass pl-10 h-10 rounded-full" />
@@ -315,8 +315,8 @@ export default function MessagesPage() {
               </div>
             </div>
             <div className="relative">
-              <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-white/10" onClick={() => setMenuOpen(!menuOpen)}>
-                <MoreVertical className="w-5 h-5 text-white" />
+              <Button variant="ghost" size="icon" className="rounded-full h-12 w-12 hover:bg-white/20 active:bg-white/30" onClick={() => setMenuOpen(!menuOpen)}>
+                <MoreVertical className="w-6 h-6 text-white" />
               </Button>
               {menuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border overflow-hidden shadow-xl z-[100] bg-gray-900 border-gray-700">
