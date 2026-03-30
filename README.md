@@ -43,28 +43,6 @@
 - **AI**: Google Genkit
 - **Геолокация**: Yandex Geocoder API
 
-## Установка
-
-```bash
-# Клонирование репозитория
-git clone https://github.com/xaxaxasav-ui/futuredate1.git
-cd futuredate1
-
-# Установка зависимостей
-npm install
-
-# Запуск dev сервера
-npm run dev
-```
-
-Откройте http://localhost:3000
-
-## Настройка Supabase
-
-1. Создайте проект на [supabase.com](https://supabase.com)
-2. Выполните SQL из файла `supabase-schema.sql` в SQL Editor
-3. Добавьте URL и ключ в переменные окружения Vercel
-
 ## Для кого это приложение
 
 - **Для одиноких людей**, ищущих серьёзные отношения
