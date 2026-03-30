@@ -1042,6 +1042,33 @@ useEffect(() => {
                           </p>
                         </div>
                       )}
+                      {(profile?.looking_for_gender || profile?.looking_for_age_min || profile?.looking_for_age_max) && (
+                        <div className="pt-4 border-t border-white/10">
+                          <h4 className="font-bold mb-3 flex items-center gap-2">
+                            <Heart className="w-4 h-4 text-primary" /> Кого я ищу
+                          </h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            {profile?.looking_for_gender && (
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4 text-muted-foreground" />
+                                <Label className="text-muted-foreground">Пол:</Label>
+                                <p className="font-medium">
+                                  {profile.looking_for_gender === 'female' ? 'Женщина' : profile.looking_for_gender === 'male' ? 'Мужчина' : 'Любой'}
+                                </p>
+                              </div>
+                            )}
+                            {(profile?.looking_for_age_min || profile?.looking_for_age_max) && (
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-muted-foreground" />
+                                <Label className="text-muted-foreground">Возраст:</Label>
+                                <p className="font-medium">
+                                  {profile.looking_for_age_min || '18'} - {profile.looking_for_age_max || '50'} лет
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       {!profile?.height && !profile?.education && !profile?.occupation && (
                         <p className="text-muted-foreground">Данные не указаны. Нажмите "Редактировать" для заполнения.</p>
                       )}
@@ -1163,6 +1190,48 @@ useEffect(() => {
                               <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                           </select>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-white/10">
+                        <h4 className="font-bold mb-3 flex items-center gap-2">
+                          <Heart className="w-4 h-4 text-primary" /> Кого я ищу
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Пол</Label>
+                            <select
+                              value={editData.looking_for_gender}
+                              onChange={(e) => setEditData({...editData, looking_for_gender: e.target.value})}
+                              className="w-full rounded-lg px-4 py-3 border border-input bg-background"
+                            >
+                              <option value="">Любой</option>
+                              <option value="female">Женщина</option>
+                              <option value="male">Мужчина</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Возраст от</Label>
+                            <Input
+                              type="number"
+                              min="18"
+                              max="70"
+                              value={editData.looking_for_age_min}
+                              onChange={(e) => setEditData({...editData, looking_for_age_min: parseInt(e.target.value) || 18})}
+                              className="glass"
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-4 space-y-2">
+                          <Label>Возраст до</Label>
+                          <Input
+                            type="number"
+                            min="18"
+                            max="70"
+                            value={editData.looking_for_age_max}
+                            onChange={(e) => setEditData({...editData, looking_for_age_max: parseInt(e.target.value) || 50})}
+                            className="glass"
+                          />
                         </div>
                       </div>
                     </div>
