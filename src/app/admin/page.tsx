@@ -233,7 +233,7 @@ export default function AdminPage() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, username, full_name, verification_photo, verification_status, is_verified, created_at')
+          .select('id, username, full_name, role, verification_photo, verification_status, is_verified, created_at')
           .order('created_at', { ascending: false })
           .limit(100);
         if (error) {
