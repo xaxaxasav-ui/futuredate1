@@ -201,12 +201,19 @@ function AuthForm() {
       if (error) throw error;
       
       if (data.user) {
-        await supabase.from('profiles').insert({
+        const username = signupName.toLowerCase().replace(/\s/g, '_') + '_' + Date.now().toString(36);
+        
+        const { error: profileError } = await supabase.from('profiles').insert({
           id: data.user.id,
-          username: signupName.toLowerCase().replace(/\s/g, '_'),
+          username: username,
           full_name: signupName,
           phone: fullPhone,
+          created_at: new Date().toISOString(),
         });
+        
+        if (profileError) {
+          console.error('Profile insert error:', profileError);
+        }
       }
       
       toast({
