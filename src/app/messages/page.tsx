@@ -293,9 +293,9 @@ export default function MessagesPage() {
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <p>Нет чатов. Начните общение с понравившимся пользователем!</p>
             </div>
-          ) : (
-          <>
-<div className="p-3 md:p-4 border-b border-white/5 flex items-center justify-between">
+            ) : (
+            <>
+            <div className="p-3 md:p-4 border-b border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <button onClick={() => setActiveChat(null)} className="md:hidden p-1">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -311,34 +311,32 @@ export default function MessagesPage() {
                   </span>
                 </div>
               </div>
+              <div className="relative">
+                <Button variant="ghost" size="icon" className="rounded-full h-12 w-12 hover:bg-white/20 active:bg-white/30" onClick={() => setMenuOpen(!menuOpen)}>
+                  <MoreVertical className="w-6 h-6 text-white" />
+                </Button>
+                {menuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border overflow-hidden shadow-xl z-[100] bg-gray-900 border-gray-700">
+                    <button
+                      onClick={() => { setShowDeleteDialog(true); setMenuOpen(false); }}
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-red-400 w-full text-left hover:bg-red-500/20"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Удалить чат
+                    </button>
+                    <button
+                      onClick={() => { setShowBlockDialog(true); setMenuOpen(false); }}
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-red-400 w-full text-left hover:bg-red-500/20"
+                    >
+                      <Ban className="w-4 h-4" />
+                      Заблокировать
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-            </div>
-            <div className="relative">
-              <Button variant="ghost" size="icon" className="rounded-full h-12 w-12 hover:bg-white/20 active:bg-white/30" onClick={() => setMenuOpen(!menuOpen)}>
-                <MoreVertical className="w-6 h-6 text-white" />
-              </Button>
-              {menuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border overflow-hidden shadow-xl z-[100] bg-gray-900 border-gray-700">
-                  <button
-                    onClick={() => { setShowDeleteDialog(true); setMenuOpen(false); }}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-red-400 w-full text-left hover:bg-red-500/20"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Удалить чат
-                  </button>
-                  <button
-                    onClick={() => { setShowBlockDialog(true); setMenuOpen(false); }}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-red-400 w-full text-left hover:bg-red-500/20"
-                  >
-                    <Ban className="w-4 h-4" />
-                    Заблокировать
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
 
-          <ScrollArea className="flex-1 p-6">
+            <ScrollArea className="flex-1 p-6">
             <div className="space-y-6">
               {messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -376,9 +374,9 @@ export default function MessagesPage() {
               <ShieldAlert className="w-4 h-4 flex-shrink-0" />
               <span>⚠️ ЗАПРЕЩЕНО: ссылки, номера телефонов, почта, приглашения в другие мессенджеры (WhatsApp, Viber, Telegram). Нарушители банятся на 1 неделю!</span>
             </div>
-          </div>
-          </>
-          )}
+            </div>
+            </>
+            )}
         </GlassCard>
       </div>
 
