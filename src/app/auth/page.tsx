@@ -202,8 +202,10 @@ function AuthForm() {
       
       toast({
         title: "Успешно",
-        description: "Проверьте email для подтверждения",
+        description: "Проверьте email для подтверждения. После подтверждения вы сможете войти.",
       });
+      
+      document.querySelector('[data-state][value="signin"]')?.click();
     } catch (error: any) {
       toast({
         title: "Ошибка регистрации",
