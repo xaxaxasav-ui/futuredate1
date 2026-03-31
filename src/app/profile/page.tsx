@@ -1442,7 +1442,7 @@ useEffect(() => {
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-white">
                     <Sparkles className="w-5 h-5" /> Хобби и увлечения
                   </h3>
-                  <p className="text-gray-400 mb-4">
+                  <p className="text-gray-300 mb-4">
                     Выберите, чем вы увлекаетесь. Это поможет найти единомышленников.
                   </p>
                   
@@ -1492,7 +1492,7 @@ useEffect(() => {
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-white">
                     <Sparkles className="w-5 h-5" /> Таланты и качества
                   </h3>
-                  <p className="text-gray-400 mb-4">
+                  <p className="text-gray-300 mb-4">
                     Качества, которые вас характеризуют.
                   </p>
                   
@@ -1535,7 +1535,7 @@ useEffect(() => {
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-white">
                     <Heart className="w-5 h-5" /> Кого я ищу
                   </h3>
-                  <p className="text-gray-400 mb-4">
+                  <p className="text-gray-300 mb-4">
                     Укажите, кто вам интересен для знакомства.
                   </p>
                   

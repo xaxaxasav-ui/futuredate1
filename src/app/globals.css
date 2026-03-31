@@ -16,7 +16,7 @@
     --secondary: 188 94% 48%;
     --secondary-foreground: 200 10% 10%;
     --muted: 200 10% 15%;
-    --muted-foreground: 0 0% 75%;
+    --muted-foreground: 0 0% 80%;
     --accent: 188 94% 48%;
     --accent-foreground: 200 10% 10%;
     --destructive: 0 84.2% 60.2%;
@@ -95,19 +95,19 @@
 }
 
 .dark .text-gray-400 {
-  color: #9ca3af !important;
+  color: #cbd5e1 !important;
 }
 
 .dark .text-muted-foreground {
-  color: #9ca3af !important;
+  color: #cbd5e1 !important;
 }
 
 .dark [class*="text-muted"] {
-  color: #a1a1aa !important;
+  color: #cbd5e1 !important;
 }
 
 .dark .muted-foreground {
-  color: #a1a1aa !important;
+  color: #cbd5e1 !important;
 }
 
 @keyframes pulse-slow {
