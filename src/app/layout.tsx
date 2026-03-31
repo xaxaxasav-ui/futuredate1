@@ -24,6 +24,7 @@ export const metadata: Metadata = {
   description: 'Испытайте новое поколение знакомств с динамической оценкой личности с помощью ИИ и иммерсивными виртуальными свиданиями.',
   metadataBase: new URL('https://lavmee.ru'),
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+  manifest: '/manifest.json',
   icons: {
     icon: '/images/favicon.svg',
     apple: '/images/favicon.svg',

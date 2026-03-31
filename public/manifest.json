@@ -1,0 +1,21 @@
+{
+  "name": "Lavmee",
+  "short_name": "Lavmee",
+  "description": "AI Знакомства нового поколения",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#00d9ff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["social", "dating"],
+  "lang": "ru",
+  "dir": "ltr"
+}
