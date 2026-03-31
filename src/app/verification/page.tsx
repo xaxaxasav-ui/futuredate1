@@ -304,9 +304,10 @@ export default function VerificationPage() {
                  border: '1px solid #f2d9e5'
                }}>
             <img 
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop"
+              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=800&fit=crop&crop=faces"
               alt="Пример селфи для верификации"
               className="w-full h-full object-cover"
+              loading="lazy"
             />
             {/* Gesture overlay */}
             <div 
