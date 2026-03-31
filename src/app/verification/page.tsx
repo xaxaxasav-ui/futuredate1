@@ -303,20 +303,11 @@ export default function VerificationPage() {
                  aspectRatio: '3/4',
                  border: '1px solid #f2d9e5'
                }}>
-            <div 
-              className="w-full h-full flex items-center justify-center"
-              style={{ 
-                aspectRatio: '3/4',
-                border: '1px solid #f2d9e5',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-              }}
-            >
-              <div className="text-center text-white p-6">
-                <div className="text-6xl mb-4">👨</div>
-                <p className="text-lg font-medium">Пример селфи</p>
-                <p className="text-sm opacity-80">Сделайте селфи как на фото</p>
-              </div>
-            </div>
+            <img 
+              src="/images/verification-example.jpg"
+              alt="Пример селфи для верификации"
+              className="w-full h-full object-cover"
+            />
             {/* Gesture overlay */}
             <div 
               className="absolute text-5xl z-20"
