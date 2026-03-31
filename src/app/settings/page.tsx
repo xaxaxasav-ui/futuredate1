@@ -87,7 +87,7 @@ export default function SettingsPage() {
               <Bell className="w-5 h-5" />
               <span>Уведомления</span>
             </div>
-            <Button variant="outline" className="rounded-full">
+            <Button variant="outline" className="rounded-full" onClick={() => router.push('/profile')}>
               Настроить
             </Button>
           </div>
@@ -97,7 +97,7 @@ export default function SettingsPage() {
               <Shield className="w-5 h-5" />
               <span>Конфиденциальность</span>
             </div>
-            <Button variant="outline" className="rounded-full">
+            <Button variant="outline" className="rounded-full" onClick={() => router.push('/legal/privacy')}>
               Управление
             </Button>
           </div>
