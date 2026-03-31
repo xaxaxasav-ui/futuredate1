@@ -96,17 +96,22 @@ export default function AdminPage() {
 
   const checkAdminAccess = async () => {
     const email = user?.email?.toLowerCase();
+    console.log("Checking admin for email:", email);
     setDebugInfo(`Checking admin access for: ${user?.email}`);
     
     if (!email || !ADMIN_EMAILS.includes(email)) {
       setError(`Доступ запрещён. Ваш email: ${user?.email}. Разрешённые: ${ADMIN_EMAILS.join(', ')}`);
-      setDebugInfo(`Email ${email} not in admin list: ${ADMIN_EMAILS.join(', ')}`);
+      setDebugInfo(`Email ${email} not in admin list`);
       return;
     }
     setDebugInfo("Admin access granted, loading data...");
-    await fetchData();
-    await fetchSupportTickets();
-    await fetchDesignSettings();
+    console.log("Admin access granted, calling fetchData...");
+    try {
+      await fetchData();
+      console.log("fetchData completed");
+    } catch (e: any) {
+      console.error("fetchData failed:", e);
+    }
   };
 
   const fetchDesignSettings = async () => {
@@ -178,7 +183,7 @@ export default function AdminPage() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, email, phone, username, full_name, role, verification_photo, verification_status, is_verified, created_at')
+          .select('id, username, full_name, role, verification_photo, verification_status, is_verified, created_at, phone')
           .order('created_at', { ascending: false })
           .limit(100);
         
