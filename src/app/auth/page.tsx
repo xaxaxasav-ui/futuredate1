@@ -213,6 +213,11 @@ function AuthForm() {
         
         if (profileError) {
           console.error('Profile insert error:', profileError);
+          toast({
+            title: "Предупреждение",
+            description: "Аккаунт создан, но профиль не был полностью настроен. Пожалуйста, заполните профиль после входа.",
+            variant: "default",
+          });
         }
       }
       
