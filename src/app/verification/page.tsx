@@ -304,7 +304,7 @@ export default function VerificationPage() {
                  border: '1px solid #f2d9e5'
                }}>
             <img 
-              src="https://media.istockphoto.com/id/470788023/ru/фото/молодой-человек-с-бородой-смотреть-в-объектив.jpg?s=612x612&w=0&k=20&c=t2dt-DNFnOSb82Xizpdo1yv1PHNtPNh1rRNv3lR8bD0="
+              src="https://png.pngtree.com/background/20231214/original/pngtree-serious-young-man-looking-at-camera-unsmiling-frowning-male-photo-picture-image_6828676.jpg"
               alt="Пример селфи для верификации"
               className="w-full h-full object-cover"
             />
