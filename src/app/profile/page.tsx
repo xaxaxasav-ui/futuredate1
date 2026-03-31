@@ -407,39 +407,39 @@ useEffect(() => {
         const file = files[i];
         if (!file.type.startsWith('image/')) continue;
         
-        // Сначала пробуем загрузить в storage
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}_${Date.now()}_${i}.${fileExt}`;
         const filePath = `photos/${fileName}`;
 
-        const { data, error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, file, { cacheControl: '3600', upsert: false });
+        try {
+          const { data, error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, file, { cacheControl: '3600', upsert: false });
 
-        if (uploadError) {
-          console.log('Storage upload failed, using local preview:', uploadError.message);
-          // Если storage не работает - используем локальный preview
-          const localUrl = URL.createObjectURL(file);
-          newPhotos.push(localUrl);
-        } else {
+          if (uploadError) {
+            console.log('Storage upload failed, using local preview:', uploadError.message);
+          }
+          
           const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
           if (urlData?.publicUrl) {
             newPhotos.push(urlData.publicUrl);
+          } else {
+            const localUrl = URL.createObjectURL(file);
+            newPhotos.push(localUrl);
           }
+        } catch (uploadErr) {
+          console.log('Upload exception, using local:', uploadErr);
+          const localUrl = URL.createObjectURL(file);
+          newPhotos.push(localUrl);
         }
       }
 
-      // Сохраняем в профиль
       setEditData(prev => ({ ...prev, photos: newPhotos }));
       
-      const { error: updateError } = await supabase
+      await supabase
         .from('profiles')
         .update({ photos: newPhotos })
         .eq('id', user.id);
-      
-      if (updateError) {
-        console.log('Profile update error:', updateError.message);
-      }
       
       await refreshProfile();
     } catch (error: any) {

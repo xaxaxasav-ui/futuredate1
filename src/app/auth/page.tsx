@@ -61,13 +61,34 @@ function AuthForm() {
   const canRegister = agreedToTerms && agreedToPrivacy && agreedToOffer && agreedToProcessing;
 
   useEffect(() => {
+    let isMounted = true;
+    const timeoutId = setTimeout(() => {
+      if (!isMounted) return;
+      console.log('Session check timeout');
+    }, 5000);
+    
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        router.push("/dashboard");
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        if (session) {
+          router.push("/dashboard");
+        }
+      } catch (e) {
+        console.warn('Session check error:', e);
+      } finally {
+        if (isMounted) {
+          clearTimeout(timeoutId);
+        }
       }
     };
+    
     checkSession();
+    
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [router]);
 
   const formatPhoneNumber = (value: string) => {
