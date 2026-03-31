@@ -106,31 +106,44 @@ export default function NearbyPage() {
         async (pos) => {
           const lat = pos.coords.latitude;
           const lon = pos.coords.longitude;
-          const acc = pos.coords.accuracy;
+          const acc = pos.coords.latitude;
           
           setLatitude(lat);
           setLongitude(lon);
           setAccuracy(acc);
           
-          const city = await getCityFromCoords(lat, lon);
-          setCityName(city);
+          try {
+            const city = await getCityFromCoords(lat, lon);
+            setCityName(city);
+          } catch (e) {
+            setCityName("Город не определён");
+          }
+          
           setLoading(false);
           
-          if (user && city !== "Город не определён") {
-            await supabase.from('profiles').update({
-              latitude: lat,
-              longitude: lon,
-              city: city
-            }).eq('id', user.id);
+          if (user && cityName !== "Город не определён") {
+            try {
+              await supabase.from('profiles').update({
+                latitude: lat,
+                longitude: lon,
+                city: cityName
+              }).eq('id', user.id);
+            } catch (e) {
+              console.log('Profile update error:', e);
+            }
           }
           
           fetchNearbyPeople(lat, lon, distance);
         },
-        () => {
+        (err) => {
           setLoading(false);
-          setError("Не удалось определить местоположение");
+          let msg = "Не удалось определить местоположение";
+          if (err.code === 1) msg = "Доступ к геолокации запрещён";
+          else if (err.code === 2) msg = "Местоположение недоступно";
+          else if (err.code === 3) msg = "Время ожидания истекло";
+          setError(msg);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
       );
     } else {
       setLoading(false);
@@ -250,6 +263,7 @@ export default function NearbyPage() {
                   frameBorder="0"
                   allowFullScreen
                   style={{ border: 0 }}
+                  title="Ваше местоположение"
                 />
               </div>
 

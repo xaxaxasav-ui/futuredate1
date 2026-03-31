@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.vercel-insights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://kvpdfqbbwynlxicjxqmg.supabase.co https://*.supabase.co https://*.vercel.app https://cdn.vercel-insights.com https://geocode-maps.yandex.ru https://*.yandex.ru wss://*.supabase.co; media-src 'self' blob:;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.vercel-insights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://kvpdfqbbwynlxicjxqmg.supabase.co https://*.supabase.co https://*.vercel.app https://cdn.vercel-insights.com https://geocode-maps.yandex.ru https://*.yandex.ru wss://*.supabase.co; media-src 'self' blob:; frame-src 'self' https://yandex.ru https://*.yandex.ru https://yandex.com;",
           },
         ],
       },
