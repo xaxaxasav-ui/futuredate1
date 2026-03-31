@@ -90,7 +90,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 export async function getMatches(userId: string): Promise<Match[]> {
   try {
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('timeout')), 10000)
+      setTimeout(() => reject(new Error('timeout')), 5000)
     );
     
     const fetchPromise = supabase
@@ -113,7 +113,7 @@ export async function getMatches(userId: string): Promise<Match[]> {
 export async function getMessages(matchId: string): Promise<Message[]> {
   try {
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('timeout')), 10000)
+      setTimeout(() => reject(new Error('timeout')), 5000)
     );
     
     const fetchPromise = supabase
@@ -176,7 +176,7 @@ export async function acceptMatch(matchId: string) {
 export async function getAllProfiles(excludeUserId: string): Promise<Profile[]> {
   try {
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('timeout')), 10000)
+      setTimeout(() => reject(new Error('timeout')), 5000)
     );
     
     const fetchPromise = supabase

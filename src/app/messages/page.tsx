@@ -104,7 +104,7 @@ export default function MessagesPage() {
       }
       try {
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('timeout')), 10000)
+          setTimeout(() => reject(new Error('timeout')), 5000)
         );
         
         const fetchPromise = supabase

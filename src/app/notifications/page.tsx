@@ -34,23 +34,33 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
   useEffect(() => {
-    if (!authLoading && user) {
-      fetchNotifications();
-    } else if (!authLoading && !user) {
-      router.push("/auth");
-    }
+    const timer = setTimeout(() => {
+      if (!user) {
+        router.push("/auth");
+      } else {
+        fetchNotifications();
+      }
+    }, 5000);
+    
+    return () => clearTimeout(timer);
   }, [authLoading, user, router]);
 
   const fetchNotifications = async () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('timeout')), 5000)
+      );
+      
+      const fetchPromise = supabase
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50);
+      
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
 
       if (data) {
         setNotifications(data);

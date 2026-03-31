@@ -86,7 +86,7 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
   const fetchProfile = async (userId: string) => {
     try {
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('timeout')), 8000)
+        setTimeout(() => reject(new Error('timeout')), 5000)
       );
       
       const fetchPromise = supabase
@@ -100,7 +100,7 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
       if (error) {
         console.warn('Profile fetch error:', error.code, error.message);
         if (error.message?.includes('Failed to fetch') || error.message?.includes('network') || !error.message || error.message === 'timeout') {
-          console.warn('Network error - Supabase may be unreachable, continuing without profile');
+          console.warn('Network error - continuing without profile');
           return;
         }
         if (error.code === 'PGRST116') {
@@ -141,10 +141,10 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
     let isMounted = true;
     const timeoutId = setTimeout(() => {
       if (isMounted) {
-        console.log('Supabase connection timeout, continuing...');
+        console.log('Supabase connection timeout, continuing with guest mode');
         setLoading(false);
       }
-    }, 10000);
+    }, 5000);
 
     const initSupabase = async () => {
       try {

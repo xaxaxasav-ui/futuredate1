@@ -219,9 +219,6 @@ export function Navbar() {
               <span>Ещё</span>
             </button>
             {moreOpen && (
-              <div className={`fixed inset-0 z-[999]`} onClick={() => setMoreOpen(false)} />
-            )}
-            {moreOpen && (
               <div className={`absolute bottom-full right-0 mb-2 w-64 rounded-xl border-2 border-primary overflow-hidden shadow-2xl z-[1000] ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
                 <div className="py-2">
                   {MORE_MENU.map((item) => (
@@ -244,6 +241,18 @@ export function Navbar() {
                       )}
                     </Link>
                   ))}
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors text-yellow-500 ${
+                        theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                      }`}
+                      onClick={() => setMoreOpen(false)}
+                    >
+                      <Shield className="w-5 h-5" />
+                      Админ-панель
+                    </Link>
+                  )}
                   <button
                     onClick={() => { handleSignOut(); setMoreOpen(false); }}
                     className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors text-red-500 w-full text-left ${
