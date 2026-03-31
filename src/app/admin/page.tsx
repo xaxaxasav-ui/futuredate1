@@ -232,7 +232,7 @@ export default function AdminPage() {
           setDebugInfo(prev => prev + `\nSelect profiles error: ${error.message}`);
         }
         setDebugInfo(prev => prev + `\nProfiles loaded: ${data?.length || 0}`);
-        alert("Загружено профилей: " + (data?.length || 0));
+        console.log("Profiles loaded:", data?.length, data);
         profilesData = data || [];
       } catch (e: any) { 
         setDebugInfo(prev => prev + `\nSelect profiles exception: ${e.message}`);
@@ -253,7 +253,7 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
       setDebugInfo(prev => prev + "\nLoading set to false");
-      alert("Загрузка завершена! Всего пользователей: " + totalCount);
+      console.log("Total users loaded:", totalCount, "Profiles:", profilesData.length);
     }
   };
 
