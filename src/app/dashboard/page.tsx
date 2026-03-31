@@ -103,7 +103,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/auth");
+      const timer = setTimeout(() => {
+        if (!user) router.push("/auth");
+      }, 2000);
+      return () => clearTimeout(timer);
     }
   }, [authLoading, user, router]);
 

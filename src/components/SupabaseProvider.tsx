@@ -85,20 +85,11 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const timeoutPromise = new Promise((resolve) => 
-        setTimeout(() => {
-          console.log('Profile fetch timeout');
-        }, 3000)
-      );
-      
-      const fetchPromise = supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
-      
-      const result = await Promise.race([fetchPromise, timeoutPromise]) as any;
-      const { data, error } = result || {};
       
       if (error) {
         console.warn('Profile fetch error:', error.code, error.message);
@@ -128,26 +119,15 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
     
     const initSupabase = async () => {
       try {
-        const timeoutPromise = new Promise((resolve) => 
-          setTimeout(() => {
-            console.log('Auth timeout, continuing...');
-            if (isMounted) setLoading(false);
-          }, 3000)
-        );
-        
-        const authPromise = supabase.auth.getSession();
-        
-        const result = await Promise.race([authPromise, timeoutPromise]) as any;
+        const { data: { session } } = await supabase.auth.getSession();
         
         if (!isMounted) return;
         
-        if (result?.data?.session) {
-          setSession(result.data.session);
-          setUser(result.data.session.user ?? null);
-          
-          if (result.data.session.user) {
-            await fetchProfile(result.data.session.user.id);
-          }
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await fetchProfile(session.user.id);
         }
       } catch (err) {
         console.warn('Supabase init error:', err);
@@ -161,13 +141,16 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
 
     initSupabase();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return;
+      
+      console.log('Auth state change:', event, session ? 'has session' : 'no session');
+      
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        await fetchProfile(session.user.id);
+        fetchProfile(session.user.id);
       } else {
         setProfile(null);
       }
