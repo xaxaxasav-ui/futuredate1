@@ -116,7 +116,8 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
 
   useEffect(() => {
     let isMounted = true;
-    
+    let loadingTimeout: NodeJS.Timeout;
+
     const initSupabase = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -139,6 +140,13 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
       }
     };
 
+    loadingTimeout = setTimeout(() => {
+      if (isMounted && loading) {
+        console.log('Force loading to false after timeout');
+        setLoading(false);
+      }
+    }, 4000);
+
     initSupabase();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -160,6 +168,7 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
 
     return () => {
       isMounted = false;
+      if (loadingTimeout) clearTimeout(loadingTimeout);
       subscription.unsubscribe();
     };
   }, []);

@@ -4,43 +4,46 @@ import { GlassCard } from "@/components/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Settings, Loader2, Moon, Sun, Bell, Shield, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { useSupabase } from "@/components/SupabaseProvider";
 import { useTheme } from "@/components/ThemeProvider";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function SettingsPage() {
-  const { user, loading: authLoading, signOut } = useSupabase();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
-  const [showContent, setShowContent] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 3000);
+    const timer = setTimeout(() => {
+      setReady(true);
+      checkUser();
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (!authLoading) {
-      setShowContent(true);
-    }
-    if (!authLoading && !user) {
+  const checkUser = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        router.push("/auth");
+      }
+    } catch (e) {
       router.push("/auth");
     }
-  }, [authLoading, user, router]);
+  };
 
   const handleDeleteAccount = async () => {
-    if (!confirm("Вы уверены, что хотите удалить аккаунт? Это действие необратимо.")) return;
+    if (!confirm("Вы уверены, что хотите удалить аккаунт? Это действие необратимо.") || !user) return;
     
     setDeleting(true);
     try {
-      if (user) {
-        const { error } = await supabase.auth.admin.deleteUser(user.id);
-        if (error) throw error;
-        await signOut();
-        router.push("/");
-      }
+      const { error } = await supabase.auth.admin.deleteUser(user.id);
+      if (error) throw error;
+      router.push("/");
     } catch (error) {
       console.error("Error deleting account:", error);
       alert("Ошибка при удалении аккаунта");
@@ -49,7 +52,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (authLoading && !showContent) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -68,62 +71,53 @@ export default function SettingsPage() {
           <p className="text-muted-foreground">Управление приложением</p>
         </div>
 
-        <div className="space-y-6">
-          <GlassCard className="p-6">
-            <h2 className="text-lg font-bold mb-4">Внешний вид</h2>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-                <span>{theme === 'dark' ? 'Тёмная тема' : 'Светлая тема'}</span>
-              </div>
-              <Button variant="outline" onClick={toggleTheme}>
-                Переключить
-              </Button>
+        <GlassCard className="p-6 space-y-6">
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+              <span>Тёмная тема</span>
             </div>
-          </GlassCard>
+            <Button variant="outline" onClick={toggleTheme} className="rounded-full">
+              {theme === 'dark' ? 'Светлая' : 'Тёмная'}
+            </Button>
+          </div>
 
-          <GlassCard className="p-6">
-            <h2 className="text-lg font-bold mb-4">Уведомления</h2>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Bell className="w-5 h-5" />
-                <span>Push-уведомления</span>
-              </div>
-              <Button variant="outline" disabled>
-                Скоро
-              </Button>
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <Bell className="w-5 h-5" />
+              <span>Уведомления</span>
             </div>
-          </GlassCard>
+            <Button variant="outline" className="rounded-full">
+              Настроить
+            </Button>
+          </div>
 
-          <GlassCard className="p-6">
-            <h2 className="text-lg font-bold mb-4">Конфиденциальность</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5" />
-                  <span>Приватный профиль</span>
-                </div>
-                <Button variant="outline" disabled>
-                  Скоро
-                </Button>
-              </div>
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <Shield className="w-5 h-5" />
+              <span>Конфиденциальность</span>
             </div>
-          </GlassCard>
+            <Button variant="outline" className="rounded-full">
+              Управление
+            </Button>
+          </div>
+        </GlassCard>
 
-          <GlassCard className="p-6 border-red-500/30">
-            <h2 className="text-lg font-bold mb-4 text-red-400">Опасная зона</h2>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Trash2 className="w-5 h-5 text-red-400" />
-                <span>Удалить аккаунт</span>
-              </div>
-              <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting}>
-                {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Удалить
-              </Button>
-            </div>
-          </GlassCard>
-        </div>
+        <GlassCard className="p-6 mt-6">
+          <h2 className="text-lg font-bold mb-4">Опасная зона</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Удаление аккаунта приведёт к потере всех ваших данных, включая профиль, сообщения и匹配и.
+          </p>
+          <Button 
+            variant="destructive" 
+            onClick={handleDeleteAccount}
+            disabled={deleting}
+            className="rounded-full"
+          >
+            {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+            Удалить аккаунт
+          </Button>
+        </GlassCard>
       </div>
     </div>
   );

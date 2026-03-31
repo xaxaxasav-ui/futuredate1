@@ -6,7 +6,6 @@ import { GlassCard } from "@/components/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Heart, MessageSquare, Star, Bell, Check, Trash2, Eye } from "lucide-react";
-import { useSupabase } from "@/components/SupabaseProvider";
 import { supabase } from "@/lib/supabase";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
@@ -27,37 +26,41 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
-  const { user, loading: authLoading } = useSupabase();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const [showContent, setShowContent] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 5000);
+    const timer = setTimeout(() => {
+      setReady(true);
+      checkUser();
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (!authLoading) {
-      setShowContent(true);
-    }
-    if (!authLoading && !user) {
-      router.push("/auth");
-    } else if (user) {
-      fetchNotifications();
-    }
-  }, [authLoading, user, router]);
-
-  const fetchNotifications = async () => {
-    if (!user) return;
-    
+  const checkUser = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        fetchNotifications(session.user.id);
+      } else {
+        router.push("/auth");
+      }
+    } catch (e) {
+      router.push("/auth");
+    }
+  };
+
+  const fetchNotifications = async (userId: string) => {
+    try {
+      const { data } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -71,74 +74,7 @@ export default function NotificationsPage() {
     }
   };
 
-  const markAsRead = async (notificationId: string) => {
-    try {
-      await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notificationId);
-      
-      setNotifications(prev => 
-        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
-      );
-    } catch (error) {
-      console.error("Error marking as read:", error);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    if (!user) return;
-    
-    try {
-      await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false);
-      
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    } catch (error) {
-      console.error("Error marking all as read:", error);
-    }
-  };
-
-  const deleteNotification = async (notificationId: string) => {
-    try {
-      await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', notificationId);
-      
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    } catch (error) {
-      console.error("Error deleting notification:", error);
-    }
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'like':
-        return <Heart className="w-5 h-5 text-pink-500" />;
-      case 'message':
-        return <MessageSquare className="w-5 h-5 text-blue-500" />;
-      case 'favorite':
-        return <Star className="w-5 h-5 text-yellow-500" />;
-      case 'match':
-        return <Heart className="w-5 h-5 text-red-500" />;
-      case 'verification':
-        return <Check className="w-5 h-5 text-green-500" />;
-      default:
-        return <Bell className="w-5 h-5 text-gray-500" />;
-    }
-  };
-
-  const filteredNotifications = filter === 'unread' 
-    ? notifications.filter(n => !n.is_read)
-    : notifications;
-
-  const unreadCount = notifications.filter(n => !n.is_read).length;
-
-  if (authLoading && !showContent) {
+  if (!ready) {
     return (
       <div className="min-h-screen relative pt-24 pb-6 px-6 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -146,10 +82,14 @@ export default function NotificationsPage() {
     );
   }
 
+  const filteredNotifications = filter === 'unread' 
+    ? notifications.filter(n => !n.is_read)
+    : notifications;
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
   return (
     <div className="min-h-screen relative pt-24 pb-6 px-6 overflow-hidden">
-      
-      
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -159,7 +99,11 @@ export default function NotificationsPage() {
             </p>
           </div>
           {unreadCount > 0 && (
-            <Button variant="outline" onClick={markAllAsRead}>
+            <Button variant="outline" onClick={async () => {
+              if (!user) return;
+              await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+              setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+            }}>
               Прочитать все
             </Button>
           )}
@@ -168,90 +112,65 @@ export default function NotificationsPage() {
         <div className="flex gap-2">
           <Button 
             variant={filter === 'all' ? 'default' : 'outline'} 
-            size="sm" 
             onClick={() => setFilter('all')}
+            className="rounded-full"
           >
             Все
           </Button>
           <Button 
             variant={filter === 'unread' ? 'default' : 'outline'} 
-            size="sm" 
             onClick={() => setFilter('unread')}
+            className="rounded-full"
           >
             Непрочитанные
-            {unreadCount > 0 && (
-              <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
-                {unreadCount}
-              </Badge>
-            )}
           </Button>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <div className="flex justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : filteredNotifications.length === 0 ? (
           <GlassCard className="p-12 text-center">
-            <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">Нет уведомлений</h3>
-            <p className="text-muted-foreground">
-              {filter === 'unread' 
-                ? 'У вас нет непрочитанных уведомлений' 
-                : 'У вас пока нет уведомлений'}
-            </p>
+            <Bell className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+            <h3 className="text-xl font-medium mb-2">Нет уведомлений</h3>
+            <p className="text-muted-foreground">Здесь появятся уведомления о лайках, сообщениях и других событиях.</p>
           </GlassCard>
         ) : (
           <div className="space-y-3">
             {filteredNotifications.map((notification) => (
-              <GlassCard 
-                key={notification.id} 
-                className={`p-4 transition-all ${
-                  !notification.is_read 
-                    ? 'bg-primary/5 border-l-4 border-l-primary' 
-                    : 'opacity-75 hover:opacity-100'
-                }`}
+              <Link
+                key={notification.id}
+                href={notification.link || '#'}
+                className="block"
               >
-                <div className="flex items-start gap-4">
-                  <div className="p-2 bg-white/10 rounded-full">
-                    {getNotificationIcon(notification.type)}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {!notification.is_read && (
-                        <span className="w-2 h-2 bg-primary rounded-full" />
-                      )}
-                      <h3 className="font-medium">{notification.title}</h3>
+                <GlassCard className={`p-4 flex gap-4 ${!notification.is_read ? 'border-primary/50' : ''}`}>
+                  <div className="relative">
+                    <img 
+                      src={notification.from_user_avatar || PlaceHolderImages[0].imageUrl}
+                      alt=""
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    <div className="absolute -bottom-1 -right-1">
+                      {notification.type === 'like' && <Heart className="w-4 h-4 text-pink-500" />}
+                      {notification.type === 'message' && <MessageSquare className="w-4 h-4 text-blue-500" />}
+                      {notification.type === 'favorite' && <Star className="w-4 h-4 text-yellow-500" />}
+                      {notification.type === 'match' && <Heart className="w-4 h-4 text-red-500" />}
+                      {notification.type === 'verification' && <Check className="w-4 h-4 text-green-500" />}
                     </div>
-                    <p className="text-sm text-muted-foreground">{notification.message}</p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {new Date(notification.created_at).toLocaleString("ru-RU")}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{notification.title}</p>
+                    <p className="text-sm text-muted-foreground truncate">{notification.message}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(notification.created_at).toLocaleString('ru')}
                     </p>
                   </div>
-
-                  <div className="flex gap-2">
-                    {notification.link && (
-                      <Link href={notification.link}>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </Link>
-                    )}
-                    <Button 
-                      size="sm" 
-                      variant="ghost"
-                      onClick={() => deleteNotification(notification.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </GlassCard>
+                  {!notification.is_read && (
+                    <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-2" />
+                  )}
+                </GlassCard>
+              </Link>
             ))}
           </div>
         )}

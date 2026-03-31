@@ -2,30 +2,19 @@
 
 import { GlassCard } from "@/components/GlassCard";
 import { Clock, Loader2 } from "lucide-react";
-import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function HistoryPage() {
-  const { user, loading: authLoading } = useSupabase();
   const router = useRouter();
-  const [showContent, setShowContent] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 3000);
+    const timer = setTimeout(() => setReady(true), 2000);
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/auth");
-    }
-    if (!authLoading) {
-      setShowContent(true);
-    }
-  }, [authLoading, user, router]);
-
-  if (authLoading && !showContent) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
