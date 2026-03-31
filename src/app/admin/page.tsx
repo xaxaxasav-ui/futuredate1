@@ -104,25 +104,9 @@ export default function AdminPage() {
       return;
     }
     setDebugInfo("Admin access granted, loading data...");
-    alert("Начинаем загрузку данных...");
-    try {
-      await fetchData();
-    } catch (e: any) {
-      console.error("Error in fetchData:", e);
-      setDebugInfo(prev => prev + "\nfetchData error: " + e.message);
-    }
-    try {
-      await fetchSupportTickets();
-    } catch (e: any) {
-      console.error("Error in fetchSupportTickets:", e);
-      setDebugInfo(prev => prev + "\nfetchSupportTickets error: " + e.message);
-    }
-    try {
-      await fetchDesignSettings();
-    } catch (e: any) {
-      console.error("Error in fetchDesignSettings:", e);
-      setDebugInfo(prev => prev + "\nfetchDesignSettings error: " + e.message);
-    }
+    await fetchData();
+    await fetchSupportTickets();
+    await fetchDesignSettings();
   };
 
   const fetchDesignSettings = async () => {
@@ -241,7 +225,7 @@ export default function AdminPage() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, username, full_name, role, verification_photo, verification_status, is_verified, created_at')
+          .select('id, email, phone, username, full_name, role, verification_photo, verification_status, is_verified, created_at')
           .order('created_at', { ascending: false })
           .limit(100);
         if (error) {
