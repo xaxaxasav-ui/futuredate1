@@ -20,16 +20,16 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'Свидание будущего AI | Знакомства будущего',
+  title: 'Lavmee | AI Знакомства нового поколения',
   description: 'Испытайте новое поколение знакомств с динамической оценкой личности с помощью ИИ и иммерсивными виртуальными свиданиями.',
-  metadataBase: new URL('https://www.date-future.ru'),
+  metadataBase: new URL('https://lavmee.ru'),
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
   icons: {
     icon: '/images/favicon.svg',
     apple: '/images/favicon.svg',
   },
   alternates: {
-    canonical: 'https://www.date-future.ru',
+    canonical: 'https://lavmee.ru',
   },
 };
 
