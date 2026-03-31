@@ -188,7 +188,7 @@ function AuthForm() {
     try {
       const fullPhone = `${selectedCountryCode.code}${signupPhone.replace(/\D/g, '')}`;
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: signupEmail,
         password: signupPassword,
         options: {
@@ -199,6 +199,15 @@ function AuthForm() {
         },
       });
       if (error) throw error;
+      
+      if (data.user) {
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          username: signupName.toLowerCase().replace(/\s/g, '_'),
+          full_name: signupName,
+          phone: fullPhone,
+        });
+      }
       
       toast({
         title: "Успешно",
