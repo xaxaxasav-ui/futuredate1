@@ -172,88 +172,43 @@ export default function AdminPage() {
     setLoading(true);
     setDebugInfo(prev => prev + "\nStarting fetchData...");
     try {
-      let totalCount = 0;
-      let verifiedCount = 0;
-      let pendingCount = 0;
       let profilesData: any[] = [];
 
-      setDebugInfo(prev => prev + "\n1. Counting all profiles...");
-      try {
-        const { count, error } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true });
-        if (error) {
-          setDebugInfo(prev => prev + `\nCount profiles error: ${error.message}`);
-        }
-        totalCount = count || 0;
-        setDebugInfo(prev => prev + `\nTotal profiles: ${totalCount}`);
-      } catch (e: any) {
-        setDebugInfo(prev => prev + `\nCount profiles exception: ${e.message}`);
-      }
-
-      setDebugInfo(prev => prev + "\n2. Counting verified profiles...");
-      try {
-        const { count, error } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('is_verified', true);
-        if (error) {
-          setDebugInfo(prev => prev + `\nVerified error: ${error.message}`);
-        }
-        verifiedCount = count || 0;
-        setDebugInfo(prev => prev + `\nVerified: ${verifiedCount}`);
-      } catch (e: any) {
-        setDebugInfo(prev => prev + `\nCount verified exception: ${e.message}`);
-      }
-
-      setDebugInfo(prev => prev + "\n3. Counting pending...");
-      try {
-        const { count, error } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('verification_status', 'pending');
-        if (error) {
-          setDebugInfo(prev => prev + `\nPending error: ${error.message}`);
-        }
-        pendingCount = count || 0;
-        setDebugInfo(prev => prev + `\nPending: ${pendingCount}`);
-      } catch (e: any) {
-        setDebugInfo(prev => prev + `\nCount pending exception: ${e.message}`);
-      }
-
-      setDebugInfo(prev => prev + "\n4. Loading profiles list...");
+      setDebugInfo(prev => prev + "\n1. Loading profiles list directly...");
       try {
         const { data, error } = await supabase
           .from('profiles')
           .select('id, email, phone, username, full_name, role, verification_photo, verification_status, is_verified, created_at')
           .order('created_at', { ascending: false })
           .limit(100);
+        
         if (error) {
           setDebugInfo(prev => prev + `\nSelect profiles error: ${error.message}`);
+          console.error("Profiles error:", error);
         }
+        
         setDebugInfo(prev => prev + `\nProfiles loaded: ${data?.length || 0}`);
         console.log("Profiles loaded:", data?.length, data);
         profilesData = data || [];
       } catch (e: any) { 
         setDebugInfo(prev => prev + `\nSelect profiles exception: ${e.message}`);
+        console.error("Profiles exception:", e);
       }
 
-      setDebugInfo(prev => prev + "\n5. Setting state...");
+      setDebugInfo(prev => prev + "\n2. Setting state...");
       setProfiles(profilesData);
       setStats({
-        totalUsers: totalCount,
-        verifiedUsers: verifiedCount,
-        pendingVerifications: pendingCount,
+        totalUsers: profilesData.length,
+        verifiedUsers: profilesData.filter(p => p.is_verified).length,
+        pendingVerifications: profilesData.filter(p => p.verification_status === 'pending').length,
         totalMessages: 0
       });
-      setDebugInfo(prev => prev + "\nDone!");
+      setDebugInfo(prev => prev + "\nDone! Users: " + profilesData.length);
     } catch (error: any) {
       console.error("Error fetching data:", error);
       setDebugInfo(prev => prev + `\nfetchData exception: ${error.message}`);
     } finally {
       setLoading(false);
-      setDebugInfo(prev => prev + "\nLoading set to false");
-      console.log("Total users loaded:", totalCount, "Profiles:", profilesData.length);
     }
   };
 
