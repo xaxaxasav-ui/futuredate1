@@ -304,7 +304,7 @@ export default function VerificationPage() {
                  border: '1px solid #f2d9e5'
                }}>
             <img 
-              src="https://png.pngtree.com/background/20231214/original/pngtree-serious-young-man-looking-at-camera-unsmiling-frowning-male-photo-picture-image_6828676.jpg"
+              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop"
               alt="Пример селфи для верификации"
               className="w-full h-full object-cover"
             />
