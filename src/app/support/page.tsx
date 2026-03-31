@@ -51,6 +51,7 @@ export default function SupportPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showContent, setShowContent] = useState(false);
   const [formData, setFormData] = useState({
     subject: "",
     message: ""
@@ -59,6 +60,14 @@ export default function SupportPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const timer = setTimeout(() => setShowContent(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading) {
+      setShowContent(true);
+    }
     if (!authLoading && user) {
       fetchTickets();
     } else if (!authLoading && !user) {
@@ -122,7 +131,7 @@ export default function SupportPage() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading && !showContent) {
     return (
       <div className="min-h-screen relative pt-24 pb-6 px-6 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -130,7 +139,7 @@ export default function SupportPage() {
     );
   }
 
-  if (!user) {
+  if (!user && !authLoading) {
     return (
       <div className="min-h-screen relative pt-24 pb-6 px-6 overflow-hidden">
         

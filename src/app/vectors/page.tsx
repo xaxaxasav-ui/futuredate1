@@ -38,6 +38,7 @@ export default function VectorsPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showContent, setShowContent] = useState(false);
   
   const [preferences, setPreferences] = useState({
     looking_for_age_min: 18,
@@ -58,6 +59,14 @@ export default function VectorsPage() {
   });
 
   useEffect(() => {
+    const timer = setTimeout(() => setShowContent(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading) {
+      setShowContent(true);
+    }
     if (!authLoading && !user) {
       router.push("/auth");
     }
@@ -165,7 +174,7 @@ export default function VectorsPage() {
     });
   };
 
-  if (authLoading || loading) {
+  if ((authLoading || loading) && !showContent) {
     return (
       <div className="min-h-screen relative pt-24 pb-12 px-6 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

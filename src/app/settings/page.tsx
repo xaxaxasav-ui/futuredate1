@@ -14,8 +14,17 @@ export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
+  const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => setShowContent(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading) {
+      setShowContent(true);
+    }
     if (!authLoading && !user) {
       router.push("/auth");
     }
@@ -40,7 +49,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading && !showContent) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

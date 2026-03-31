@@ -14,6 +14,7 @@ export default function VerificationPage() {
   const { user, profile, loading: authLoading, refreshProfile } = useSupabase();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showContent, setShowContent] = useState(false);
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [currentUrl, setCurrentUrl] = useState<string>("");
@@ -22,6 +23,14 @@ export default function VerificationPage() {
   const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => setShowContent(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading) {
+      setShowContent(true);
+    }
     if (!authLoading && !user) {
       router.push("/auth");
     }
@@ -246,7 +255,7 @@ export default function VerificationPage() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading && !showContent) {
     return (
       <div className="min-h-screen relative pt-24 pb-12 px-6 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

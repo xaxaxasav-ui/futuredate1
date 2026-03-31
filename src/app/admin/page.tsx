@@ -50,6 +50,7 @@ export default function AdminPage() {
   const { user, loading: authLoading } = useSupabase();
   const [profiles, setProfiles] = useState<AdminProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showContent, setShowContent] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProfile, setSelectedProfile] = useState<AdminProfile | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -78,7 +79,13 @@ export default function AdminPage() {
   const [debugInfo, setDebugInfo] = useState<string>("");
 
   useEffect(() => {
+    const timer = setTimeout(() => setShowContent(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     if (!authLoading) {
+      setShowContent(true);
       if (!user) {
         setDebugInfo("User not logged in, showing login message");
       } else {
@@ -468,7 +475,7 @@ export default function AdminPage() {
     p.city?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (authLoading) {
+  if (authLoading && !showContent) {
     return (
       <div className="min-h-screen relative pt-24 pb-6 px-6 flex items-center justify-center">
         <div className="text-center">
@@ -479,7 +486,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!user) {
+  if (!user && !authLoading) {
     return (
       <div className="min-h-screen relative pt-24 pb-6 px-6 flex items-center justify-center">
         <GlassCard className="p-8 text-center max-w-md">

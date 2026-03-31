@@ -32,8 +32,17 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => setShowContent(true), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading) {
+      setShowContent(true);
+    }
     if (!authLoading && !user) {
       router.push("/auth");
     } else if (user) {
@@ -129,7 +138,7 @@ export default function NotificationsPage() {
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
-  if (authLoading) {
+  if (authLoading && !showContent) {
     return (
       <div className="min-h-screen relative pt-24 pb-6 px-6 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
