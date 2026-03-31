@@ -6,6 +6,7 @@ import { SupabaseProvider } from '@/components/SupabaseProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 
 const inter = Inter({ 
   subsets: ['latin', 'latin-ext', 'cyrillic'],
@@ -42,6 +43,7 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="font-body antialiased bg-background text-foreground overflow-x-hidden flex flex-col min-h-screen">
+        <ServiceWorkerRegistration />
         <ThemeProvider>
           <SupabaseProvider>
             <Navbar />

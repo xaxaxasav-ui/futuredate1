@@ -12,9 +12,12 @@
       "src": "/images/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
+  "apple-mobile-web-app-capable": "yes",
+  "apple-mobile-web-app-status-bar-style": "black-translucent",
+  "apple-mobile-web-app-title": "Lavmee",
   "categories": ["social", "dating"],
   "lang": "ru",
   "dir": "ltr"
