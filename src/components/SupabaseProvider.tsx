@@ -85,15 +85,21 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('timeout')), 8000)
+      );
+      
+      const fetchPromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
       
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      
       if (error) {
         console.warn('Profile fetch error:', error.code, error.message);
-        if (error.message?.includes('Failed to fetch') || error.message?.includes('network') || !error.message) {
+        if (error.message?.includes('Failed to fetch') || error.message?.includes('network') || !error.message || error.message === 'timeout') {
           console.warn('Network error - Supabase may be unreachable, continuing without profile');
           return;
         }
@@ -132,9 +138,18 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
   };
 
   useEffect(() => {
+    let isMounted = true;
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.log('Supabase connection timeout, continuing...');
+        setLoading(false);
+      }
+    }, 10000);
+
     const initSupabase = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -143,14 +158,19 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
         }
       } catch (err) {
         console.warn('Supabase init error:', err);
+        if (!isMounted) return;
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
       }
     };
 
     initSupabase();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -164,6 +184,8 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
     });
 
     return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []);

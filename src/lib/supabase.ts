@@ -88,24 +88,46 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 }
 
 export async function getMatches(userId: string): Promise<Match[]> {
-  const { data } = await supabase
-    .from('matches')
-    .select(`
-      *,
-      matched_profile:profiles!matches_matched_user_id_fkey(id, username, full_name, avatar_url, bio, traits)
-    `)
-    .or(`user_id.eq.${userId},matched_user_id.eq.${userId}`)
-    .eq('status', 'accepted');
-  return data || [];
+  try {
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('timeout')), 10000)
+    );
+    
+    const fetchPromise = supabase
+      .from('matches')
+      .select(`
+        *,
+        matched_profile:profiles!matches_matched_user_id_fkey(id, username, full_name, avatar_url, bio, traits)
+      `)
+      .or(`user_id.eq.${userId},matched_user_id.eq.${userId}`)
+      .eq('status', 'accepted');
+    
+    const { data } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+    return data || [];
+  } catch (error) {
+    console.warn('getMatches error:', error);
+    return [];
+  }
 }
 
 export async function getMessages(matchId: string): Promise<Message[]> {
-  const { data } = await supabase
-    .from('messages')
-    .select('*')
-    .eq('match_id', matchId)
-    .order('created_at', { ascending: true });
-  return data || [];
+  try {
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('timeout')), 10000)
+    );
+    
+    const fetchPromise = supabase
+      .from('messages')
+      .select('*')
+      .eq('match_id', matchId)
+      .order('created_at', { ascending: true });
+    
+    const { data } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+    return data || [];
+  } catch (error) {
+    console.warn('getMessages error:', error);
+    return [];
+  }
 }
 
 export async function sendMessage(matchId: string, content: string, senderId: string) {
@@ -152,9 +174,20 @@ export async function acceptMatch(matchId: string) {
 }
 
 export async function getAllProfiles(excludeUserId: string): Promise<Profile[]> {
-  const { data } = await supabase
-    .from('profiles')
-    .select('*')
-    .neq('id', excludeUserId);
-  return data || [];
+  try {
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('timeout')), 10000)
+    );
+    
+    const fetchPromise = supabase
+      .from('profiles')
+      .select('*')
+      .neq('id', excludeUserId);
+    
+    const { data } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+    return data || [];
+  } catch (error) {
+    console.warn('getAllProfiles error:', error);
+    return [];
+  }
 }
