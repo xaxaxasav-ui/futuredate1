@@ -16,7 +16,7 @@
     --secondary: 188 94% 48%;
     --secondary-foreground: 200 10% 10%;
     --muted: 200 10% 15%;
-    --muted-foreground: 0 0% 60%;
+    --muted-foreground: 0 0% 75%;
     --accent: 188 94% 48%;
     --accent-foreground: 200 10% 10%;
     --destructive: 0 84.2% 60.2%;
@@ -80,6 +80,34 @@
 
 .text-glow {
   text-shadow: 0 0 10px theme('colors.primary.DEFAULT');
+}
+
+.profile-label {
+  color: #a0a0a0;
+}
+
+.dark .profile-label {
+  color: #9ca3af;
+}
+
+.dark .profile-text {
+  color: #e5e5e5;
+}
+
+.dark .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.dark .text-muted-foreground {
+  color: #9ca3af !important;
+}
+
+.dark [class*="text-muted"] {
+  color: #a1a1aa !important;
+}
+
+.dark .muted-foreground {
+  color: #a1a1aa !important;
 }
 
 @keyframes pulse-slow {
