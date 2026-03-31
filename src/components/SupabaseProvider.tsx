@@ -85,8 +85,10 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('timeout')), 5000)
+      const timeoutPromise = new Promise((resolve) => 
+        setTimeout(() => {
+          console.log('Profile fetch timeout');
+        }, 3000)
       );
       
       const fetchPromise = supabase
@@ -95,29 +97,13 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
         .eq('id', userId)
         .single();
       
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      const result = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      const { data, error } = result || {};
       
       if (error) {
         console.warn('Profile fetch error:', error.code, error.message);
-        if (error.message?.includes('Failed to fetch') || error.message?.includes('network') || !error.message || error.message === 'timeout') {
-          console.warn('Network error - continuing without profile');
-          return;
-        }
         if (error.code === 'PGRST116') {
-          console.log('Profile not found, creating new one...');
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert({ id: userId, username: `user_${userId.slice(0,8)}` })
-            .select()
-            .single();
-          
-          if (createError) {
-            console.error('Profile create error:', createError.code, createError.message);
-            setProfile(null);
-            return;
-          }
-          console.log('Profile created:', newProfile);
-          setProfile(newProfile);
+          console.log('Profile not found');
           return;
         }
         if (error.code === '42P01') {
@@ -139,29 +125,35 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
 
   useEffect(() => {
     let isMounted = true;
-    const timeoutId = setTimeout(() => {
-      if (isMounted) {
-        console.log('Supabase connection timeout, continuing with guest mode');
-        setLoading(false);
-      }
-    }, 5000);
-
+    
     const initSupabase = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!isMounted) return;
-        setSession(session);
-        setUser(session?.user ?? null);
+        const timeoutPromise = new Promise((resolve) => 
+          setTimeout(() => {
+            console.log('Auth timeout, continuing...');
+            if (isMounted) setLoading(false);
+          }, 3000)
+        );
         
-        if (session?.user) {
-          await fetchProfile(session.user.id);
+        const authPromise = supabase.auth.getSession();
+        
+        const result = await Promise.race([authPromise, timeoutPromise]) as any;
+        
+        if (!isMounted) return;
+        
+        if (result?.data?.session) {
+          setSession(result.data.session);
+          setUser(result.data.session.user ?? null);
+          
+          if (result.data.session.user) {
+            await fetchProfile(result.data.session.user.id);
+          }
         }
       } catch (err) {
         console.warn('Supabase init error:', err);
         if (!isMounted) return;
       } finally {
         if (isMounted) {
-          clearTimeout(timeoutId);
           setLoading(false);
         }
       }
@@ -185,7 +177,6 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
 
     return () => {
       isMounted = false;
-      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []);

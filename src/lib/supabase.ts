@@ -89,11 +89,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 
 export async function getMatches(userId: string): Promise<Match[]> {
   try {
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('timeout')), 5000)
-    );
-    
-    const fetchPromise = supabase
+    const { data } = await supabase
       .from('matches')
       .select(`
         *,
@@ -101,8 +97,6 @@ export async function getMatches(userId: string): Promise<Match[]> {
       `)
       .or(`user_id.eq.${userId},matched_user_id.eq.${userId}`)
       .eq('status', 'accepted');
-    
-    const { data } = await Promise.race([fetchPromise, timeoutPromise]) as any;
     return data || [];
   } catch (error) {
     console.warn('getMatches error:', error);
@@ -112,17 +106,11 @@ export async function getMatches(userId: string): Promise<Match[]> {
 
 export async function getMessages(matchId: string): Promise<Message[]> {
   try {
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('timeout')), 5000)
-    );
-    
-    const fetchPromise = supabase
+    const { data } = await supabase
       .from('messages')
       .select('*')
       .eq('match_id', matchId)
       .order('created_at', { ascending: true });
-    
-    const { data } = await Promise.race([fetchPromise, timeoutPromise]) as any;
     return data || [];
   } catch (error) {
     console.warn('getMessages error:', error);
@@ -175,16 +163,10 @@ export async function acceptMatch(matchId: string) {
 
 export async function getAllProfiles(excludeUserId: string): Promise<Profile[]> {
   try {
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('timeout')), 5000)
-    );
-    
-    const fetchPromise = supabase
+    const { data } = await supabase
       .from('profiles')
       .select('*')
       .neq('id', excludeUserId);
-    
-    const { data } = await Promise.race([fetchPromise, timeoutPromise]) as any;
     return data || [];
   } catch (error) {
     console.warn('getAllProfiles error:', error);

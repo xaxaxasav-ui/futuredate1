@@ -87,13 +87,9 @@ export default function MessagesPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!authLoading && !user) {
-        window.location.href = "/auth";
-      }
-    }, 5000);
-    
-    return () => clearTimeout(timer);
+    if (!authLoading && !user) {
+      window.location.href = "/auth";
+    }
   }, [authLoading, user]);
 
   useEffect(() => {
@@ -103,11 +99,7 @@ export default function MessagesPage() {
         return;
       }
       try {
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('timeout')), 5000)
-        );
-        
-        const fetchPromise = supabase
+        const { data: matches } = await supabase
           .from('matches')
           .select(`
             id,
@@ -115,8 +107,6 @@ export default function MessagesPage() {
           `)
           .or(`user_id.eq.${user.id},matched_user_id.eq.${user.id}`)
           .eq('status', 'accepted');
-        
-        const { data: matches } = await Promise.race([fetchPromise, timeoutPromise]) as any;
 
         if (matches && matches.length > 0) {
           const loadedChats: Chat[] = matches.map((m: any) => ({
