@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
+import { CookieBanner } from '@/components/CookieBanner';
 
 const inter = Inter({ 
   subsets: ['latin', 'latin-ext', 'cyrillic'],
@@ -51,6 +52,7 @@ export default function RootLayout({
               {children}
             </main>
             <Footer />
+            <CookieBanner />
             <Toaster />
           </SupabaseProvider>
         </ThemeProvider>
