@@ -21,6 +21,7 @@ import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { supabase } from "@/lib/supabase";
+import { createNotification } from "@/lib/notifications";
 
 interface ChatMessage {
   role: 'user' | 'partner';
@@ -230,6 +231,21 @@ function MessagesContent() {
         sender_id: user.id,
         content: input,
       });
+      
+      // Уведомление о новом сообщении
+      const otherUserId = activeChat.id.includes('_') ? activeChat.id.split('_').find(id => id !== user.id) : null;
+      if (otherUserId) {
+        createNotification({
+          userId: otherUserId,
+          type: 'message',
+          title: 'Новое сообщение!',
+          message: `${user.user_metadata?.full_name || 'Пользователь'} написал вам: ${input.substring(0, 50)}${input.length > 50 ? '...' : ''}`,
+          fromUserId: user.id,
+          fromUserName: user.user_metadata?.full_name || 'Пользователь',
+          fromUserAvatar: user.user_metadata?.avatar_url || undefined,
+          link: `/messages?chat=${activeChat.id}`
+        });
+      }
     } catch (e) {
       console.error('Error saving message:', e);
     }

@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
 import { getAllProfiles, Profile, supabase } from "@/lib/supabase";
+import { createNotification } from "@/lib/notifications";
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useSupabase();
@@ -49,6 +50,18 @@ export default function DashboardPage() {
           liked_user_id: profile.id,
           created_at: new Date().toISOString(),
         }, { onConflict: 'user_id,liked_user_id' });
+        
+        // Отправляем уведомление о лайке
+        createNotification({
+          userId: profile.id,
+          type: 'like',
+          title: 'Новый лайк!',
+          message: `${user.user_metadata?.full_name || 'Кто-то'} поставил вам лайк!`,
+          fromUserId: user.id,
+          fromUserName: user.user_metadata?.full_name || 'Пользователь',
+          fromUserAvatar: user.user_metadata?.avatar_url || undefined,
+          link: `/profile/${user.id}`
+        });
       } catch (e) {}
       
       // Проверяем взаимный лайк
@@ -81,6 +94,18 @@ export default function DashboardPage() {
               matched_user_id: user.id,
               status: 'accepted',
             }).catch(() => {});
+            
+            // Уведомление о взаимном лайке (match)
+            createNotification({
+              userId: profile.id,
+              type: 'match',
+              title: 'Это взаимный лайк! 💕',
+              message: `Вы понравились ${user.user_metadata?.full_name || 'пользователю'}! Теперь вы можете написать друг другу.`,
+              fromUserId: user.id,
+              fromUserName: user.user_metadata?.full_name || 'Пользователь',
+              fromUserAvatar: user.user_metadata?.avatar_url || undefined,
+              link: `/messages?chat=${profile.id}`
+            });
           } catch (e: any) {
             console.error('Match create error:', e?.message || e);
           }
@@ -139,6 +164,18 @@ export default function DashboardPage() {
           favorited_user_id: profile.id,
           created_at: new Date().toISOString(),
         }, { onConflict: 'user_id,favorited_user_id' });
+        
+        // Уведомление о добавлении в избранное
+        createNotification({
+          userId: profile.id,
+          type: 'favorite',
+          title: 'Вас добавили в избранное! ⭐',
+          message: `${user.user_metadata?.full_name || 'Кто-то'} добавил вас в избранное!`,
+          fromUserId: user.id,
+          fromUserName: user.user_metadata?.full_name || 'Пользователь',
+          fromUserAvatar: user.user_metadata?.avatar_url || undefined,
+          link: `/profile/${user.id}`
+        });
       } catch (e) {}
     }
   };

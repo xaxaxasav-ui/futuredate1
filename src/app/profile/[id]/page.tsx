@@ -10,6 +10,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, Heart, Star, MessageSquare, ArrowLeft, MapPin, Calendar, Ruler, GraduationCap, Briefcase, Mail, Phone, X, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { createNotification } from "@/lib/notifications";
 import Link from "next/link";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
@@ -40,6 +41,12 @@ interface AssessmentResult {
   strengths?: string[];
   idealPartner?: string;
   datingStyle?: string;
+}
+
+function genderEnding(gender?: string): string {
+  if (gender === 'male') return '';
+  if (gender === 'female') return 'а';
+  return '';
 }
 
 export default function ViewProfilePage() {
@@ -83,6 +90,18 @@ export default function ViewProfilePage() {
           await supabase.from('profile_views').insert({
             profile_id: params.id,
             viewer_id: user.id,
+          });
+          
+          // Уведомление о просмотре профиля
+          createNotification({
+            userId: params.id as string,
+            type: 'view',
+            title: 'Ваш профиль посмотрели!',
+            message: `${user.user_metadata?.full_name || 'Кто-то'} просмотрел${genderEnding(user.user_metadata?.gender)} ваш профиль`,
+            fromUserId: user.id,
+            fromUserName: user.user_metadata?.full_name || 'Пользователь',
+            fromUserAvatar: user.user_metadata?.avatar_url || undefined,
+            link: `/profile/${user.id}`
           });
           
           const { data: likeData } = await supabase
