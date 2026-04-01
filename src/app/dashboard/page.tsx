@@ -43,41 +43,57 @@ export default function DashboardPage() {
     } else {
       setLikes(prev => [...prev, profile.id]);
       
-      await supabase.from('likes').insert({
-        user_id: user.id,
-        liked_user_id: profile.id,
-      });
-      
-      await createNotification({
-        userId: profile.id,
-        type: 'like',
-        title: 'Новый лайк!',
-        message: `${user.user_metadata?.full_name || 'Кто-то'} поставил вам лайк`,
-        fromUserId: user.id,
-        fromUserName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Пользователь',
-        link: '/dashboard',
-      });
-      
-      const { data: mutualLike } = await supabase
-        .from('likes')
-        .select('id')
-        .eq('user_id', profile.id)
-        .eq('liked_user_id', user.id)
-        .single();
-      
-      if (mutualLike) {
-        if (!matches.includes(profile.id)) {
-          setMatches(prev => [...prev, profile.id]);
-        }
-        
-        await supabase.from('matches').upsert({
+      try {
+        await supabase.from('likes').insert({
           user_id: user.id,
-          matched_user_id: profile.id,
-          status: 'accepted',
-        }, { onConflict: 'user_id,matched_user_id' });
+          liked_user_id: profile.id,
+        });
+      } catch (e) {
+        console.log('Like already exists');
+      }
+      
+      try {
+        await createNotification({
+          userId: profile.id,
+          type: 'like',
+          title: 'Новый лайк!',
+          message: `${user.user_metadata?.full_name || 'Кто-то'} поставил вам лайк`,
+          fromUserId: user.id,
+          fromUserName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Пользователь',
+          link: '/dashboard',
+        });
+      } catch (e) {
+        console.log('Notification error:', e);
+      }
+      
+      try {
+        const { data: mutualLike } = await supabase
+          .from('likes')
+          .select('id')
+          .eq('user_id', profile.id)
+          .eq('liked_user_id', user.id)
+          .single();
         
-        alert(`🎉 Это взаимный лайк! Вы можете написать ${profile.full_name}!`);
-      } else {
+        if (mutualLike) {
+          if (!matches.includes(profile.id)) {
+            setMatches(prev => [...prev, profile.id]);
+          }
+          
+          try {
+            await supabase.from('matches').upsert({
+              user_id: user.id,
+              matched_user_id: profile.id,
+              status: 'accepted',
+            }, { onConflict: 'user_id,matched_user_id' });
+          } catch (e) {
+            console.log('Match create error:', e);
+          }
+          
+          alert(`🎉 Это взаимный лайк! Вы можете написать ${profile.full_name}!`);
+        } else {
+          alert(`Лайк отправлен ${profile.full_name}!`);
+        }
+      } catch (e) {
         alert(`Лайк отправлен ${profile.full_name}!`);
       }
     }
@@ -120,20 +136,28 @@ export default function DashboardPage() {
     } else {
       setFavorites(prev => [...prev, profile.id]);
       
-      await supabase.from('favorites').insert({
-        user_id: user.id,
-        favorited_user_id: profile.id,
-      });
+      try {
+        await supabase.from('favorites').insert({
+          user_id: user.id,
+          favorited_user_id: profile.id,
+        });
+      } catch (e) {
+        console.log('Favorite already exists');
+      }
       
-      await createNotification({
-        userId: profile.id,
-        type: 'favorite',
-        title: 'Добавлены в избранное!',
-        message: `${user.user_metadata?.full_name || 'Кто-то'} добавил вас в избранное`,
-        fromUserId: user.id,
-        fromUserName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Пользователь',
-        link: '/favorites',
-      });
+      try {
+        await createNotification({
+          userId: profile.id,
+          type: 'favorite',
+          title: 'Добавлены в избранное!',
+          message: `${user.user_metadata?.full_name || 'Кто-то'} добавил вас в избранное`,
+          fromUserId: user.id,
+          fromUserName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Пользователь',
+          link: '/favorites',
+        });
+      } catch (e) {
+        console.log('Notification error:', e);
+      }
     }
   };
 

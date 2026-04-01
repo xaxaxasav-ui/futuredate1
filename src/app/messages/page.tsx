@@ -122,30 +122,32 @@ function MessagesContent() {
         }
 
         if (matches && matches.length > 0) {
-          const loadedChats: Chat[] = await Promise.all(
-            matches.map(async (m: any) => {
-              const otherUserId = m.user_id === user.id ? m.matched_user_id : m.user_id;
-              
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('username, full_name, avatar_url')
-                .eq('id', otherUserId)
-                .single();
+          const loadedChats: Chat[] = [];
+          
+          for (const m of matches) {
+            const otherUserId = m.user_id === user.id ? m.matched_user_id : m.user_id;
+            
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('username, full_name, avatar_url')
+              .eq('id', otherUserId)
+              .single();
 
-              return {
-                id: m.id,
-                name: profile?.full_name || profile?.username || 'Неизвестно',
-                lastMsg: 'Новые сообщения',
-                time: 'Сейчас',
-                avatar: profile?.avatar_url || PlaceHolderImages[0].imageUrl,
-                online: Math.random() > 0.5
-              };
-            })
-          );
+            loadedChats.push({
+              id: m.id,
+              name: profile?.full_name || profile?.username || 'Неизвестно',
+              lastMsg: 'Новые сообщения',
+              time: 'Сейчас',
+              avatar: profile?.avatar_url || PlaceHolderImages[0].imageUrl,
+              online: Math.random() > 0.5
+            });
+          }
+          
           setChats(loadedChats);
           if (loadedChats.length > 0) {
             setActiveChat(loadedChats[0]);
           }
+        }
         }
       } catch (error) {
         console.error("Error loading chats:", error);
