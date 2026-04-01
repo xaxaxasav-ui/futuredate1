@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Heart, Star, MessageSquare, ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { createNotification } from "@/lib/notifications";
 import Link from "next/link";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
@@ -62,7 +63,15 @@ export default function ViewProfilePage() {
     });
 
     if (!error) {
-      alert('Лайк отправлен!');
+      await createNotification({
+        userId: profile.id,
+        type: 'like',
+        title: 'Новый лайк!',
+        message: `${user.user_metadata?.full_name || 'Кто-то'} поставил вам лайк`,
+        fromUserId: user.id,
+        fromUserName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Пользователь',
+        link: '/dashboard',
+      });
     }
   };
 
@@ -75,7 +84,15 @@ export default function ViewProfilePage() {
     });
 
     if (!error) {
-      alert('Добавлено в избранное!');
+      await createNotification({
+        userId: profile.id,
+        type: 'favorite',
+        title: 'Добавлены в избранное!',
+        message: `${user.user_metadata?.full_name || 'Кто-то'} добавил вас в избранное`,
+        fromUserId: user.id,
+        fromUserName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Пользователь',
+        link: '/favorites',
+      });
     }
   };
 
