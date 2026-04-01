@@ -47,12 +47,19 @@ export default function ViewProfilePage() {
 
       if (!error && data) {
         setProfile(data);
+        
+        if (user && user.id !== params.id) {
+          await supabase.from('profile_views').insert({
+            profile_id: params.id,
+            viewer_id: user.id,
+          });
+        }
       }
       setLoading(false);
     };
 
     fetchProfile();
-  }, [params.id]);
+  }, [params.id, user]);
 
   const handleLike = async () => {
     if (!user || !profile) return;

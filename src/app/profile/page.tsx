@@ -119,20 +119,26 @@ export default function ProfilePage() {
     if (!user) return;
     
     try {
-      const [likesCount, viewsCount, favoritesCount] = await Promise.all([
-        supabase.from('likes').select('id', { count: 'exact', head: true }).eq('liked_user_id', user.id),
-        supabase.from('profile_views').select('id', { count: 'exact', head: true }).eq('profile_id', user.id),
-        supabase.from('favorites').select('id', { count: 'exact', head: true }).eq('favorited_user_id', user.id),
-      ]);
+      let likes = 0, views = 0, matches = 0;
+      
+      const likesResult = await supabase.from('likes').select('id', { count: 'exact', head: true }).eq('liked_user_id', user.id);
+      if (!likesResult.error && likesResult.count !== null) likes = likesResult.count;
+      
+      const viewsResult = await supabase.from('profile_views').select('id', { count: 'exact', head: true }).eq('profile_id', user.id);
+      if (!viewsResult.error && viewsResult.count !== null) views = viewsResult.count;
+      
+      const matchesResult = await supabase.from('favorites').select('id', { count: 'exact', head: true }).eq('favorited_user_id', user.id);
+      if (!matchesResult.error && matchesResult.count !== null) matches = matchesResult.count;
       
       setStats({
-        views: viewsCount.count || 0,
-        likes: likesCount.count || 0,
+        views: views,
+        likes: likes,
         messages: 0,
-        matches: favoritesCount.count || 0,
+        matches: matches,
       });
     } catch (e) {
       console.error('Error fetching stats:', e);
+      setStats({ views: 0, likes: 0, messages: 0, matches: 0 });
     }
   };
 
