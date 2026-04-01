@@ -70,7 +70,7 @@ export default function DashboardPage() {
       alert(`💌 Чтобы написать ${profile.full_name}, сначала нужно взаимно лайкнуть друг друга!\n\nПоставьте лайк и ждите взаимности.`);
       return;
     }
-    router.push("/messages");
+    router.push(`/messages?chat=${profile.id}`);
   };
 
   const handleDate = (profile: Profile) => {
@@ -78,7 +78,7 @@ export default function DashboardPage() {
       alert(`🎥 Чтобы пригласить ${profile.full_name} на свидание, нужно чтобы это был взаимный лайк!\n\nКак это работает:\n1. Поставьте лайк понравившемуся пользователю\n2. Если этот пользователь тоже поставит вам лайк - это взаимность!\n3. После взаимного лайка вы можете написать или пригласить на свидание\n\nВзаимные лайки = ваша пара!`);
       return;
     }
-    router.push("/date");
+    router.push(`/date?user=${profile.id}`);
   };
 
   const handleFavorite = async (profile: Profile) => {

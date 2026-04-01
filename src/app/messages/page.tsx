@@ -18,7 +18,7 @@ import {
 import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/SupabaseProvider";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 interface ChatMessage {
@@ -74,6 +74,7 @@ function checkProhibitedContent(text: string): { isProhibited: boolean; reason: 
 export default function MessagesPage() {
   const { user, loading: authLoading } = useSupabase();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -91,6 +92,16 @@ export default function MessagesPage() {
       window.location.href = "/auth";
     }
   }, [authLoading, user]);
+
+  useEffect(() => {
+    const chatId = searchParams.get('chat');
+    if (chatId && chats.length > 0) {
+      const chat = chats.find(c => c.id === chatId);
+      if (chat) {
+        setActiveChat(chat);
+      }
+    }
+  }, [searchParams, chats]);
 
   useEffect(() => {
     const loadChats = async () => {
