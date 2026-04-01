@@ -174,20 +174,23 @@ export default function DashboardPage() {
       }
       
       try {
-        const { data: userMatches } = await supabase
+        const { data: userMatches, error: matchError } = await supabase
           .from('matches')
           .select('matched_user_id, user_id')
           .eq('status', 'accepted')
           .or(`user_id.eq.${user.id},matched_user_id.eq.${user.id}`);
         
+        console.log('Loading matches:', { userMatches, matchError });
+        
         if (userMatches && userMatches.length > 0) {
           const matchIds = userMatches.map(m => 
             m.user_id === user.id ? m.matched_user_id : m.user_id
           );
+          console.log('Match IDs:', matchIds);
           setMatches(matchIds);
         }
       } catch (e) {
-        console.log('Matches table not available');
+        console.log('Matches table error:', e);
       }
     };
     
