@@ -46,7 +46,8 @@ export default function ViewProfilePage() {
         .single();
 
       if (!error && data) {
-        setProfile(data);
+        const cleanBio = data.bio ? data.bio.replace(/🎯?ИИ_АНАЛИЗ_START.+?ИИ_АНАЛИЗ_END/g, '').trim() : null;
+        setProfile({ ...data, bio: cleanBio });
         
         if (user && user.id !== params.id) {
           await supabase.from('profile_views').insert({
