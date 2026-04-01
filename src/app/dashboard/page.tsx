@@ -10,7 +10,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
-import { getAllProfiles, Profile } from "@/lib/supabase";
+import { getAllProfiles, Profile, supabase } from "@/lib/supabase";
 import { createNotification } from "@/lib/notifications";
 
 export default function DashboardPage() {
@@ -42,12 +42,34 @@ export default function DashboardPage() {
       setLikes(prev => prev.filter(id => id !== profile.id));
     } else {
       setLikes(prev => [...prev, profile.id]);
-      trackStats(profile.id, 'like');
       
-      if (Math.random() > 0.5) {
-        setMatches(prev => [...prev, profile.id]);
-        trackStats(profile.id, 'match');
-        alert(`🎉 Это взаимный лайк! Вы можете назначить свидание с ${profile.full_name}!`);
+      await supabase.from('likes').insert({
+        user_id: user.id,
+        liked_user_id: profile.id,
+      });
+      
+      await createNotification({
+        userId: profile.id,
+        type: 'like',
+        title: 'Новый лайк!',
+        message: `${user.user_metadata?.full_name || 'Кто-то'} поставил вам лайк`,
+        fromUserId: user.id,
+        fromUserName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Пользователь',
+        link: '/dashboard',
+      });
+      
+      const { data: mutualLike } = await supabase
+        .from('likes')
+        .select('id')
+        .eq('user_id', profile.id)
+        .eq('liked_user_id', user.id)
+        .single();
+      
+      if (mutualLike) {
+        if (!matches.includes(profile.id)) {
+          setMatches(prev => [...prev, profile.id]);
+        }
+        alert(`🎉 Это взаимный лайк! Вы можете написать ${profile.full_name}!`);
       } else {
         alert(`Лайк отправлен ${profile.full_name}!`);
       }
@@ -90,13 +112,20 @@ export default function DashboardPage() {
       setFavorites(prev => prev.filter(id => id !== profile.id));
     } else {
       setFavorites(prev => [...prev, profile.id]);
-      trackStats(profile.id, 'favorite');
+      
+      await supabase.from('favorites').insert({
+        user_id: user.id,
+        favorited_user_id: profile.id,
+      });
       
       await createNotification({
-        userId: user.id,
+        userId: profile.id,
         type: 'favorite',
-        title: 'Добавлено в избранное',
-        message: `Вы добавили ${profile.full_name} в избранное`,
+        title: 'Добавлены в избранное!',
+        message: `${user.user_metadata?.full_name || 'Кто-то'} добавил вас в избранное`,
+        fromUserId: user.id,
+        fromUserName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Пользователь',
+        link: '/favorites',
       });
     }
   };
