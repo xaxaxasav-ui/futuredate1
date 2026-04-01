@@ -19,8 +19,10 @@ export async function createNotification({
   fromUserAvatar?: string;
   link?: string;
 }) {
+  console.log('Creating notification:', { userId, type, title, message, fromUserId, fromUserName, fromUserAvatar, link });
+  
   try {
-    await supabase.from('notifications').insert({
+    const { data, error } = await supabase.from('notifications').insert({
       user_id: userId,
       type,
       title,
@@ -31,7 +33,13 @@ export async function createNotification({
       is_read: false,
       link: link || null,
       created_at: new Date().toISOString(),
-    });
+    }).select();
+    
+    console.log('Notification insert result:', { data, error });
+    
+    if (error) {
+      console.error('Supabase error creating notification:', error);
+    }
   } catch (e) {
     console.error('Error creating notification:', e);
   }

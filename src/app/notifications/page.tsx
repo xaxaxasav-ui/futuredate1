@@ -54,12 +54,15 @@ export default function NotificationsPage() {
 
   const fetchNotifications = async (userId: string) => {
     try {
-      const { data } = await supabase
+      console.log('Fetching notifications for user:', userId);
+      const { data, error } = await supabase
         .from('notifications')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);
+
+      console.log('Notifications response:', { data, error });
 
       if (data) {
         setNotifications(data);
