@@ -5,10 +5,10 @@ import { useParams } from "next/navigation";
 import { GlassCard } from "@/components/GlassCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Heart, Star, MessageSquare, ArrowLeft } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Heart, Star, MessageSquare, ArrowLeft, MapPin, Calendar, Ruler, GraduationCap, Briefcase, Mail, Phone } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { createNotification } from "@/lib/notifications";
 import Link from "next/link";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
@@ -25,7 +25,12 @@ interface ProfileData {
   traits: string[] | null;
   hobbies: string[] | null;
   talents: string[] | null;
+  looking_for: string | null;
   photos: string[] | null;
+  photos_visibility: string | null;
+  height: number | null;
+  education: string | null;
+  occupation: string | null;
 }
 
 export default function ViewProfilePage() {
@@ -34,6 +39,9 @@ export default function ViewProfilePage() {
   const { user } = useSupabase();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMatch, setIsMatch] = useState(false);
+  const [hasLiked, setHasLiked] = useState(false);
+  const [hasFavorited, setHasFavorited] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -54,6 +62,31 @@ export default function ViewProfilePage() {
             profile_id: params.id,
             viewer_id: user.id,
           });
+          
+          const { data: likeData } = await supabase
+            .from('likes')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('liked_user_id', params.id)
+            .single();
+          setHasLiked(!!likeData);
+          
+          const { data: favData } = await supabase
+            .from('favorites')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('favorited_user_id', params.id)
+            .single();
+          setHasFavorited(!!favData);
+          
+          const { data: matchData } = await supabase
+            .from('matches')
+            .select('id')
+            .eq('status', 'accepted')
+            .or(`user_id.eq.${user.id},matched_user_id.eq.${user.id}`)
+            .or(`user_id.eq.${params.id},matched_user_id.eq.${params.id}`)
+            .single();
+          setIsMatch(!!matchData);
         }
       }
       setLoading(false);
@@ -65,43 +98,46 @@ export default function ViewProfilePage() {
   const handleLike = async () => {
     if (!user || !profile) return;
     
-    const { error } = await supabase.from('likes').insert({
-      user_id: user.id,
-      liked_user_id: profile.id,
-    });
-
-    if (!error) {
-      await createNotification({
-        userId: profile.id,
-        type: 'like',
-        title: 'Новый лайк!',
-        message: `${user.user_metadata?.full_name || 'Кто-то'} поставил вам лайк`,
-        fromUserId: user.id,
-        fromUserName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Пользователь',
-        link: '/dashboard',
-      });
-    }
+    try {
+      await supabase.from('likes').upsert({
+        user_id: user.id,
+        liked_user_id: profile.id,
+        created_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,liked_user_id' });
+      setHasLiked(true);
+      
+      const { data: mutualLike } = await supabase
+        .from('likes')
+        .select('id')
+        .eq('user_id', profile.id)
+        .eq('liked_user_id', user.id)
+        .single();
+      
+      if (mutualLike) {
+        setIsMatch(true);
+        await supabase.from('matches').upsert({
+          user_id: user.id,
+          matched_user_id: profile.id,
+          status: 'accepted',
+        }, { onConflict: 'user_id,matched_user_id' });
+        alert(`🎉 Это взаимный лайк! Вы можете написать ${profile.full_name}!`);
+      } else {
+        alert(`Лайк отправлен ${profile.full_name}!`);
+      }
+    } catch (e) {}
   };
 
   const handleFavorite = async () => {
     if (!user || !profile) return;
     
-    const { error } = await supabase.from('favorites').insert({
-      user_id: user.id,
-      favorited_user_id: profile.id,
-    });
-
-    if (!error) {
-      await createNotification({
-        userId: profile.id,
-        type: 'favorite',
-        title: 'Добавлены в избранное!',
-        message: `${user.user_metadata?.full_name || 'Кто-то'} добавил вас в избранное`,
-        fromUserId: user.id,
-        fromUserName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Пользователь',
-        link: '/favorites',
-      });
-    }
+    try {
+      await supabase.from('favorites').upsert({
+        user_id: user.id,
+        favorited_user_id: profile.id,
+        created_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,favorited_user_id' });
+      setHasFavorited(true);
+    } catch (e) {}
   };
 
   if (loading) {
@@ -127,9 +163,11 @@ export default function ViewProfilePage() {
     ? new Date().getFullYear() - new Date(profile.birth_date).getFullYear() 
     : null;
 
+  const canViewPhotos = profile.photos_visibility === 'all' || isMatch || profile.photos_visibility === 'none';
+
   return (
     <div className="min-h-screen pt-20 pb-6 px-4">
-      <div className="max-w-md mx-auto space-y-6">
+      <div className="max-w-lg mx-auto space-y-6">
         <button 
           onClick={() => router.back()}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
@@ -138,79 +176,188 @@ export default function ViewProfilePage() {
           Назад
         </button>
 
-        <div className="relative">
-          <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full opacity-30" />
-          <GlassCard className="p-1 rotate-1">
-            <div className="rounded-xl overflow-hidden">
-              <img 
-                src={profile.avatar_url || PlaceHolderImages[0].imageUrl}
-                alt={profile.full_name || 'Фото'}
-                className="w-full aspect-[3/4] object-cover"
-              />
+        <Tabs defaultValue="main" className="w-full">
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="main">Обо мне</TabsTrigger>
+            <TabsTrigger value="photos">Фото</TabsTrigger>
+            <TabsTrigger value="info">Детали</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="main" className="space-y-4 mt-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full opacity-30" />
+              <GlassCard className="p-1">
+                <div className="rounded-xl overflow-hidden">
+                  <img 
+                    src={profile.avatar_url || PlaceHolderImages[0].imageUrl}
+                    alt={profile.full_name || 'Фото'}
+                    className="w-full aspect-[3/4] object-cover"
+                  />
+                </div>
+              </GlassCard>
+              
+              {isMatch && (
+                <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-green-500/80 text-white text-sm font-bold">
+                  Взаимно ✓
+                </div>
+              )}
+              
+              <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-3">
+                <button 
+                  onClick={handleLike}
+                  className={`p-3 rounded-full backdrop-blur-sm text-white transition-colors ${
+                    hasLiked 
+                      ? 'bg-pink-500' 
+                      : 'bg-black/30 hover:bg-pink-500/50'
+                  }`}
+                >
+                  <Heart className={`w-5 h-5 ${hasLiked ? 'fill-white' : ''}`} />
+                </button>
+                <button 
+                  onClick={handleFavorite}
+                  className={`p-3 rounded-full backdrop-blur-sm text-white transition-colors ${
+                    hasFavorited 
+                      ? 'bg-yellow-500' 
+                      : 'bg-black/30 hover:bg-yellow-500/50'
+                  }`}
+                >
+                  <Star className={`w-5 h-5 ${hasFavorited ? 'fill-white' : ''}`} />
+                </button>
+                {isMatch && (
+                  <button 
+                    onClick={() => router.push(`/messages?chat=${profile.id}`)}
+                    className="p-3 rounded-full bg-green-500/80 hover:bg-green-500 text-white"
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
             </div>
-          </GlassCard>
-          
-          <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-4">
-            <button 
-              onClick={handleLike}
-              className="p-4 rounded-full bg-black/30 backdrop-blur-sm hover:bg-pink-500/50 text-white"
-            >
-              <Heart className="w-6 h-6" />
-            </button>
-            <button 
-              onClick={handleFavorite}
-              className="p-4 rounded-full bg-black/30 backdrop-blur-sm hover:bg-yellow-500/50 text-white"
-            >
-              <Star className="w-6 h-6" />
-            </button>
-            <button 
-              onClick={() => router.push(`/messages?chat=${profile.id}`)}
-              className="p-4 rounded-full bg-black/30 backdrop-blur-sm hover:bg-green-500/50 text-white"
-            >
-              <MessageSquare className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
 
-        <GlassCard className="p-6">
-          <h1 className="text-2xl font-bold">
-            {profile.full_name || 'Неизвестно'}{age ? `, ${age}` : ''}
-          </h1>
-          
-          {profile.city && (
-            <p className="text-muted-foreground mt-1">{profile.city}</p>
-          )}
+            <GlassCard className="p-5">
+              <h1 className="text-2xl font-bold">
+                {profile.full_name || 'Неизвестно'}{age ? `, ${age}` : ''}
+                {profile.gender && ` (${profile.gender === 'male' ? 'М' : 'Ж'})`}
+              </h1>
+              
+              {profile.city && (
+                <div className="flex items-center gap-2 text-muted-foreground mt-2">
+                  <MapPin className="w-4 h-4" />
+                  {profile.city}
+                </div>
+              )}
 
-          {profile.bio && (
-            <p className="mt-4">{profile.bio}</p>
-          )}
-        </GlassCard>
+              {profile.bio && (
+                <p className="mt-4 text-sm">{profile.bio}</p>
+              )}
 
-        {profile.traits && profile.traits.length > 0 && (
-          <GlassCard className="p-6">
-            <h3 className="font-bold mb-3">Особенности</h3>
-            <div className="flex flex-wrap gap-2">
-              {profile.traits.map((trait) => (
-                <Badge key={trait} variant="secondary" className="glass">
-                  {trait}
-                </Badge>
-              ))}
-            </div>
-          </GlassCard>
-        )}
+              {profile.looking_for && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <p className="text-sm text-muted-foreground mb-2">Ищу:</p>
+                  <p className="font-medium">{profile.looking_for}</p>
+                </div>
+              )}
+            </GlassCard>
 
-        {profile.hobbies && profile.hobbies.length > 0 && (
-          <GlassCard className="p-6">
-            <h3 className="font-bold mb-3">Интересы</h3>
-            <div className="flex flex-wrap gap-2">
-              {profile.hobbies.map((hobby) => (
-                <Badge key={hobby} variant="outline" className="border-primary/30 text-primary">
-                  {hobby}
-                </Badge>
-              ))}
-            </div>
-          </GlassCard>
-        )}
+            {profile.traits && profile.traits.length > 0 && (
+              <GlassCard className="p-5">
+                <h3 className="font-bold mb-3">Особенности</h3>
+                <div className="flex flex-wrap gap-2">
+                  {profile.traits.map((trait) => (
+                    <Badge key={trait} variant="secondary" className="glass">
+                      {trait}
+                    </Badge>
+                  ))}
+                </div>
+              </GlassCard>
+            )}
+
+            {profile.hobbies && profile.hobbies.length > 0 && (
+              <GlassCard className="p-5">
+                <h3 className="font-bold mb-3">Интересы</h3>
+                <div className="flex flex-wrap gap-2">
+                  {profile.hobbies.map((hobby) => (
+                    <Badge key={hobby} variant="outline" className="border-primary/30 text-primary">
+                      {hobby}
+                    </Badge>
+                  ))}
+                </div>
+              </GlassCard>
+            )}
+          </TabsContent>
+
+          <TabsContent value="photos" className="mt-4">
+            <GlassCard className="p-5">
+              {canViewPhotos && profile.photos && profile.photos.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {profile.photos.map((photo, i) => (
+                    <div key={i} className="aspect-square rounded-lg overflow-hidden">
+                      <img 
+                        src={photo} 
+                        alt={`Фото ${i + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Фото недоступны</p>
+                  {profile.photos_visibility === 'matches' && !isMatch && (
+                    <p className="text-sm mt-2">Фото видны только взаимным лайкам</p>
+                  )}
+                </div>
+              )}
+            </GlassCard>
+          </TabsContent>
+
+          <TabsContent value="info" className="mt-4">
+            <GlassCard className="p-5 space-y-4">
+              {profile.height && (
+                <div className="flex items-center gap-3">
+                  <Ruler className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Рост</p>
+                    <p className="font-medium">{profile.height} см</p>
+                  </div>
+                </div>
+              )}
+              
+              {profile.education && (
+                <div className="flex items-center gap-3">
+                  <GraduationCap className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Образование</p>
+                    <p className="font-medium">{profile.education}</p>
+                  </div>
+                </div>
+              )}
+              
+              {profile.occupation && (
+                <div className="flex items-center gap-3">
+                  <Briefcase className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Работа</p>
+                    <p className="font-medium">{profile.occupation}</p>
+                  </div>
+                </div>
+              )}
+              
+              {profile.talents && profile.talents.length > 0 && (
+                <div className="pt-4 border-t border-white/10">
+                  <p className="text-sm text-muted-foreground mb-2">Таланты</p>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.talents.map((talent) => (
+                      <Badge key={talent} variant="outline" className="border-primary/30 text-primary">
+                        ⭐ {talent}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </GlassCard>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
