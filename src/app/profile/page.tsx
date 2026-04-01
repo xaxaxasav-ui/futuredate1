@@ -559,13 +559,6 @@ useEffect(() => {
   };
   const completion = profileCompletion();
 
-  const stats = {
-    views: stats.views,
-    likes: stats.likes,
-    messages: stats.messages,
-    matches: stats.matches,
-  };
-
   return (
     <div className="min-h-screen relative pt-24 pb-12 px-6">
       
