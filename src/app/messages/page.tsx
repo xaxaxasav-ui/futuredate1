@@ -19,6 +19,7 @@ import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X } from
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 
 interface ChatMessage {
@@ -71,7 +72,7 @@ function checkProhibitedContent(text: string): { isProhibited: boolean; reason: 
   return { isProhibited: false, reason: '' };
 }
 
-export default function MessagesPage() {
+function MessagesContent() {
   const { user, loading: authLoading } = useSupabase();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -436,5 +437,20 @@ export default function MessagesPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Загрузка...</p>
+        </div>
+      </div>
+    }>
+      <MessagesContent />
+    </Suspense>
   );
 }
