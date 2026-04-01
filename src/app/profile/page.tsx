@@ -107,6 +107,34 @@ export default function ProfilePage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showCityDialog, setShowCityDialog] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [stats, setStats] = useState({ views: 0, likes: 0, messages: 0, matches: 0 });
+
+  useEffect(() => {
+    if (user) {
+      fetchStats();
+    }
+  }, [user]);
+
+  const fetchStats = async () => {
+    if (!user) return;
+    
+    try {
+      const [likesCount, viewsCount, favoritesCount] = await Promise.all([
+        supabase.from('likes').select('id', { count: 'exact', head: true }).eq('liked_user_id', user.id),
+        supabase.from('profile_views').select('id', { count: 'exact', head: true }).eq('profile_id', user.id),
+        supabase.from('favorites').select('id', { count: 'exact', head: true }).eq('favorited_user_id', user.id),
+      ]);
+      
+      setStats({
+        views: viewsCount.count || 0,
+        likes: likesCount.count || 0,
+        messages: 0,
+        matches: favoritesCount.count || 0,
+      });
+    } catch (e) {
+      console.error('Error fetching stats:', e);
+    }
+  };
 
   const getReferralCode = () => {
     if (profile?.username) return profile.username;
@@ -517,10 +545,10 @@ useEffect(() => {
   const completion = profileCompletion();
 
   const stats = {
-    views: Math.floor(Math.random() * 500) + 50,
-    likes: Math.floor(Math.random() * 100) + 10,
-    messages: Math.floor(Math.random() * 200) + 20,
-    matches: Math.floor(Math.random() * 20) + 1,
+    views: stats.views,
+    likes: stats.likes,
+    messages: stats.messages,
+    matches: stats.matches,
   };
 
   return (
