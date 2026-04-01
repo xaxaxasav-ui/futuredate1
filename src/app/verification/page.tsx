@@ -303,18 +303,6 @@ export default function VerificationPage() {
               alt="Пример селфи для верификации"
               className="w-full h-full object-cover"
             />
-            {/* Gesture overlay */}
-            <div 
-              className="absolute text-7xl z-20"
-              style={{ 
-                right: '15%',
-                top: '40%',
-                transform: 'rotate(-15deg)',
-                filter: 'drop-shadow(0 8px 16px rgba(0,0,0,.5))'
-              }}
-            >
-              ✌️
-            </div>
             {/* OK badge */}
             <div 
               className="absolute px-3 py-1 rounded-full text-white text-sm font-bold z-30"
