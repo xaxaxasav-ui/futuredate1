@@ -821,6 +821,7 @@ useEffect(() => {
             <Tabs defaultValue="info" className="w-full" style={{ position: 'relative', zIndex: 1 }}>
               <TabsList className="flex w-full overflow-x-auto pb-2 gap-1">
                 <TabsTrigger value="info" className="text-xs px-3 py-2 flex-shrink-0">Обо мне</TabsTrigger>
+                <TabsTrigger value="interests" className="text-xs px-3 py-2 flex-shrink-0">Интересы</TabsTrigger>
                 <TabsTrigger value="details" className="text-xs px-3 py-2 flex-shrink-0">Анкета</TabsTrigger>
                 <TabsTrigger value="ai" className="text-xs px-3 py-2 flex-shrink-0">ИИ</TabsTrigger>
                 <TabsTrigger value="photos" className="text-xs px-3 py-2 flex-shrink-0">Фото</TabsTrigger>
@@ -961,6 +962,128 @@ useEffect(() => {
                           className="glass"
                           rows={6}
                         />
+                      </div>
+                    </div>
+                  )}
+                </GlassCard>
+              </TabsContent>
+
+              <TabsContent value="interests" className="space-y-6 mt-6">
+                <GlassCard className="p-6">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5" /> Интересы и увлечения
+                  </h3>
+                  
+                  {!editing ? (
+                    <div className="space-y-4">
+                      {profile?.hobbies && profile.hobbies.length > 0 ? (
+                        <div>
+                          <Label className="text-muted-foreground mb-2 block">Хобби</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {profile.hobbies.map((hobby, i) => (
+                              <Badge key={i} variant="secondary" className="bg-primary/20 text-primary">
+                                {hobby}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground text-sm">Хобби не указаны</p>
+                      )}
+                      
+                      {profile?.talents && profile.talents.length > 0 && (
+                        <div className="mt-4">
+                          <Label className="text-muted-foreground mb-2 block">Таланты</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {profile.talents.map((talent, i) => (
+                              <Badge key={i} variant="outline" className="border-primary/30 text-primary">
+                                ⭐ {talent}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {profile?.looking_for && (
+                        <div className="mt-4">
+                          <Label className="text-muted-foreground mb-2 block">Ищу</Label>
+                          <p>{profile.looking_for}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div>
+                        <Label className="mb-3 block">Хобби</Label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {HOBBY_OPTIONS.map((hobby) => (
+                            <button
+                              key={hobby.id}
+                              type="button"
+                              onClick={() => {
+                                const current = editData.hobbies || [];
+                                const newHobbies = current.includes(hobby.label)
+                                  ? current.filter(h => h !== hobby.label)
+                                  : [...current, hobby.label];
+                                setEditData({...editData, hobbies: newHobbies});
+                              }}
+                              className={`p-3 rounded-lg border text-sm transition-all ${
+                                (editData.hobbies || []).includes(hobby.label)
+                                  ? 'bg-primary/20 border-primary text-primary'
+                                  : 'border-white/10 hover:border-primary/30'
+                              }`}
+                            >
+                              <hobby.icon className="w-5 h-5 mx-auto mb-1" />
+                              {hobby.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="mb-3 block">Таланты</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {TALENT_OPTIONS.map((talent) => (
+                            <button
+                              key={talent}
+                              type="button"
+                              onClick={() => {
+                                const current = editData.talents || [];
+                                const newTalents = current.includes(talent)
+                                  ? current.filter(t => t !== talent)
+                                  : [...current, talent];
+                                setEditData({...editData, talents: newTalents});
+                              }}
+                              className={`px-3 py-2 rounded-lg border text-sm transition-all ${
+                                (editData.talents || []).includes(talent)
+                                  ? 'bg-primary/20 border-primary text-primary'
+                                  : 'border-white/10 hover:border-primary/30'
+                              }`}
+                            >
+                              {talent}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="mb-2 block">Ищу</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {LOOKING_FOR_OPTIONS.map((option) => (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() => setEditData({...editData, looking_for: option})}
+                              className={`px-3 py-2 rounded-lg border text-sm transition-all ${
+                                editData.looking_for === option
+                                  ? 'bg-primary/20 border-primary text-primary'
+                                  : 'border-white/10 hover:border-primary/30'
+                              }`}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
