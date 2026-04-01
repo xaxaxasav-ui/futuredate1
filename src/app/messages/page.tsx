@@ -148,7 +148,6 @@ function MessagesContent() {
             setActiveChat(loadedChats[0]);
           }
         }
-        }
       } catch (error) {
         console.error("Error loading chats:", error);
       } finally {
