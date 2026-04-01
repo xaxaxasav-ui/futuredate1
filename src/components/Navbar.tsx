@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, MessageSquare, User, Sparkles, LogOut, Sun, Moon, Navigation, Shield, HelpCircle, Bell, Menu, Star, Clock, FileText, Settings, Home } from "lucide-react";
+import { Heart, MessageSquare, User, Sparkles, LogOut, Sun, Moon, Navigation, Shield, HelpCircle, Bell, Menu, ChevronDown, MoreHorizontal, Star, Clock, FileText, Settings, Home } from "lucide-react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useTheme } from "@/components/ThemeProvider";
 import { getUnreadCount } from "@/lib/notifications";
@@ -23,7 +23,7 @@ const MAIN_TABS = [
   { href: "/messages", label: "Сообщения", icon: MessageSquare },
 ];
 
-const MORE_TABS = [
+const MORE_MENU = [
   { href: "/notifications", label: "Уведомления", icon: Bell, badge: true },
   { href: "/favorites", label: "Избранное", icon: Star },
   { href: "/history", label: "История", icon: Clock },
@@ -39,6 +39,7 @@ export function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -52,7 +53,7 @@ export function Navbar() {
 
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
-  const goTo = (href: string) => {
+  const navigate = (href: string) => {
     window.location.href = href;
   };
 
@@ -81,15 +82,65 @@ export function Navbar() {
                   {item.label}
                 </Link>
               ))}
-              <Link
-                href="/settings"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === '/settings' ? 'text-primary' : theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'
-                }`}
-              >
-                <Settings className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
-                <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Настройки</span>
-              </Link>
+              
+              <div className="relative">
+                <button 
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    MORE_MENU.some(n => pathname === n.href) ? 'text-primary' : theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'
+                  }`}
+                  onClick={() => setMoreOpen(!moreOpen)}
+                >
+                  <MoreHorizontal className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+                  <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Ещё</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${moreOpen ? 'rotate-180' : ''} ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+                </button>
+                
+                {moreOpen && (
+                  <div className={`absolute top-full right-0 mt-2 w-60 rounded-xl border overflow-hidden shadow-xl z-[100] ${theme === 'dark' ? 'bg-black border-white/10' : 'bg-white border-black/10'}`}>
+                    <div className="py-2">
+                      {MORE_MENU.map((item) => (
+                        <button
+                          key={item.href}
+                          onClick={() => { setMoreOpen(false); navigate(item.href); }}
+                          className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors w-full ${
+                            theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <item.icon className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+                            <span>{item.label}</span>
+                          </div>
+                          {item.badge && unreadCount > 0 && (
+                            <Badge variant="destructive" className="h-5 px-1.5 text-xs">
+                              {unreadCount > 9 ? '9+' : unreadCount}
+                            </Badge>
+                          )}
+                        </button>
+                      ))}
+                      {isAdmin && (
+                        <button
+                          onClick={() => { setMoreOpen(false); navigate('/admin'); }}
+                          className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-yellow-500 w-full ${
+                            theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                          }`}
+                        >
+                          <Shield className="w-4 h-4" />
+                          Админ-панель
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { handleSignOut(); setMoreOpen(false); }}
+                        className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-red-500 w-full text-left ${
+                          theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                        }`}
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Выйти
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
@@ -104,7 +155,7 @@ export function Navbar() {
               
               {user ? (
                 <>
-                  <button onClick={() => goTo('/notifications')} className={`relative p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'}`}>
+                  <button onClick={() => navigate('/notifications')} className={`relative p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'}`}>
                     <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
                       <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
@@ -112,7 +163,7 @@ export function Navbar() {
                       </Badge>
                     )}
                   </button>
-                  <button onClick={() => goTo('/profile')} className={`p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'}`}>
+                  <button onClick={() => navigate('/profile')} className={`p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'}`}>
                     <User className="w-5 h-5" />
                   </button>
                 </>
@@ -131,52 +182,73 @@ export function Navbar() {
         </div>
       </div>
 
-      <div className={`md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-md border-t z-[65] px-1 py-2 ${theme === 'dark' ? 'bg-black/90 border-white/10' : 'bg-white/90 border-black/10'}`}>
-        <div className="flex items-center justify-between overflow-x-auto">
+      <div className="md:hidden fixed bottom-0 left-0 right-0">
+        <div className={`flex items-center justify-around backdrop-blur-md border-t px-2 py-3 ${theme === 'dark' ? 'bg-black/90 border-white/10' : 'bg-white/90 border-black/10'}`}>
           {MAIN_TABS.map((item) => (
             <button
               key={item.href}
-              onClick={() => goTo(item.href)}
-              className={`flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-xs min-w-[60px] ${
+              onClick={() => navigate(item.href)}
+              className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-xs ${
                 pathname === item.href 
                   ? 'text-primary' 
                   : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}
             >
-              <item.icon className={`w-5 h-5 ${pathname === item.href ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
-              <span className="text-[10px]">{item.label}</span>
-            </button>
-          ))}
-          {MORE_TABS.slice(0, 4).map((item) => (
-            <button
-              key={item.href}
-              onClick={() => goTo(item.href)}
-              className={`flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-xs min-w-[60px] ${
-                pathname === item.href 
-                  ? 'text-primary' 
-                  : theme === 'dark' ? 'text-white' : 'text-gray-900'
-              }`}
-            >
-              {item.badge && unreadCount > 0 && (
-                <Badge variant="destructive" className="absolute top-0 right-0 h-3 w-3 p-0 text-[8px]">
-                </Badge>
-              )}
               <item.icon className={`w-5 h-5 ${pathname === item.href ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
               <span className="text-[10px]">{item.label}</span>
             </button>
           ))}
           <button
-            onClick={() => goTo('/settings')}
-            className={`flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-xs min-w-[60px] ${
-              pathname === '/settings' 
-                ? 'text-primary' 
-                : theme === 'dark' ? 'text-white' : 'text-gray-900'
+            onClick={() => setMoreOpen(!moreOpen)}
+            className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-xs ${
+              moreOpen ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'
             }`}
           >
-            <Settings className={`w-5 h-5 ${pathname === '/settings' ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+            <Menu className={`w-5 h-5 ${moreOpen ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
             <span className="text-[10px]">Ещё</span>
           </button>
         </div>
+
+        {moreOpen && (
+          <div className={`absolute bottom-full left-0 right-0 mb-0 rounded-t-xl border-b overflow-hidden shadow-xl ${
+            theme === 'dark' ? 'bg-black border-white/10' : 'bg-white border-black/10'
+          }`}>
+            <div className="py-3 px-2 grid grid-cols-2 gap-2">
+              {MORE_MENU.map((item) => (
+                <button
+                  key={item.href}
+                  onClick={() => { setMoreOpen(false); navigate(item.href); }}
+                  className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors rounded-lg ${
+                    theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+              {isAdmin && (
+                <button
+                  onClick={() => { setMoreOpen(false); navigate('/admin'); }}
+                  className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors rounded-lg text-yellow-500 ${
+                    theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                  }`}
+                >
+                  <Shield className="w-5 h-5" />
+                  <span>Админ-панель</span>
+                </button>
+              )}
+              <button
+                onClick={() => { handleSignOut(); setMoreOpen(false); }}
+                className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors rounded-lg text-red-500 ${
+                  theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                }`}
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Выйти</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
