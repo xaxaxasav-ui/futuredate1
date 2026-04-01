@@ -305,12 +305,12 @@ export default function VerificationPage() {
             />
             {/* Gesture overlay */}
             <div 
-              className="absolute text-5xl z-20"
+              className="absolute text-7xl z-20"
               style={{ 
-                right: '8%',
-                top: '35%',
-                transform: 'rotate(-8deg)',
-                filter: 'drop-shadow(0 8px 16px rgba(0,0,0,.3))'
+                right: '15%',
+                top: '40%',
+                transform: 'rotate(-15deg)',
+                filter: 'drop-shadow(0 8px 16px rgba(0,0,0,.5))'
               }}
             >
               ✌️
