@@ -122,14 +122,18 @@ export default function ProfilePage() {
       let likes = 0, views = 0, matches = 0;
       
       const likesResult = await supabase.from('likes').select('id', { count: 'exact', head: true }).eq('liked_user_id', user.id);
+      console.log('Likes query result:', likesResult);
       if (!likesResult.error && likesResult.count !== null) likes = likesResult.count;
       
       const viewsResult = await supabase.from('profile_views').select('id', { count: 'exact', head: true }).eq('profile_id', user.id);
+      console.log('Views query result:', viewsResult);
       if (!viewsResult.error && viewsResult.count !== null) views = viewsResult.count;
       
       const matchesResult = await supabase.from('favorites').select('id', { count: 'exact', head: true }).eq('favorited_user_id', user.id);
+      console.log('Matches query result:', matchesResult);
       if (!matchesResult.error && matchesResult.count !== null) matches = matchesResult.count;
       
+      console.log('Setting stats:', { views, likes, messages: 0, matches });
       setStats({
         views: views,
         likes: likes,
