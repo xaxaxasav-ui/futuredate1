@@ -6,7 +6,8 @@ import { GlassCard } from "@/components/GlassCard";
 import { Video, Mic, MicOff, VideoOff, PhoneOff, Sparkles, MessageCircle, Volume2, Loader2 } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/SupabaseProvider";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createNotification } from "@/lib/notifications";
 
 const ICEBREAKERS = [
   "Что бы ты взяла с собой на обитаемую станцию?",
@@ -19,6 +20,8 @@ const ICEBREAKERS = [
 export default function VideoDatePage() {
   const { user, loading: authLoading } = useSupabase();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const partnerId = searchParams?.get('user');
   
   const [icebreaker, setIcebreaker] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -107,8 +110,21 @@ export default function VideoDatePage() {
     }, 1000);
   };
 
-  const startCall = () => {
+  const startCall = async () => {
     setCallStarted(true);
+    
+    if (partnerId && user) {
+      createNotification({
+        userId: partnerId,
+        type: 'message',
+        title: 'Видеосвидание началось! 🎥',
+        message: `${user.user_metadata?.full_name || 'Пользователь'} приглашает вас на видеосвидание!`,
+        fromUserId: user.id,
+        fromUserName: user.user_metadata?.full_name || 'Пользователь',
+        fromUserAvatar: user.user_metadata?.avatar_url || undefined,
+        link: '/date'
+      });
+    }
   };
 
   const endCall = () => {

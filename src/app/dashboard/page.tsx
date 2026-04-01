@@ -140,11 +140,23 @@ export default function DashboardPage() {
     router.push(`/messages?chat=${profile.id}`);
   };
 
-  const handleDate = (profile: Profile) => {
+  const handleDate = async (profile: Profile) => {
     if (!canInteract(profile.id)) {
       alert(`🎥 Чтобы пригласить ${profile.full_name} на свидание, нужно чтобы это был взаимный лайк!\n\nКак это работает:\n1. Поставьте лайк понравившемуся пользователю\n2. Если этот пользователь тоже поставит вам лайк - это взаимность!\n3. После взаимного лайка вы можете написать или пригласить на свидание\n\nВзаимные лайки = ваша пара!`);
       return;
     }
+    
+    createNotification({
+      userId: profile.id,
+      type: 'message',
+      title: 'Приглашение на свидание! 🎥',
+      message: `${user?.user_metadata?.full_name || 'Пользователь'} приглашает вас на видеосвидание!`,
+      fromUserId: user?.id,
+      fromUserName: user?.user_metadata?.full_name || 'Пользователь',
+      fromUserAvatar: user?.user_metadata?.avatar_url || undefined,
+      link: `/date?user=${user?.id}`
+    });
+    
     router.push(`/date?user=${profile.id}`);
   };
 
