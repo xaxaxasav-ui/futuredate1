@@ -89,7 +89,7 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .limit(1);
       
       if (error) {
         console.warn('Profile fetch error:', error.code, error.message);
@@ -101,8 +101,21 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
           console.error('Table profiles does not exist!');
           return;
         }
+        if (error.code === '406') {
+          console.log('RLS blocking - trying without single()');
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId);
+          if (profiles && profiles.length > 0) {
+            setProfile(profiles[0]);
+          }
+          return;
+        }
       }
-      setProfile(data);
+      if (data && data.length > 0) {
+        setProfile(data[0]);
+      }
     } catch (err: any) {
       console.warn('Fetch profile exception:', err?.message || err);
     }

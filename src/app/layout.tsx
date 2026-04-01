@@ -46,7 +46,6 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="font-body antialiased bg-background text-foreground overflow-x-hidden flex flex-col min-h-screen">
-        {/* <ServiceWorkerRegistration /> */}
         <ThemeProvider>
           <SupabaseProvider>
             <Navbar />

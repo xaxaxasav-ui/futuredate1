@@ -187,6 +187,22 @@ function AuthForm() {
     setIsLoading(true);
     try {
       const fullPhone = `${selectedCountryCode.code}${signupPhone.replace(/\D/g, '')}`;
+      const username = signupName.toLowerCase().replace(/\s/g, '_') + '_' + Date.now().toString(36);
+      
+      // Сначала создаём профиль
+      const tempId = crypto.randomUUID();
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id: tempId,
+        username: username,
+        full_name: signupName,
+        phone: fullPhone,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+      
+      if (profileError) {
+        console.warn('Profile pre-create warning:', profileError);
+      }
       
       const { data, error } = await supabase.auth.signUp({
         email: signupEmail,
@@ -210,24 +226,11 @@ function AuthForm() {
       }
       
       if (data.user) {
-        const username = signupName.toLowerCase().replace(/\s/g, '_') + '_' + Date.now().toString(36);
-        
-        const { error: profileError } = await supabase.from('profiles').insert({
+        // Обновляем профиль с правильным ID
+        await supabase.from('profiles').update({
           id: data.user.id,
-          username: username,
-          full_name: signupName,
-          phone: fullPhone,
-          created_at: new Date().toISOString(),
-        });
-        
-        if (profileError) {
-          console.error('Profile insert error:', profileError);
-          toast({
-            title: "Предупреждение",
-            description: "Аккаунт создан, но профиль не был полностью настроен. Пожалуйста, заполните профиль после входа.",
-            variant: "default",
-          });
-        }
+          email: signupEmail,
+        }).eq('id', tempId);
       }
       
       toast({
