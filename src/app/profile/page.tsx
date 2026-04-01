@@ -116,7 +116,12 @@ export default function ProfilePage() {
   }, [user]);
 
   const fetchStats = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user, skipping stats fetch');
+      return;
+    }
+    
+    console.log('Fetching stats for user:', user.id);
     
     try {
       let likes = 0, views = 0, matches = 0;
