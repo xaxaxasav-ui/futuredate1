@@ -50,7 +50,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8 relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass border-primary/20 text-xs font-semibold text-primary uppercase tracking-widest animate-pulse">
-              <Sparkles className="w-3 h-3" /> На базе современных технологий
+              <Sparkles className="w-3 h-3" /> На базе искусственного интеллекта
             </div>
             <h1 className="text-6xl md:text-8xl font-bold leading-[0.9] text-glow font-headline">
               Знакомства <br />
