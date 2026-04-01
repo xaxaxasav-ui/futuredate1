@@ -69,6 +69,13 @@ export default function DashboardPage() {
         if (!matches.includes(profile.id)) {
           setMatches(prev => [...prev, profile.id]);
         }
+        
+        await supabase.from('matches').upsert({
+          user_id: user.id,
+          matched_user_id: profile.id,
+          status: 'accepted',
+        }, { onConflict: 'user_id,matched_user_id' });
+        
         alert(`🎉 Это взаимный лайк! Вы можете написать ${profile.full_name}!`);
       } else {
         alert(`Лайк отправлен ${profile.full_name}!`);

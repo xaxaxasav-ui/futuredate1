@@ -111,24 +111,37 @@ function MessagesContent() {
         return;
       }
       try {
-        const { data: matches } = await supabase
+        const { data: matches, error } = await supabase
           .from('matches')
-          .select(`
-            id,
-            matched_profile:profiles!matches_matched_user_id_fkey(id, username, full_name, avatar_url)
-          `)
+          .select('*')
           .or(`user_id.eq.${user.id},matched_user_id.eq.${user.id}`)
           .eq('status', 'accepted');
 
+        if (error) {
+          console.error("Error loading matches:", error);
+        }
+
         if (matches && matches.length > 0) {
-          const loadedChats: Chat[] = matches.map((m: any) => ({
-            id: m.id,
-            name: m.matched_profile?.full_name || m.matched_profile?.username || 'Неизвестно',
-            lastMsg: 'Новые сообщения',
-            time: 'Сейчас',
-            avatar: m.matched_profile?.avatar_url || PlaceHolderImages[0].imageUrl,
-            online: Math.random() > 0.5
-          }));
+          const loadedChats: Chat[] = await Promise.all(
+            matches.map(async (m: any) => {
+              const otherUserId = m.user_id === user.id ? m.matched_user_id : m.user_id;
+              
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('username, full_name, avatar_url')
+                .eq('id', otherUserId)
+                .single();
+
+              return {
+                id: m.id,
+                name: profile?.full_name || profile?.username || 'Неизвестно',
+                lastMsg: 'Новые сообщения',
+                time: 'Сейчас',
+                avatar: profile?.avatar_url || PlaceHolderImages[0].imageUrl,
+                online: Math.random() > 0.5
+              };
+            })
+          );
           setChats(loadedChats);
           if (loadedChats.length > 0) {
             setActiveChat(loadedChats[0]);
