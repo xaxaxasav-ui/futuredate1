@@ -1,35 +1,9 @@
 "use client";
 
 import { GlassCard } from "@/components/GlassCard";
-import { Star, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Star } from "lucide-react";
 
 export default function FavoritesPage() {
-  const router = useRouter();
-  const [ready, setReady] = useState(false);
-  const [userChecked, setUserChecked] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setReady(true);
-      const hasSession = localStorage.getItem('sb-local');
-      if (!hasSession) {
-        router.push("/auth");
-      }
-      setUserChecked(true);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [router]);
-
-  if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen pt-20 pb-6 px-6">
       <div className="max-w-4xl mx-auto">

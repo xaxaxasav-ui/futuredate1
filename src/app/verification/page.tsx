@@ -14,7 +14,7 @@ export default function VerificationPage() {
   const { user, profile, loading: authLoading, refreshProfile } = useSupabase();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showContent, setShowContent] = useState(false);
+  const [showContent, setShowContent] = useState(true);
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [currentUrl, setCurrentUrl] = useState<string>("");
@@ -23,16 +23,11 @@ export default function VerificationPage() {
   const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!authLoading) {
-      setShowContent(true);
-    }
     if (!authLoading && !user) {
       router.push("/auth");
+    }
+    if (!authLoading) {
+      setShowContent(true);
     }
   }, [authLoading, user, router]);
 

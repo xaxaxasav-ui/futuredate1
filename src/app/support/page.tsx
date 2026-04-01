@@ -51,7 +51,7 @@ export default function SupportPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [showContent, setShowContent] = useState(false);
+  const [showContent, setShowContent] = useState(true);
   const [formData, setFormData] = useState({
     subject: "",
     message: ""
@@ -60,18 +60,11 @@ export default function SupportPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!authLoading) {
-      setShowContent(true);
-    }
     if (!authLoading && user) {
       fetchTickets();
     } else if (!authLoading && !user) {
       setLoading(false);
+      setShowContent(true);
     }
   }, [authLoading, user]);
 

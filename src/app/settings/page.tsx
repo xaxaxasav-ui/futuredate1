@@ -12,29 +12,26 @@ export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
-  const [ready, setReady] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setReady(true);
-      checkUser();
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const checkUser = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-      } else {
+    const checkUser = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+        } else {
+          router.push("/auth");
+        }
+      } catch (e) {
         router.push("/auth");
+      } finally {
+        setChecking(false);
       }
-    } catch (e) {
-      router.push("/auth");
-    }
-  };
+    };
+    checkUser();
+  }, [router]);
 
   const handleDeleteAccount = async () => {
     if (!confirm("Вы уверены, что хотите удалить аккаунт? Это действие необратимо.") || !user) return;
@@ -52,7 +49,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (!ready) {
+  if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

@@ -1,27 +1,9 @@
 "use client";
 
 import { GlassCard } from "@/components/GlassCard";
-import { Clock, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Clock } from "lucide-react";
 
 export default function HistoryPage() {
-  const router = useRouter();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setReady(true), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen pt-20 pb-6 px-6">
       <div className="max-w-4xl mx-auto">

@@ -79,11 +79,6 @@ export default function AdminPage() {
   const [debugInfo, setDebugInfo] = useState<string>("");
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     if (!authLoading) {
       setShowContent(true);
       if (!user) {

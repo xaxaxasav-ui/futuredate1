@@ -59,16 +59,11 @@ export default function VectorsPage() {
   });
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     if (!authLoading) {
       setShowContent(true);
-    }
-    if (!authLoading && !user) {
-      router.push("/auth");
+      if (!user) {
+        router.push("/auth");
+      }
     }
   }, [authLoading, user, router]);
 

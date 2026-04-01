@@ -30,30 +30,27 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const [ready, setReady] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setReady(true);
-      checkUser();
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const checkUser = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        fetchNotifications(session.user.id);
-      } else {
+    const checkUser = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          fetchNotifications(session.user.id);
+        } else {
+          router.push("/auth");
+        }
+      } catch (e) {
         router.push("/auth");
+      } finally {
+        setChecking(false);
       }
-    } catch (e) {
-      router.push("/auth");
-    }
-  };
+    };
+    checkUser();
+  }, [router]);
 
   const fetchNotifications = async (userId: string) => {
     try {
@@ -74,7 +71,7 @@ export default function NotificationsPage() {
     }
   };
 
-  if (!ready) {
+  if (checking) {
     return (
       <div className="min-h-screen relative pt-24 pb-6 px-6 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

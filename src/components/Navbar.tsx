@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, MessageSquare, User, Sparkles, LogOut, Sun, Moon, Navigation, Shield, HelpCircle, Bell, Menu, ChevronDown, MoreHorizontal, Star, Clock, FileText, Settings, Home } from "lucide-react";
+import { Heart, MessageSquare, User, Sparkles, LogOut, Sun, Moon, Navigation, Shield, HelpCircle, Bell, Menu, Star, Clock, FileText, Settings, Home } from "lucide-react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useTheme } from "@/components/ThemeProvider";
 import { getUnreadCount } from "@/lib/notifications";
@@ -23,7 +23,7 @@ const MAIN_TABS = [
   { href: "/messages", label: "Сообщения", icon: MessageSquare },
 ];
 
-const MORE_MENU = [
+const MORE_TABS = [
   { href: "/notifications", label: "Уведомления", icon: Bell, badge: true },
   { href: "/favorites", label: "Избранное", icon: Star },
   { href: "/history", label: "История", icon: Clock },
@@ -39,8 +39,6 @@ export function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -48,21 +46,15 @@ export function Navbar() {
     }
   }, [user]);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
-        setMoreOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleSignOut = async () => {
     await signOut();
   };
 
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+
+  const goTo = (href: string) => {
+    window.location.href = href;
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50">
@@ -74,7 +66,7 @@ export function Navbar() {
               <span className="font-headline font-bold text-lg hidden sm:inline">Свидание AI</span>
             </Link>
 
-              <div className="hidden md:flex items-center gap-1">
+            <div className="hidden md:flex items-center gap-1">
               {MAIN_TABS.map((item) => (
                 <Link
                   key={item.href}
@@ -89,67 +81,15 @@ export function Navbar() {
                   {item.label}
                 </Link>
               ))}
-              
-              <div className="relative" ref={moreRef}>
-                <button 
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    MORE_MENU.some(n => pathname === n.href) ? 'text-primary' : theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'
-                  }`}
-                  onClick={() => setMoreOpen(!moreOpen)}
-                >
-                  <MoreHorizontal className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
-                  <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Ещё</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${moreOpen ? 'rotate-180' : ''} ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
-                </button>
-                
-                {moreOpen && (
-                  <div className={`absolute top-full right-0 mt-2 w-60 rounded-xl border overflow-hidden shadow-xl z-[100] ${theme === 'dark' ? 'bg-black border-white/10' : 'bg-white border-black/10'}`}>
-                    <div className="py-2">
-                      {MORE_MENU.map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
-                            theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'
-                          }`}
-                          onClick={() => setMoreOpen(false)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <item.icon className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
-                            <span>{item.label}</span>
-                          </div>
-                          {item.badge && unreadCount > 0 && (
-                            <Badge variant="destructive" className="h-5 px-1.5 text-xs">
-                              {unreadCount > 9 ? '9+' : unreadCount}
-                            </Badge>
-                          )}
-                        </Link>
-                      ))}
-                      {isAdmin && (
-                        <Link
-                          href="/admin"
-                          className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-yellow-500 ${
-                            theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                          }`}
-                          onClick={() => setMoreOpen(false)}
-                        >
-                          <Shield className="w-4 h-4" />
-                          Админ-панель
-                        </Link>
-                      )}
-                      <button
-                        onClick={() => { handleSignOut(); setMoreOpen(false); }}
-                        className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-red-500 w-full text-left ${
-                          theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                        }`}
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Выйти
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <Link
+                href="/settings"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  pathname === '/settings' ? 'text-primary' : theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'
+                }`}
+              >
+                <Settings className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+                <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Настройки</span>
+              </Link>
             </div>
 
             <div className="flex items-center gap-2">
@@ -164,17 +104,17 @@ export function Navbar() {
               
               {user ? (
                 <>
-                  <Link href="/notifications" className={`relative p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'}`}>
+                  <button onClick={() => goTo('/notifications')} className={`relative p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'}`}>
                     <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
                       <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </Badge>
                     )}
-                  </Link>
-                  <Link href="/profile" className={`p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'}`}>
+                  </button>
+                  <button onClick={() => goTo('/profile')} className={`p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'}`}>
                     <User className="w-5 h-5" />
-                  </Link>
+                  </button>
                 </>
               ) : (
                 <>
@@ -191,81 +131,51 @@ export function Navbar() {
         </div>
       </div>
 
-      <div className={`md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-md border-t z-[65] px-2 py-2 ${theme === 'dark' ? 'bg-black/90 border-white/10' : 'bg-white/90 border-black/10'}`}>
-        <div className="flex items-center justify-around">
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-md border-t z-[65] px-1 py-2 ${theme === 'dark' ? 'bg-black/90 border-white/10' : 'bg-white/90 border-black/10'}`}>
+        <div className="flex items-center justify-between overflow-x-auto">
           {MAIN_TABS.map((item) => (
-            <Link
+            <button
               key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs ${
+              onClick={() => goTo(item.href)}
+              className={`flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-xs min-w-[60px] ${
                 pathname === item.href 
                   ? 'text-primary' 
                   : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}
             >
               <item.icon className={`w-5 h-5 ${pathname === item.href ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
-              {item.label}
-            </Link>
-          ))}
-          <div className="relative">
-            <button 
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-xs active:bg-primary/30 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-              onClick={() => { console.log('Menu clicked!'); setMoreOpen(!moreOpen); }}
-              type="button"
-              aria-label="Открыть меню"
-              style={{ touchAction: 'manipulation' }}
-            >
-              <Menu className={`w-7 h-7 ${moreOpen ? 'text-primary' : ''}`} />
-              <span>Ещё</span>
+              <span className="text-[10px]">{item.label}</span>
             </button>
-            {moreOpen && (
-              <div className={`absolute bottom-full right-0 mb-2 w-64 rounded-xl border-2 border-primary overflow-hidden shadow-2xl z-[1000] ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
-                <div className="py-2">
-                  {MORE_MENU.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center justify-between px-4 py-3 text-sm transition-colors ${
-                        theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'
-                      }`}
-                      onClick={() => setMoreOpen(false)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <item.icon className="w-5 h-5" />
-                        <span>{item.label}</span>
-                      </div>
-                      {item.badge && unreadCount > 0 && (
-                        <Badge variant="destructive" className="h-5 px-1.5 text-xs">
-                          {unreadCount > 9 ? '9+' : unreadCount}
-                        </Badge>
-                      )}
-                    </Link>
-                  ))}
-                  {isAdmin && (
-                    <Link
-                      href="/admin"
-                      className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors text-yellow-500 ${
-                        theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                      }`}
-                      onClick={() => setMoreOpen(false)}
-                    >
-                      <Shield className="w-5 h-5" />
-                      Админ-панель
-                    </Link>
-                  )}
-                  <button
-                    onClick={() => { handleSignOut(); setMoreOpen(false); }}
-                    className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors text-red-500 w-full text-left ${
-                      theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    <LogOut className="w-5 h-5" />
-                    Выйти
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          ))}
+          {MORE_TABS.slice(0, 4).map((item) => (
+            <button
+              key={item.href}
+              onClick={() => goTo(item.href)}
+              className={`flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-xs min-w-[60px] ${
+                pathname === item.href 
+                  ? 'text-primary' 
+                  : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}
+            >
+              {item.badge && unreadCount > 0 && (
+                <Badge variant="destructive" className="absolute top-0 right-0 h-3 w-3 p-0 text-[8px]">
+                </Badge>
+              )}
+              <item.icon className={`w-5 h-5 ${pathname === item.href ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+              <span className="text-[10px]">{item.label}</span>
+            </button>
+          ))}
+          <button
+            onClick={() => goTo('/settings')}
+            className={`flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-xs min-w-[60px] ${
+              pathname === '/settings' 
+                ? 'text-primary' 
+                : theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}
+          >
+            <Settings className={`w-5 h-5 ${pathname === '/settings' ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+            <span className="text-[10px]">Ещё</span>
+          </button>
         </div>
       </div>
     </nav>
