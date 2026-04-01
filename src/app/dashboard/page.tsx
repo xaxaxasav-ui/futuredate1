@@ -168,6 +168,49 @@ export default function DashboardPage() {
   }, [authLoading, user, router]);
 
   useEffect(() => {
+    const loadUserData = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: userLikes } = await supabase
+          .from('likes')
+          .select('liked_user_id')
+          .eq('user_id', user.id);
+        
+        if (userLikes) {
+          setLikes(userLikes.map(l => l.liked_user_id));
+        }
+        
+        const { data: userFavorites } = await supabase
+          .from('favorites')
+          .select('favorited_user_id')
+          .eq('user_id', user.id);
+        
+        if (userFavorites) {
+          setFavorites(userFavorites.map(f => f.favorited_user_id));
+        }
+        
+        const { data: userMatches } = await supabase
+          .from('matches')
+          .select('matched_user_id, user_id')
+          .eq('status', 'accepted')
+          .or(`user_id.eq.${user.id},matched_user_id.eq.${user.id}`);
+        
+        if (userMatches) {
+          const matchIds = userMatches.map(m => 
+            m.user_id === user.id ? m.matched_user_id : m.user_id
+          );
+          setMatches(matchIds);
+        }
+      } catch (e) {
+        console.error('Error loading user data:', e);
+      }
+    };
+    
+    loadUserData();
+  }, [user]);
+
+  useEffect(() => {
     const loadProfiles = async () => {
       if (!user) return;
       try {
