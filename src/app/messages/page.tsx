@@ -111,17 +111,25 @@ function MessagesContent() {
         return;
       }
       try {
+        console.log('Loading chats for user:', user.id);
+        
         const { data: matches, error } = await supabase
           .from('matches')
           .select('*')
           .or(`user_id.eq.${user.id},matched_user_id.eq.${user.id}`)
           .eq('status', 'accepted');
 
+        console.log('Matches response:', { matches, error });
+
         if (error) {
           console.error("Error loading matches:", error);
+          setChats([]);
+          setLoadingChats(false);
+          return;
         }
 
         if (matches && matches.length > 0) {
+          console.log('Found matches:', matches.length);
           const loadedChats: Chat[] = [];
           
           for (const m of matches) {
@@ -147,9 +155,13 @@ function MessagesContent() {
           if (loadedChats.length > 0) {
             setActiveChat(loadedChats[0]);
           }
+        } else {
+          console.log('No matches found');
+          setChats([]);
         }
       } catch (error) {
         console.error("Error loading chats:", error);
+        setChats([]);
       } finally {
         setLoadingChats(false);
       }

@@ -58,13 +58,15 @@ export default function DashboardPage() {
           .select('id')
           .eq('user_id', profile.id)
           .eq('liked_user_id', user.id)
-          .single();
+          .maybeSingle();
         
         if (mutualLike) {
+          console.log('Mutual like detected! Creating match...');
           if (!matches.includes(profile.id)) {
             setMatches(prev => [...prev, profile.id]);
           }
-          // Создаём match
+          
+          // Создаём match для обоих пользователей
           try {
             await supabase.from('matches').upsert({
               user_id: user.id,
@@ -72,13 +74,17 @@ export default function DashboardPage() {
               status: 'accepted',
               created_at: new Date().toISOString(),
             }, { onConflict: 'user_id,matched_user_id' });
-          } catch (e) {}
-          
+            console.log('Match created successfully');
+          } catch (e) {
+            console.error('Match create error:', e);
+          }
+           
           alert(`🎉 Это взаимный лайк! Вы можете написать ${profile.full_name}!`);
         } else {
           alert(`Лайк отправлен ${profile.full_name}!`);
         }
       } catch (e) {
+        console.error('Like check error:', e);
         alert(`Лайк отправлен ${profile.full_name}!`);
       }
     }
