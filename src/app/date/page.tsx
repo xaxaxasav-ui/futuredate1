@@ -8,20 +8,14 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createNotification } from "@/lib/notifications";
+import { Suspense } from "react";
 
-const ICEBREAKERS = [
-  "Что бы ты взяла с собой на обитаемую станцию?",
-  "Если бы ты могла создать новый вид искусства, какой бы он был?",
-  "Какой момент из будущего ты хотела бы пережить?",
-  "О чем ты мечтаешь, глядя на звезды?",
-  "Если бы мы оказались в виртуальной реальности, куда бы отправились?",
-];
-
-export default function VideoDatePage() {
+function VideoDateContent() {
   const { user, loading: authLoading } = useSupabase();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const partnerId = searchParams?.get('user');
+  
+  const [partnerId, setPartnerId] = useState<string | null>(null);
   
   const [icebreaker, setIcebreaker] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -42,6 +36,12 @@ export default function VideoDatePage() {
       router.push("/auth");
     }
   }, [authLoading, user, router]);
+
+  useEffect(() => {
+    if (searchParams) {
+      setPartnerId(searchParams.get('user'));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (callStarted) {
@@ -290,5 +290,17 @@ export default function VideoDatePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function VideoDatePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    }>
+      <VideoDateContent />
+    </Suspense>
   );
 }
