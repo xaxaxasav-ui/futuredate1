@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, MessageSquare, User, Sparkles, LogOut, Sun, Moon, Navigation, Shield, HelpCircle, Bell, Menu, ChevronDown, MoreHorizontal, Star, Clock, FileText, Settings, Home } from "lucide-react";
+import { Heart, MessageSquare, User, Sparkles, LogOut, Sun, Moon, Navigation, Shield, HelpCircle, Bell, Menu, ChevronDown, MoreHorizontal, Star, Clock, FileText, Settings, Home, Download } from "lucide-react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useTheme } from "@/components/ThemeProvider";
 import { getUnreadCount } from "@/lib/notifications";
@@ -30,6 +30,7 @@ const MORE_MENU = [
   { href: "/assessment", label: "ИИ Лаборатория", icon: Sparkles },
   { href: "/support", label: "Поддержка", icon: HelpCircle },
   { href: "/verification", label: "Верификация", icon: FileText },
+  { href: "/install", label: "Установить", icon: Download },
   { href: "/profile", label: "Профиль", icon: User },
   { href: "/settings", label: "Настройки", icon: Settings },
 ];
