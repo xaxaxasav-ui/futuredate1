@@ -6,7 +6,8 @@ import { GlassCard } from "@/components/GlassCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Heart, Star, MessageSquare, ArrowLeft, MapPin, Calendar, Ruler, GraduationCap, Briefcase, Mail, Phone } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Loader2, Heart, Star, MessageSquare, ArrowLeft, MapPin, Calendar, Ruler, GraduationCap, Briefcase, Mail, Phone, X, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
@@ -33,6 +34,14 @@ interface ProfileData {
   occupation: string | null;
 }
 
+interface AssessmentResult {
+  completedAt: string;
+  personalityType: string;
+  strengths?: string[];
+  idealPartner?: string;
+  datingStyle?: string;
+}
+
 export default function ViewProfilePage() {
   const params = useParams();
   const router = useRouter();
@@ -42,6 +51,8 @@ export default function ViewProfilePage() {
   const [isMatch, setIsMatch] = useState(false);
   const [hasLiked, setHasLiked] = useState(false);
   const [hasFavorited, setHasFavorited] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -56,6 +67,17 @@ export default function ViewProfilePage() {
       if (!error && data) {
         const cleanBio = data.bio ? data.bio.replace(/🎯?ИИ_АНАЛИЗ_START.+?ИИ_АНАЛИЗ_END/g, '').trim() : null;
         setProfile({ ...data, bio: cleanBio });
+        
+        if (data.bio && data.bio.includes('ИИ_АНАЛИЗ_START')) {
+          try {
+            const match = data.bio.match(/ИИ_АНАЛИЗ_START(\{.*?\})ИИ_АНАЛИЗ_END/);
+            if (match) {
+              setAssessment(JSON.parse(match[1]));
+            }
+          } catch (e) {
+            console.error('Error parsing assessment:', e);
+          }
+        }
         
         if (user && user.id !== params.id) {
           await supabase.from('profile_views').insert({
@@ -291,7 +313,11 @@ export default function ViewProfilePage() {
               {canViewPhotos && profile.photos && profile.photos.length > 0 ? (
                 <div className="grid grid-cols-2 gap-2">
                   {profile.photos.map((photo, i) => (
-                    <div key={i} className="aspect-square rounded-lg overflow-hidden">
+                    <div 
+                      key={i} 
+                      className="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => setSelectedPhoto(photo)}
+                    >
                       <img 
                         src={photo} 
                         alt={`Фото ${i + 1}`}
@@ -358,7 +384,74 @@ export default function ViewProfilePage() {
             </GlassCard>
           </TabsContent>
         </Tabs>
+
+        {assessment && (
+          <GlassCard className="p-5 border-primary/30">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h3 className="font-bold">ИИ Анализ личности</h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Тип личности</span>
+                <Badge className="bg-primary/20 text-primary">{assessment.personalityType}</Badge>
+              </div>
+              
+              {assessment.strengths && assessment.strengths.length > 0 && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Сильные стороны</p>
+                  <div className="flex flex-wrap gap-1">
+                    {assessment.strengths.slice(0, 5).map((s, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs">{s}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {assessment.idealPartner && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Идеальный партнёр</p>
+                  <p className="text-sm">{assessment.idealPartner}</p>
+                </div>
+              )}
+              
+              {assessment.datingStyle && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Стиль свиданий</p>
+                  <p className="text-sm">{assessment.datingStyle}</p>
+                </div>
+              )}
+              
+              {assessment.completedAt && (
+                <p className="text-xs text-muted-foreground">
+                  Тест пройден: {new Date(assessment.completedAt).toLocaleDateString('ru-RU')}
+                </p>
+              )}
+            </div>
+          </GlassCard>
+        )}
       </div>
+
+      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
+        <DialogContent className="max-w-4xl p-0 bg-transparent border-none">
+          <div className="relative">
+            <button 
+              onClick={() => setSelectedPhoto(null)}
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            {selectedPhoto && (
+              <img 
+                src={selectedPhoto} 
+                alt="Фото"
+                className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
