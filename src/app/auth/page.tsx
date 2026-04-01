@@ -192,13 +192,22 @@ function AuthForm() {
         email: signupEmail,
         password: signupPassword,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: { 
             name: signupName,
             phone: fullPhone,
           },
         },
       });
-      if (error) throw error;
+      if (error) {
+        console.error('Sign up error:', error);
+        toast({
+          title: "Ошибка регистрации",
+          description: error.message || "Попробуйте позже",
+          variant: "destructive",
+        });
+        return;
+      }
       
       if (data.user) {
         const username = signupName.toLowerCase().replace(/\s/g, '_') + '_' + Date.now().toString(36);
