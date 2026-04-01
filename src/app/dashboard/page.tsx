@@ -344,7 +344,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
 
-                <p className="text-sm text-muted-foreground line-clamp-2">{profile.bio || 'Нет описания'}</p>
+                <p className="text-sm text-muted-foreground line-clamp-2">{profile.bio ? profile.bio.replace(/🎯?ИИ_АНАЛИЗ_START.+?ИИ_АНАЛИЗ_END/g, '').trim() || 'Нет описания' : 'Нет описания'}</p>
 
                 <div className="pt-4 grid grid-cols-2 gap-4">
                   <Button 
