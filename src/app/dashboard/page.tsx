@@ -52,7 +52,6 @@ export default function DashboardPage() {
         }, { onConflict: 'user_id,liked_user_id' });
         
         // Отправляем уведомление о лайке
-        console.log('Creating like notification for:', profile.id);
         createNotification({
           userId: profile.id,
           type: 'like',
@@ -63,7 +62,6 @@ export default function DashboardPage() {
           fromUserAvatar: user.user_metadata?.avatar_url || undefined,
           link: `/profile/${user.id}`
         });
-        console.log('Like notification created');
       } catch (e) {}
       
       // Проверяем взаимный лайк
