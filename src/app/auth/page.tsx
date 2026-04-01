@@ -186,35 +186,13 @@ function AuthForm() {
 
     setIsLoading(true);
     try {
-      const fullPhone = `${selectedCountryCode.code}${signupPhone.replace(/\D/g, '')}`;
-      const username = signupName.toLowerCase().replace(/\s/g, '_') + '_' + Date.now().toString(36);
-      
-      // Сначала создаём профиль
-      const tempId = crypto.randomUUID();
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id: tempId,
-        username: username,
-        full_name: signupName,
-        phone: fullPhone,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
-      
-      if (profileError) {
-        console.warn('Profile pre-create warning:', profileError);
-      }
+      setIsLoading(true);
       
       const { data, error } = await supabase.auth.signUp({
         email: signupEmail,
         password: signupPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { 
-            name: signupName,
-            phone: fullPhone,
-          },
-        },
       });
+      
       if (error) {
         console.error('Sign up error:', error);
         toast({
@@ -226,23 +204,25 @@ function AuthForm() {
       }
       
       if (data.user) {
-        // Обновляем профиль с правильным ID
-        await supabase.from('profiles').update({
+        const username = signupName.toLowerCase().replace(/\s/g, '_') + '_' + data.user.id.slice(0, 8);
+        
+        await supabase.from('profiles').insert({
           id: data.user.id,
-          email: signupEmail,
-        }).eq('id', tempId);
+          username: username,
+          full_name: signupName,
+        });
       }
       
       toast({
         title: "Успешно",
-        description: "Проверьте email для подтверждения. После подтверждения вы сможете войти.",
+        description: "Проверьте email для подтверждения",
       });
       
       document.querySelector('[data-state][value="signin"]')?.click();
     } catch (error: any) {
       toast({
         title: "Ошибка регистрации",
-        description: error.message,
+        description: error.message || "Попробуйте позже",
         variant: "destructive",
       });
     } finally {
