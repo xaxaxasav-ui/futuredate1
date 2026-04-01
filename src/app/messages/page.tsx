@@ -236,36 +236,6 @@ function MessagesContent() {
 
     setLoading(false);
   };
-    
-    setMessages(prev => [...prev, newMessage]);
-    setInput("");
-    setLoading(true);
-
-    if (user) {
-      await supabase.from('messages').insert({
-        match_id: activeChat.id,
-        sender_id: user.id,
-        content: input,
-      });
-    }
-
-    setTimeout(() => {
-      const responses = [
-        "Это так интересно! Расскажи мне больше.",
-        "Ого, я тоже об этом думала!",
-        "Давай обсудим это на видеосвидании?",
-        "Ты меня заставляешь улыбаться 😊",
-      ];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      
-      setMessages(prev => [...prev, {
-        role: 'partner',
-        text: randomResponse,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }]);
-      setLoading(false);
-    }, 1000);
-  };
 
   const handleBlockUser = async () => {
     if (!user || !activeChat) return;
