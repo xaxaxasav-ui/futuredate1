@@ -11,7 +11,6 @@ import Link from "next/link";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
 import { getAllProfiles, Profile, supabase } from "@/lib/supabase";
-import { createNotification } from "@/lib/notifications";
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useSupabase();
@@ -43,29 +42,16 @@ export default function DashboardPage() {
     } else {
       setLikes(prev => [...prev, profile.id]);
       
+      // Лайк сохраняем (409 = уже есть, игнорируем)
       try {
-        await supabase.from('likes').insert({
+        await supabase.from('likes').upsert({
           user_id: user.id,
           liked_user_id: profile.id,
-        });
-      } catch (e) {
-        console.log('Like already exists');
-      }
+          created_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,liked_user_id' });
+      } catch (e) {}
       
-      try {
-        await createNotification({
-          userId: profile.id,
-          type: 'like',
-          title: 'Новый лайк!',
-          message: `${user.user_metadata?.full_name || 'Кто-то'} поставил вам лайк`,
-          fromUserId: user.id,
-          fromUserName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Пользователь',
-          link: '/dashboard',
-        });
-      } catch (e) {
-        console.log('Notification error:', e);
-      }
-      
+      // Проверяем взаимный лайк
       try {
         const { data: mutualLike } = await supabase
           .from('likes')
@@ -78,16 +64,15 @@ export default function DashboardPage() {
           if (!matches.includes(profile.id)) {
             setMatches(prev => [...prev, profile.id]);
           }
-          
+          // Создаём match
           try {
             await supabase.from('matches').upsert({
               user_id: user.id,
               matched_user_id: profile.id,
               status: 'accepted',
+              created_at: new Date().toISOString(),
             }, { onConflict: 'user_id,matched_user_id' });
-          } catch (e) {
-            console.log('Match create error:', e);
-          }
+          } catch (e) {}
           
           alert(`🎉 Это взаимный лайк! Вы можете написать ${profile.full_name}!`);
         } else {
@@ -137,27 +122,12 @@ export default function DashboardPage() {
       setFavorites(prev => [...prev, profile.id]);
       
       try {
-        await supabase.from('favorites').insert({
+        await supabase.from('favorites').upsert({
           user_id: user.id,
           favorited_user_id: profile.id,
-        });
-      } catch (e) {
-        console.log('Favorite already exists');
-      }
-      
-      try {
-        await createNotification({
-          userId: profile.id,
-          type: 'favorite',
-          title: 'Добавлены в избранное!',
-          message: `${user.user_metadata?.full_name || 'Кто-то'} добавил вас в избранное`,
-          fromUserId: user.id,
-          fromUserName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Пользователь',
-          link: '/favorites',
-        });
-      } catch (e) {
-        console.log('Notification error:', e);
-      }
+          created_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,favorited_user_id' });
+      } catch (e) {}
     }
   };
 
@@ -177,33 +147,41 @@ export default function DashboardPage() {
           .select('liked_user_id')
           .eq('user_id', user.id);
         
-        if (userLikes) {
+        if (userLikes && userLikes.length > 0) {
           setLikes(userLikes.map(l => l.liked_user_id));
         }
-        
+      } catch (e) {
+        console.log('Likes table not available');
+      }
+      
+      try {
         const { data: userFavorites } = await supabase
           .from('favorites')
           .select('favorited_user_id')
           .eq('user_id', user.id);
         
-        if (userFavorites) {
+        if (userFavorites && userFavorites.length > 0) {
           setFavorites(userFavorites.map(f => f.favorited_user_id));
         }
-        
+      } catch (e) {
+        console.log('Favorites table not available');
+      }
+      
+      try {
         const { data: userMatches } = await supabase
           .from('matches')
           .select('matched_user_id, user_id')
           .eq('status', 'accepted')
           .or(`user_id.eq.${user.id},matched_user_id.eq.${user.id}`);
         
-        if (userMatches) {
+        if (userMatches && userMatches.length > 0) {
           const matchIds = userMatches.map(m => 
             m.user_id === user.id ? m.matched_user_id : m.user_id
           );
           setMatches(matchIds);
         }
       } catch (e) {
-        console.error('Error loading user data:', e);
+        console.log('Matches table not available');
       }
     };
     
