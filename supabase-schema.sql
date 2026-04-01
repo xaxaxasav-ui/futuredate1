@@ -115,6 +115,8 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   title TEXT NOT NULL,
   message TEXT,
   from_user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  from_user_name TEXT,
+  from_user_avatar TEXT,
   is_read BOOLEAN DEFAULT FALSE,
   link TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -229,13 +231,14 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
 DROP POLICY IF EXISTS "Users can create notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Users can create notifications for others" ON public.notifications;
 DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
 
 CREATE POLICY "Users can view own notifications" ON public.notifications
   FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can create notifications" ON public.notifications
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can create notifications for others" ON public.notifications
+  FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Users can update own notifications" ON public.notifications
   FOR UPDATE USING (auth.uid() = user_id);
