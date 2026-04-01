@@ -324,19 +324,26 @@ export default function DashboardPage() {
 
                 <p className="text-sm text-muted-foreground line-clamp-2">{profile.bio ? profile.bio.replace(/🎯?ИИ_АНАЛИЗ_START.+?ИИ_АНАЛИЗ_END/g, '').trim() || 'Нет описания' : 'Нет описания'}</p>
 
-                <div className="pt-4 grid grid-cols-2 gap-4">
+                <div className="pt-4 grid grid-cols-3 gap-2">
                   <Button 
                     variant="outline" 
-                    className={`w-full rounded-full glass border-primary/20 hover:bg-primary/10 ${!canInteract(profile.id) ? 'opacity-50' : ''}`}
-                    onClick={() => handleMessage(profile)}
+                    className="w-full rounded-full glass border-primary/20 hover:bg-primary/10 text-xs py-2"
+                    onClick={() => router.push(`/profile/${profile.id}`)}
                   >
-                    <MessageSquare className="w-4 h-4 mr-2" /> Написать
+                    <Eye className="w-3 h-3 mr-1" /> Профиль
                   </Button>
                   <Button 
-                    className={`w-full rounded-full ${canInteract(profile.id) ? 'neo-glow' : 'opacity-50'}`}
+                    variant="outline" 
+                    className={`w-full rounded-full glass border-primary/20 hover:bg-primary/10 text-xs py-2 ${!canInteract(profile.id) ? 'opacity-50' : ''}`}
+                    onClick={() => handleMessage(profile)}
+                  >
+                    <MessageSquare className="w-3 h-3 mr-1" /> Написать
+                  </Button>
+                  <Button 
+                    className={`w-full rounded-full text-xs py-2 ${canInteract(profile.id) ? 'neo-glow' : 'opacity-50'}`}
                     onClick={() => handleDate(profile)}
                   >
-                    <Video className="w-4 h-4 mr-2" /> Свидание
+                    <Video className="w-3 h-3 mr-1" /> Свидание
                   </Button>
                 </div>
               </div>
