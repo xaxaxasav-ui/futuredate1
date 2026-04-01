@@ -205,7 +205,7 @@ export default function DashboardPage() {
                   <Button 
                     size="icon" 
                     variant="ghost" 
-                    className={`rounded-full bg-black/30 backdrop-blur-sm hover:bg-pink-500/50 ${likes.includes(match.id) ? 'text-pink-500' : 'hover:text-white'}`}
+                    className={`rounded-full bg-black/30 backdrop-blur-sm hover:bg-pink-500/50 ${likes.includes(profile.id) ? 'text-pink-500' : 'hover:text-white'}`}
                     onClick={() => handleLike(profile)}
                   >
                     <Heart className="w-6 h-6" />
@@ -213,10 +213,10 @@ export default function DashboardPage() {
                   <Button 
                     size="icon" 
                     variant="ghost" 
-                    className={`rounded-full bg-black/30 backdrop-blur-sm hover:bg-yellow-500/50 ${favorites.includes(match.id) ? 'text-yellow-400' : 'hover:text-white'}`}
+                    className={`rounded-full bg-black/30 backdrop-blur-sm hover:bg-yellow-500/50 ${favorites.includes(profile.id) ? 'text-yellow-400' : 'hover:text-white'}`}
                     onClick={() => handleFavorite(profile)}
                   >
-                    <Star className={`w-6 h-6 ${favorites.includes(match.id) ? 'fill-yellow-400' : ''}`} />
+                    <Star className={`w-6 h-6 ${favorites.includes(profile.id) ? 'fill-yellow-400' : ''}`} />
                   </Button>
                 </div>
               </div>

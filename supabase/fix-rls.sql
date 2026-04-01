@@ -1,6 +1,3 @@
--- Отключаем RLS полностью для тестирования
-ALTER TABLE public.profiles DISABLE ROW LEVEL SECURITY;
-
 -- Создаём функцию для авто-создания профиля
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
