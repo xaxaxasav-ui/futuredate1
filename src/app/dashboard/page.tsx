@@ -66,17 +66,23 @@ export default function DashboardPage() {
             setMatches(prev => [...prev, profile.id]);
           }
           
-          // Создаём match для обоих пользователей
+          // Создаём match для обоих пользователей - используем INSERT с игнорированием
           try {
-            await supabase.from('matches').upsert({
+            await supabase.from('matches').insert({
               user_id: user.id,
               matched_user_id: profile.id,
               status: 'accepted',
-              created_at: new Date().toISOString(),
-            }, { onConflict: 'user_id,matched_user_id' });
-            console.log('Match created successfully');
-          } catch (e) {
-            console.error('Match create error:', e);
+            });
+            console.log('Match created via insert');
+            
+            // Также создаём обратную запись
+            await supabase.from('matches').insert({
+              user_id: profile.id,
+              matched_user_id: user.id,
+              status: 'accepted',
+            }).catch(() => {});
+          } catch (e: any) {
+            console.error('Match create error:', e?.message || e);
           }
            
           alert(`🎉 Это взаимный лайк! Вы можете написать ${profile.full_name}!`);
