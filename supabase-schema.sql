@@ -83,6 +83,8 @@ CREATE TABLE IF NOT EXISTS public.messages (
   match_id UUID REFERENCES public.matches(id) ON DELETE CASCADE,
   sender_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  read_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

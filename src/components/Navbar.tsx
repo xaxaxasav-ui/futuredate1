@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Heart, MessageSquare, User, Sparkles, LogOut, Sun, Moon, Navigation, Shield, HelpCircle, Bell, Menu, ChevronDown, MoreHorizontal, Star, Clock, FileText, Settings, Home, Download } from "lucide-react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useTheme } from "@/components/ThemeProvider";
-import { getUnreadCount } from "@/lib/notifications";
+import { getUnreadCount, getUnreadMessagesCount } from "@/lib/notifications";
 
 const ADMIN_EMAILS = [
   "admin@date-future.ru",
@@ -20,7 +20,7 @@ const MAIN_TABS = [
   { href: "/", label: "Главная", icon: Home },
   { href: "/dashboard", label: "Найти", icon: Heart },
   { href: "/nearby", label: "Рядом", icon: Navigation },
-  { href: "/messages", label: "Сообщения", icon: MessageSquare },
+  { href: "/messages", label: "Сообщения", icon: MessageSquare, badge: true },
 ];
 
 const MORE_MENU = [
@@ -40,11 +40,13 @@ export function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
       getUnreadCount(user.id).then(count => setUnreadCount(count));
+      getUnreadMessagesCount(user.id).then(count => setUnreadMessagesCount(count));
     }
   }, [user]);
 
@@ -73,7 +75,7 @@ export function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors relative ${
                     pathname === item.href 
                       ? 'bg-primary/20 text-primary' 
                       : theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'
@@ -81,6 +83,11 @@ export function Navbar() {
                 >
                   <item.icon className={`w-4 h-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
                   {item.label}
+                  {item.href === '/messages' && unreadMessagesCount > 0 && (
+                    <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                      {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                    </Badge>
+                  )}
                 </Link>
               ))}
               
@@ -189,13 +196,20 @@ export function Navbar() {
             <button
               key={item.href}
               onClick={() => navigate(item.href)}
-              className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-xs ${
+              className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-xs relative ${
                 pathname === item.href 
                   ? 'text-primary' 
                   : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}
             >
-              <item.icon className={`w-5 h-5 ${pathname === item.href ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+              <div className="relative">
+                <item.icon className={`w-5 h-5 ${pathname === item.href ? 'text-primary' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
+                {item.href === '/messages' && unreadMessagesCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-2 -right-2 h-4 w-4 p-0 flex items-center justify-center text-[8px]">
+                    {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                  </Badge>
+                )}
+              </div>
               <span className="text-[10px]">{item.label}</span>
             </button>
           ))}
