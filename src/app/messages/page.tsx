@@ -170,36 +170,47 @@ function MessagesContent() {
   }, [user]);
 
   useEffect(() => {
+    const loadMessages = async () => {
+      if (!activeChat || !user) return;
+      
+      try {
+        const { data: chatMessages } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('match_id', activeChat.id)
+          .order('created_at', { ascending: true });
+        
+        if (chatMessages && chatMessages.length > 0) {
+          const loadedMessages: ChatMessage[] = chatMessages.map((m: any) => ({
+            role: m.sender_id === user.id ? 'user' : 'partner',
+            text: m.content,
+            time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }));
+          setMessages(loadedMessages);
+        } else {
+          setMessages([]);
+        }
+      } catch (e) {
+        console.error('Error loading messages:', e);
+        setMessages([]);
+      }
+    };
+    
+    loadMessages();
+  }, [activeChat, user]);
+
+  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !activeChat || !user) return;
 
     const check = checkProhibitedContent(input);
     if (check.isProhibited) {
-      alert(`⚠️ Нарушение правил!\n\n${check.reason}\n\nОбщение за пределами сервиса запрещено. Вы забанены на 1 неделю.`);
-      
-      if (user) {
-        const banEndDate = new Date();
-        banEndDate.setDate(banEndDate.getDate() + 7);
-        
-        await supabase
-          .from('profiles')
-          .update({
-            is_banned: true,
-            ban_reason: `${check.reason}. Автобан за попытку общения вне сервиса.`,
-            banned_at: new Date().toISOString(),
-            ban_expires_at: banEndDate.toISOString()
-          })
-          .eq('id', user.id);
-        
-        await supabase.auth.signOut();
-        router.push("/");
-        return;
-      }
+      alert(`⚠️ Нарушение правил!\n\n${check.reason}\n\nОбщение за пределами сервиса запрещено.`);
       return;
     }
     
@@ -208,6 +219,23 @@ function MessagesContent() {
       text: input,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
+    
+    setMessages(prev => [...prev, newMessage]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      await supabase.from('messages').insert({
+        match_id: activeChat.id,
+        sender_id: user.id,
+        content: input,
+      });
+    } catch (e) {
+      console.error('Error saving message:', e);
+    }
+
+    setLoading(false);
+  };
     
     setMessages(prev => [...prev, newMessage]);
     setInput("");
