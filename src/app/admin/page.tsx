@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Users, Shield, BarChart3, Settings, Search, 
   CheckCircle, XCircle, X, Loader2, MapPin, 
-  Calendar, Mail, Phone, AlertTriangle, MessageCircle, Send, Palette, Image, Save, Eye, Upload
+  Calendar, Mail, Phone, AlertTriangle, MessageCircle, Send, Palette, Image, Save, Eye, Upload, Gift, Plus, Trash2
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSupabase } from "@/components/SupabaseProvider";
@@ -74,6 +74,8 @@ export default function AdminPage() {
   const [sendingReply, setSendingReply] = useState(false);
   const [bgImageUrl, setBgImageUrl] = useState("");
   const [savingBg, setSavingBg] = useState(false);
+  const [gifts, setGifts] = useState<any[]>([]);
+  const [loadingGifts, setLoadingGifts] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>("");
@@ -165,6 +167,77 @@ export default function AdminPage() {
       alert("Ошибка сохранения");
     } finally {
       setSavingBg(false);
+    }
+  };
+
+  const loadGifts = async () => {
+    setLoadingGifts(true);
+    try {
+      const { data } = await supabase
+        .from('gifts_catalog')
+        .select('*')
+        .order('id');
+      setGifts(data || []);
+    } catch (e) {
+      console.error('Error loading gifts:', e);
+      alert('Ошибка загрузки подарков');
+    } finally {
+      setLoadingGifts(false);
+    }
+  };
+
+  const toggleGiftActive = async (giftId: string, isActive: boolean) => {
+    try {
+      await supabase
+        .from('gifts_catalog')
+        .update({ is_active: isActive })
+        .eq('id', giftId);
+      setGifts(gifts.map(g => g.id === giftId ? { ...g, is_active: isActive } : g));
+    } catch (e) {
+      console.error('Error updating gift:', e);
+      alert('Ошибка обновления');
+    }
+  };
+
+  const deleteGift = async (giftId: string) => {
+    if (!confirm('Удалить этот подарок?')) return;
+    try {
+      await supabase
+        .from('gifts_catalog')
+        .delete()
+        .eq('id', giftId);
+      setGifts(gifts.filter(g => g.id !== giftId));
+    } catch (e) {
+      console.error('Error deleting gift:', e);
+      alert('Ошибка удаления');
+    }
+  };
+
+  const addNewGift = async () => {
+    const emojiInput = document.getElementById('newGiftEmoji') as HTMLInputElement;
+    const nameInput = document.getElementById('newGiftName') as HTMLInputElement;
+    const emoji = emojiInput?.value?.trim();
+    const name = nameInput?.value?.trim();
+    
+    if (!emoji || !name) {
+      alert('Введите эмодзи и название');
+      return;
+    }
+    
+    const id = name.toLowerCase().replace(/\s+/g, '_');
+    
+    try {
+      await supabase
+        .from('gifts_catalog')
+        .insert({ id, name, emoji, is_active: true });
+      
+      setGifts([...gifts, { id, name, emoji, is_active: true }]);
+      emojiInput.value = '';
+      nameInput.value = '';
+      alert('Подарок добавлен!');
+    } catch (e) {
+      console.error('Error adding gift:', e);
+      alert('Ошибка добавления');
     }
   };
 
@@ -553,6 +626,10 @@ export default function AdminPage() {
               <Palette className="w-4 h-4 mr-2" />
               Дизайн
             </TabsTrigger>
+            <TabsTrigger value="gifts">
+              <Gift className="w-4 h-4 mr-2" />
+              Подарки
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -928,6 +1005,85 @@ export default function AdminPage() {
                     <li>• Изображение будет растянуто на весь экран</li>
                   </ul>
                 </div>
+              </div>
+            </GlassCard>
+          </TabsContent>
+
+          <TabsContent value="gifts" className="space-y-4">
+            <GlassCard className="p-6">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <Gift className="w-5 h-5" />
+                Управление подарками
+              </h3>
+              
+              <div className="space-y-4">
+                <Button 
+                  onClick={() => loadGifts()}
+                  variant="outline"
+                  className="glass"
+                >
+                  <Loader2 className={`w-4 h-4 mr-2 ${loadingGifts ? 'animate-spin' : ''}`} />
+                  Загрузить подарки
+                </Button>
+                
+                {gifts.length === 0 ? (
+                  <p className="text-muted-foreground">Нажмите "Загрузить подарки" для просмотра</p>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {gifts.map(gift => (
+                      <div 
+                        key={gift.id}
+                        className={`p-4 rounded-lg border ${
+                          gift.is_active 
+                            ? 'bg-green-500/10 border-green-500/30' 
+                            : 'bg-red-500/10 border-red-500/30'
+                        }`}
+                      >
+                        <div className="text-3xl text-center mb-2">{gift.emoji}</div>
+                        <p className="text-center font-medium text-sm">{gift.name}</p>
+                        <div className="flex justify-center gap-2 mt-3">
+                          <Button
+                            size="sm"
+                            variant={gift.is_active ? "destructive" : "default"}
+                            onClick={() => toggleGiftActive(gift.id, !gift.is_active)}
+                          >
+                            {gift.is_active ? "Отключить" : "Включить"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => deleteGift(gift.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </GlassCard>
+            
+            <GlassCard className="p-6">
+              <h4 className="font-bold mb-4 flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                Добавить новый подарок
+              </h4>
+              <div className="flex gap-3">
+                <Input 
+                  id="newGiftEmoji"
+                  placeholder="Эмодзи (напр. 🌹)"
+                  className="glass w-24 text-center text-2xl"
+                />
+                <Input 
+                  id="newGiftName"
+                  placeholder="Название (напр. Роза)"
+                  className="glass flex-1"
+                />
+                <Button onClick={addNewGift} className="neo-glow">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Добавить
+                </Button>
               </div>
             </GlassCard>
           </TabsContent>

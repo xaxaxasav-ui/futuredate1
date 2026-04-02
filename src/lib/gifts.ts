@@ -1,20 +1,30 @@
 import { supabase } from "./supabase";
 import { createNotification } from "./notifications";
 
-export const GIFTS = [
-  { id: 'rose', name: 'Роза', emoji: '🌹', price: 0, premium: false },
-  { id: 'heart', name: 'Сердце', emoji: '❤️', price: 0, premium: false },
-  { id: 'star', name: 'Звезда', emoji: '⭐', price: 0, premium: false },
-  { id: 'fire', name: 'Огонь', emoji: '🔥', price: 0, premium: false },
-  { id: 'kiss', name: 'Поцелуй', emoji: '💋', price: 0, premium: false },
-  { id: 'cake', name: 'Торт', emoji: '🎂', price: 0, premium: false },
-  { id: 'ring', name: 'Кольцо', emoji: '💍', price: 1, premium: true },
-  { id: 'diamond', name: 'Бриллиант', emoji: '💎', price: 5, premium: true },
-  { id: 'car', name: 'Машина', emoji: '🚗', price: 10, premium: true },
-  { id: 'house', name: 'Дом', emoji: '🏠', price: 20, premium: true },
-  { id: 'rocket', name: 'Ракета', emoji: '🚀', price: 50, premium: true },
-  { id: 'crown', name: 'Корона', emoji: '👑', price: 100, premium: true },
+export const DEFAULT_GIFTS = [
+  { id: 'rose', name: 'Роза', emoji: '🌹', is_active: true },
+  { id: 'heart', name: 'Сердце', emoji: '❤️', is_active: true },
+  { id: 'star', name: 'Звезда', emoji: '⭐', is_active: true },
+  { id: 'fire', name: 'Огонь', emoji: '🔥', is_active: true },
+  { id: 'kiss', name: 'Поцелуй', emoji: '💋', is_active: true },
+  { id: 'cake', name: 'Торт', emoji: '🎂', is_active: true },
+  { id: 'ring', name: 'Кольцо', emoji: '💍', is_active: true },
+  { id: 'diamond', name: 'Бриллиант', emoji: '💎', is_active: true },
+  { id: 'car', name: 'Машина', emoji: '🚗', is_active: true },
+  { id: 'house', name: 'Дом', emoji: '🏠', is_active: true },
+  { id: 'rocket', name: 'Ракета', emoji: '🚀', is_active: true },
+  { id: 'crown', name: 'Корона', emoji: '👑', is_active: true },
 ];
+
+export async function getGifts() {
+  const { data } = await supabase
+    .from('gifts_catalog')
+    .select('*')
+    .eq('is_active', true)
+    .order('id');
+  
+  return data && data.length > 0 ? data : DEFAULT_GIFTS.map(g => ({ ...g, is_active: true }));
+}
 
 export async function sendGift({
   senderId,
@@ -27,7 +37,8 @@ export async function sendGift({
   giftId: string;
   message?: string;
 }) {
-  const gift = GIFTS.find(g => g.id === giftId);
+  const gifts = await getGifts();
+  const gift = gifts.find((g: any) => g.id === giftId);
   if (!gift) throw new Error('Gift not found');
   
   try {
@@ -35,14 +46,15 @@ export async function sendGift({
       sender_id: senderId,
       receiver_id: receiverId,
       gift_type: giftId,
+      gift_name: gift.name,
+      gift_emoji: gift.emoji,
       message: message || null,
-      is_premium: gift.premium,
     });
     
     createNotification({
       userId: receiverId,
       type: 'message',
-      title: gift.premium ? `Получен подарок ${gift.emoji}!` : 'Получен подарок!',
+      title: 'Получен подарок! 🎁',
       message: message 
         ? `${gift.emoji} ${gift.name} с сообщением: "${message}"`
         : `${gift.emoji} ${gift.name}`,
@@ -60,7 +72,7 @@ export async function sendGift({
 export async function getSentGifts(userId: string) {
   const { data } = await supabase
     .from('gifts')
-    .select('*, receiver:profiles!gifts_receiver_id_fk(full_name, avatar_url)')
+    .select('*, receiver:profiles!gifts_receiver_id_fk(id, full_name, avatar_url)')
     .eq('sender_id', userId)
     .order('created_at', { ascending: false })
     .limit(20);
@@ -70,7 +82,7 @@ export async function getSentGifts(userId: string) {
 export async function getReceivedGifts(userId: string) {
   const { data } = await supabase
     .from('gifts')
-    .select('*, sender:profiles!gifts_sender_id_fk(full_name, avatar_url)')
+    .select('*, sender:profiles!gifts_sender_id_fk(id, full_name, avatar_url)')
     .eq('receiver_id', userId)
     .order('created_at', { ascending: false })
     .limit(20);

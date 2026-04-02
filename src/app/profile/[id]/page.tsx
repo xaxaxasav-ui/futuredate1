@@ -14,7 +14,7 @@ import { createNotification } from "@/lib/notifications";
 import Link from "next/link";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
-import { GIFTS, sendGift } from "@/lib/gifts";
+import { getGifts, sendGift } from "@/lib/gifts";
 
 interface ProfileData {
   id: string;
@@ -62,6 +62,7 @@ export default function ViewProfilePage() {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
   const [showGiftDialog, setShowGiftDialog] = useState(false);
+  const [gifts, setGifts] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -294,7 +295,13 @@ export default function ViewProfilePage() {
                   </button>
                 )}
                 <button 
-                  onClick={() => setShowGiftDialog(true)}
+                  onClick={async () => {
+                    if (gifts.length === 0) {
+                      const loadedGifts = await getGifts();
+                      setGifts(loadedGifts);
+                    }
+                    setShowGiftDialog(true);
+                  }}
                   className="p-3 rounded-full bg-purple-500/80 hover:bg-purple-500 text-white"
                 >
                   <Gift className="w-5 h-5" />
@@ -505,19 +512,23 @@ export default function ViewProfilePage() {
             <DialogTitle>Выбрать подарок</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-4 gap-3 py-4">
-            {GIFTS.map(gift => (
+            {(gifts.length > 0 ? gifts : [
+              { id: 'rose', name: 'Роза', emoji: '🌹' },
+              { id: 'heart', name: 'Сердце', emoji: '❤️' },
+              { id: 'star', name: 'Звезда', emoji: '⭐' },
+              { id: 'fire', name: 'Огонь', emoji: '🔥' },
+              { id: 'kiss', name: 'Поцелуй', emoji: '💋' },
+              { id: 'cake', name: 'Торт', emoji: '🎂' },
+              { id: 'ring', name: 'Кольцо', emoji: '💍' },
+              { id: 'diamond', name: 'Бриллиант', emoji: '💎' },
+            ]).map(gift => (
               <button
                 key={gift.id}
                 onClick={() => handleSendGift(gift.id)}
-                className={`flex flex-col items-center p-3 rounded-lg transition-colors ${
-                  gift.premium 
-                    ? 'bg-yellow-500/20 hover:bg-yellow-500/40 border border-yellow-500/30' 
-                    : 'bg-muted hover:bg-muted/80'
-                }`}
+                className="flex flex-col items-center p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
               >
                 <span className="text-3xl">{gift.emoji}</span>
                 <span className="text-xs mt-1 text-center">{gift.name}</span>
-                {gift.premium && <span className="text-[10px] text-yellow-500">PREMIUM</span>}
               </button>
             ))}
           </div>

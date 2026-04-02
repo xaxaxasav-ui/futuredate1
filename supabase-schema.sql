@@ -260,10 +260,50 @@ CREATE TABLE IF NOT EXISTS public.gifts (
   sender_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   receiver_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   gift_type TEXT NOT NULL,
+  gift_name TEXT,
+  gift_emoji TEXT,
   message TEXT,
-  is_premium BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Gifts catalog for admin management
+CREATE TABLE IF NOT EXISTS public.gifts_catalog (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  emoji TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Insert default gifts if not exists
+INSERT INTO gifts_catalog (id, name, emoji, is_active) VALUES
+  ('rose', 'Роза', '🌹', true),
+  ('heart', 'Сердце', '❤️', true),
+  ('star', 'Звезда', '⭐', true),
+  ('fire', 'Огонь', '🔥', true),
+  ('kiss', 'Поцелуй', '💋', true),
+  ('cake', 'Торт', '🎂', true),
+  ('ring', 'Кольцо', '💍', true),
+  ('diamond', 'Бриллиант', '💎', true),
+  ('car', 'Машина', '🚗', true),
+  ('house', 'Дом', '🏠', true),
+  ('rocket', 'Ракета', '🚀', true),
+  ('crown', 'Корона', '👑', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- RLS for gifts_catalog (public read, admin write)
+ALTER TABLE public.gifts_catalog ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view gifts catalog" ON public.gifts_catalog;
+DROP POLICY IF EXISTS "Admins can manage gifts catalog" ON public.gifts_catalog;
+
+CREATE POLICY "Anyone can view gifts catalog" ON public.gifts_catalog
+  FOR SELECT USING (true);
+
+CREATE POLICY "Admins can manage gifts catalog" ON public.gifts_catalog
+  FOR ALL USING (
+    auth.jwt()->>'email' IN ('admin@date-future.ru', 'admin@свидание-будущего.рф', 'statnihx@mail.ru')
+  );
 
 -- RLS for gifts
 ALTER TABLE public.gifts ENABLE ROW LEVEL SECURITY;
