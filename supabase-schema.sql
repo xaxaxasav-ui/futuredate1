@@ -254,5 +254,32 @@ CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
 CREATE INDEX IF NOT EXISTS idx_profiles_city ON public.profiles(city);
 CREATE INDEX IF NOT EXISTS idx_profiles_gender ON public.profiles(gender);
 
+-- Gifts table for virtual gifts between users
+CREATE TABLE IF NOT EXISTS public.gifts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sender_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  receiver_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  gift_type TEXT NOT NULL,
+  message TEXT,
+  is_premium BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- RLS for gifts
+ALTER TABLE public.gifts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view sent gifts" ON public.gifts;
+DROP POLICY IF EXISTS "Users can view received gifts" ON public.gifts;
+DROP POLICY IF EXISTS "Users can send gifts" ON public.gifts;
+
+CREATE POLICY "Users can view sent gifts" ON public.gifts
+  FOR SELECT USING (auth.uid() = sender_id);
+
+CREATE POLICY "Users can view received gifts" ON public.gifts
+  FOR SELECT USING (auth.uid() = receiver_id);
+
+CREATE POLICY "Users can send gifts" ON public.gifts
+  FOR INSERT WITH CHECK (auth.uid() = sender_id);
+
 -- Enable realtime for messages table
 -- ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;

@@ -6,14 +6,15 @@ import { GlassCard } from "@/components/GlassCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Loader2, Heart, Star, MessageSquare, ArrowLeft, MapPin, Calendar, Ruler, GraduationCap, Briefcase, Mail, Phone, X, Sparkles } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, Heart, Star, MessageSquare, ArrowLeft, MapPin, Calendar, Ruler, GraduationCap, Briefcase, Mail, Phone, X, Sparkles, Gift } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { createNotification } from "@/lib/notifications";
 import Link from "next/link";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
+import { GIFTS, sendGift } from "@/lib/gifts";
 
 interface ProfileData {
   id: string;
@@ -60,6 +61,7 @@ export default function ViewProfilePage() {
   const [hasFavorited, setHasFavorited] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
+  const [showGiftDialog, setShowGiftDialog] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -165,7 +167,26 @@ export default function ViewProfilePage() {
       } else {
         alert(`Лайк отправлен ${profile.full_name}!`);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Error liking profile:', e);
+    }
+  };
+
+  const handleSendGift = async (giftId: string) => {
+    if (!user || !profile) return;
+    
+    try {
+      await sendGift({
+        senderId: user.id,
+        receiverId: profile.id,
+        giftId,
+      });
+      setShowGiftDialog(false);
+      alert('Подарок отправлен! 🎁');
+    } catch (e) {
+      console.error('Error sending gift:', e);
+      alert('Ошибка отправки подарка');
+    }
   };
 
   const handleFavorite = async () => {
@@ -272,6 +293,12 @@ export default function ViewProfilePage() {
                     <MessageSquare className="w-5 h-5" />
                   </button>
                 )}
+                <button 
+                  onClick={() => setShowGiftDialog(true)}
+                  className="p-3 rounded-full bg-purple-500/80 hover:bg-purple-500 text-white"
+                >
+                  <Gift className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
@@ -468,6 +495,31 @@ export default function ViewProfilePage() {
                 className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
               />
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showGiftDialog} onOpenChange={setShowGiftDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Выбрать подарок</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-4 gap-3 py-4">
+            {GIFTS.map(gift => (
+              <button
+                key={gift.id}
+                onClick={() => handleSendGift(gift.id)}
+                className={`flex flex-col items-center p-3 rounded-lg transition-colors ${
+                  gift.premium 
+                    ? 'bg-yellow-500/20 hover:bg-yellow-500/40 border border-yellow-500/30' 
+                    : 'bg-muted hover:bg-muted/80'
+                }`}
+              >
+                <span className="text-3xl">{gift.emoji}</span>
+                <span className="text-xs mt-1 text-center">{gift.name}</span>
+                {gift.premium && <span className="text-[10px] text-yellow-500">PREMIUM</span>}
+              </button>
+            ))}
           </div>
         </DialogContent>
       </Dialog>
