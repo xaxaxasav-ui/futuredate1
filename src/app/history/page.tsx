@@ -45,12 +45,13 @@ export default function HistoryPage() {
     if (!user) return;
     
     try {
+      // Get views with explicit smaller limit
       const { data: profileViews } = await supabase
         .from('profile_views')
         .select('profile_id, created_at')
         .eq('viewer_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(20);
 
       if (!profileViews || profileViews.length === 0) {
         setViews([]);
@@ -58,15 +59,24 @@ export default function HistoryPage() {
         return;
       }
 
-      const profileIds = [...new Set(profileViews.map(v => v.profile_id))];
+      // Get unique profile IDs (limit to 10 to avoid issues)
+      const uniqueIds = [...new Set(profileViews.map(v => v.profile_id))].slice(0, 10);
       
+      // Fetch profiles
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, age, city, avatar_url')
-        .in('id', profileIds);
+        .in('id', uniqueIds);
 
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      if (!profiles) {
+        setViews([]);
+        setLoading(false);
+        return;
+      }
+
+      const profileMap = new Map(profiles.map(p => [p.id, p]));
       
+      // Map views with profiles
       const viewsWithProfiles = profileViews.map(v => ({
         id: v.profile_id,
         profile_id: v.profile_id,
@@ -75,7 +85,7 @@ export default function HistoryPage() {
         profile: profileMap.get(v.profile_id)
       }));
 
-      setViews(viewsWithProfiles);
+      setViews(viewsWithProfiles.filter(v => v.profile));
     } catch (e) {
       console.error('Error loading history:', e);
     } finally {
