@@ -177,16 +177,18 @@ export default function ViewProfilePage() {
     if (!user || !profile) return;
     
     try {
+      console.log('Sending gift:', { senderId: user.id, receiverId: profile.id, giftId });
       await sendGift({
         senderId: user.id,
         receiverId: profile.id,
         giftId,
       });
+      console.log('Gift sent successfully');
       setShowGiftDialog(false);
       alert('Подарок отправлен! 🎁');
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error sending gift:', e);
-      alert('Ошибка отправки подарка');
+      alert('Ошибка отправки подарка: ' + (e.message || e));
     }
   };
 
