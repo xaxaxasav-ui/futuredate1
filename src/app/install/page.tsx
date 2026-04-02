@@ -57,9 +57,6 @@ export default function InstallPage() {
           <div className="bg-muted p-4 rounded-lg">
             <code className="text-primary">https://lavmee.onrender.com</code>
           </div>
-          <p className="text-sm text-muted-foreground mt-4">
-            Иногда может потребоваться VPN для доступа к сайту.
-          </p>
         </GlassCard>
 
         <div className="text-center">
