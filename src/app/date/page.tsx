@@ -191,6 +191,19 @@ function VideoDateContent() {
 
   const initAgoraCall = async (callId: string) => {
     try {
+      // Wait for SDK to be ready
+      if (!(window as any).AgoraRTC) {
+        await new Promise((resolve) => {
+          const check = setInterval(() => {
+            if ((window as any).AgoraRTC) {
+              clearInterval(check);
+              resolve(true);
+            }
+          }, 100);
+          setTimeout(() => clearInterval(check), 5000);
+        });
+      }
+      
       const AgoraRTC = (window as any).AgoraRTC;
       const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
       clientRef.current = client;
