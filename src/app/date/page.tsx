@@ -11,24 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createNotification } from "@/lib/notifications";
 import { Suspense } from "react";
 
-const ICE_SERVERS = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-  ]
-};
-
-const ICEBREAKERS = [
-  "Расскажи о своём самом необычном путешествии.",
-  "Если бы ты мог жить в любой эпохе, какую бы выбрал?",
-  "Какой навык ты хотел бы освоить за неделю?",
-  "Что тебя больше всего рассмешило в последнее время?",
-  "Если бы ты мог dinner с любым историческим персонажем?",
-  "Какой твой любимый фильм и почему именно он?",
-  "Что ты делаешь, когда не можешь заснуть?",
-  "Расскажи о своём питомце или о том, какой бы ты хотел.",
-];
+const APP_ID = "9ff80e5c2be740deb61195e461353e19";
 
 function VideoDateContent() {
   const { user, loading: authLoading } = useSupabase();
@@ -43,13 +26,12 @@ function VideoDateContent() {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [callStarted, setCallStarted] = useState(false);
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const peerConnection = useRef<RTCPeerConnection | null>(null);
+  const clientRef = useRef<any>(null);
+  const localTracksRef = useRef<any[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [partnerData, setPartnerData] = useState<any>(null);
@@ -110,33 +92,6 @@ function VideoDateContent() {
 
   const partnerImg = partnerData?.avatar_url || partnerData?.photos?.[0] || PlaceHolderImages[1].imageUrl;
 
-  useEffect(() => {
-    if (partnerId && user) {
-      const interval = setInterval(checkForIncomingCalls, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [partnerId, user]);
-
-  const checkForIncomingCalls = async () => {
-    if (!partnerId || !user) return;
-    try {
-      const { data, error } = await supabase
-        .from('calls')
-        .select('*')
-        .eq('receiver_id', user.id)
-        .eq('caller_id', partnerId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      if (data && !error) {
-        setIncomingCall(data);
-        setCurrentCallId(data.id);
-      }
-    } catch (e) {}
-  };
-
   const checkCallStatus = async (callId: string) => {
     try {
       const { data } = await supabase
@@ -153,7 +108,6 @@ function VideoDateContent() {
   const initiateCall = async () => {
     if (!user || !partnerId) return;
     
-    console.log('Initiating call to', partnerId);
     setCallingTo(true);
     setCallStatus('calling');
     try {
@@ -167,20 +121,15 @@ function VideoDateContent() {
         .select()
         .single();
 
-      console.log('Call created - data:', JSON.stringify(call), 'error:', error);
-      
       if (error || !call) {
-        console.error('Failed to create call, error:', error);
-        alert('Ошибка при создании звонка: ' + (error?.message || 'unknown'));
+        console.error('Failed to create call:', error);
         setCallingTo(false);
         setCallStatus(null);
         return;
       }
 
       setCurrentCallId(call.id);
-      console.log('Call ID set to:', call.id);
 
-      console.log('Creating notification for', partnerId);
       await createNotification({
         userId: partnerId,
         type: 'message',
@@ -197,7 +146,7 @@ function VideoDateContent() {
         if (status === 'accepted') {
           clearInterval(statusCheck);
           setCallStatus('connected');
-          startWebRTC();
+          startAgoraCall(call.id);
         } else if (status === 'declined') {
           clearInterval(statusCheck);
           setCallStatus('declined');
@@ -210,7 +159,7 @@ function VideoDateContent() {
           clearInterval(statusCheck);
           setCallingTo(false);
           setCallStatus(null);
-          alert('Абонент не отвечает. Попробуйте позже.');
+          alert('Абонент не отвечает');
         }
       }, 30000);
     } catch (e) {
@@ -221,62 +170,93 @@ function VideoDateContent() {
     }
   };
 
-  const acceptCall = async () => {
-    if (!incomingCall || !user) return;
-    
-    await supabase
-      .from('calls')
-      .update({ status: 'accepted' })
-      .eq('id', incomingCall.id);
-    
-    setIncomingCall(null);
-    setCallStatus('connected');
-    startWebRTC();
-  };
-
-  const declineCall = async () => {
-    if (!incomingCall) return;
-    await supabase
-      .from('calls')
-      .update({ status: 'declined' })
-      .eq('id', incomingCall.id);
-    setIncomingCall(null);
-  };
-
-  const startWebRTC = async () => {
+  const startAgoraCall = async (callId: string) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      setLocalStream(stream);
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
+      // Load Agora SDK dynamically
+      const AgoraRTC = (window as any).AgoraRTC;
+      if (!AgoraRTC) {
+        // Load from CDN
+        const script = document.createElement('script');
+        script.src = 'https://cdn.agora.io/sdk/release/AgoraRTC_N.js';
+        script.onload = () => initAgoraCall(callId);
+        document.head.appendChild(script);
+      } else {
+        initAgoraCall(callId);
       }
+    } catch (e: any) {
+      console.error('Error starting call:', e);
+      setError('Ошибка: ' + e.message);
+    }
+  };
 
-      const pc = new RTCPeerConnection(ICE_SERVERS);
-      peerConnection.current = pc;
+  const initAgoraCall = async (callId: string) => {
+    try {
+      const AgoraRTC = (window as any).AgoraRTC;
+      const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      clientRef.current = client;
 
-      stream.getTracks().forEach(track => {
-        pc.addTrack(track, stream);
+      await client.init(APP_ID);
+      
+      // Channel name = call ID
+      await client.join(APP_ID, callId, null, user?.id);
+      
+      // Create local tracks
+      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+      localTracksRef.current = [audioTrack, videoTrack];
+      
+      // Play local video
+      if (localVideoRef.current) {
+        videoTrack.play(localVideoRef.current);
+      }
+      
+      // Publish local tracks
+      await client.publish(localTracksRef.current);
+      
+      // Handle remote users
+      client.on('user-published', async (user: any, mediaType: string) => {
+        await client.subscribe(user, mediaType);
+        if (mediaType === 'video') {
+          const remoteVideoTrack = user.videoTrack;
+          if (remoteVideoRef.current) {
+            remoteVideoTrack.play(remoteVideoRef.current);
+          }
+        }
+        if (mediaType === 'audio') {
+          user.audioTrack.play();
+        }
       });
 
-      pc.ontrack = (event) => {
-        setRemoteStream(event.streams[0]);
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = event.streams[0];
-        }
-      };
+      client.on('user-left', (user: any) => {
+        console.log('User left:', user.uid);
+        endCall();
+      });
 
       setCallStarted(true);
       setError(null);
     } catch (e: any) {
-      console.error('Error starting call:', e);
-      setError('Не удалось получить доступ к камере: ' + e.message);
+      console.error('Agora init error:', e);
+      setError('Ошибка: ' + e.message);
     }
   };
 
   const endCall = async () => {
+    // Leave Agora
+    if (clientRef.current) {
+      try {
+        await clientRef.current.leave();
+      } catch (e) {}
+    }
+    
+    // Stop local tracks
+    localTracksRef.current.forEach((track: any) => {
+      try {
+        track.stop();
+        track.close();
+      } catch (e) {}
+    });
+    localTracksRef.current = [];
+
+    // Update call status
     if (currentCallId) {
       await supabase
         .from('calls')
@@ -284,14 +264,6 @@ function VideoDateContent() {
         .eq('id', currentCallId);
     }
 
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-    }
-    if (peerConnection.current) {
-      peerConnection.current.close();
-    }
-    setLocalStream(null);
-    setRemoteStream(null);
     setCallStarted(false);
     setCallDuration(0);
     setCallStatus(null);
@@ -312,7 +284,6 @@ function VideoDateContent() {
           video: true,
           audio: true,
         });
-        setLocalStream(stream);
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
@@ -323,29 +294,42 @@ function VideoDateContent() {
     initCamera();
 
     return () => {
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
+      if (localVideoRef.current?.srcObject) {
+        const stream = localVideoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
       }
     };
   }, []);
 
   useEffect(() => {
-    if (localStream) {
-      localStream.getAudioTracks().forEach(track => {
+    if (localVideoRef.current?.srcObject) {
+      const stream = localVideoRef.current.srcObject as MediaStream;
+      stream.getAudioTracks().forEach(track => {
         track.enabled = !isMuted;
       });
     }
-  }, [isMuted, localStream]);
+  }, [isMuted]);
 
   useEffect(() => {
-    if (localStream) {
-      localStream.getVideoTracks().forEach(track => {
+    if (localVideoRef.current?.srcObject) {
+      const stream = localVideoRef.current.srcObject as MediaStream;
+      stream.getVideoTracks().forEach(track => {
         track.enabled = !isVideoOff;
       });
     }
-  }, [isVideoOff, localStream]);
+  }, [isVideoOff]);
 
   const generateIcebreaker = () => {
+    const ICEBREAKERS = [
+      "Расскажи о своём самом необычном путешествии.",
+      "Если бы ты мог жить в любой эпохе, какую бы выбрал?",
+      "Какой навык ты хотел бы освоить за неделю?",
+      "Что тебя больше всего рассмешило в последнее время?",
+      "Если бы ты мог dinner с любым историческим персонажем?",
+      "Какой твой любимый фильм и почему именно он?",
+      "Что ты делаешь, когда не можешь заснуть?",
+      "Расскажи о своём питомце или о том, какой бы ты хотел.",
+    ];
     setIsGenerating(true);
     setTimeout(() => {
       const randomIcebreaker = ICEBREAKERS[Math.floor(Math.random() * ICEBREAKERS.length)];
@@ -364,52 +348,6 @@ function VideoDateContent() {
 
   return (
     <div className="min-h-screen bg-black relative flex flex-col">
-      {incomingCall && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center">
-          <GlassCard className="p-8 max-w-md text-center space-y-6">
-            <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto animate-pulse">
-              <PhoneIncoming className="w-10 h-10 text-primary" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold">Входящий звонок!</h3>
-              <p className="text-muted-foreground mt-2">
-                {partnerData?.full_name || 'Пользователь'} звонит вам
-              </p>
-            </div>
-            {localStream && (
-              <div className="w-32 aspect-[3/4] rounded-xl overflow-hidden border-2 border-white/10 mx-auto">
-                <video 
-                  ref={localVideoRef}
-                  autoPlay 
-                  playsInline 
-                  muted
-                  className="object-cover w-full h-full"
-                />
-              </div>
-            )}
-            <div className="flex gap-4 justify-center">
-              <Button 
-                variant="destructive" 
-                size="lg"
-                className="rounded-full px-8"
-                onClick={declineCall}
-              >
-                <PhoneOff className="w-5 h-5 mr-2" />
-                Отклонить
-              </Button>
-              <Button 
-                className="rounded-full px-8 neo-glow"
-                size="lg"
-                onClick={acceptCall}
-              >
-                <Phone className="w-5 h-5 mr-2" />
-                Принять
-              </Button>
-            </div>
-          </GlassCard>
-        </div>
-      )}
-
       <div className="absolute inset-0 opacity-20 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
       </div>
@@ -480,7 +418,7 @@ function VideoDateContent() {
               Назад к сообщениям
             </Button>
 
-            {localStream && !callStarted && !callingTo && (
+            {localVideoRef.current?.srcObject && !callStarted && !callingTo && (
               <div className="w-32 aspect-[3/4] glass rounded-2xl overflow-hidden border-2 border-white/10 mx-auto">
                 <video 
                   ref={localVideoRef}
@@ -501,45 +439,28 @@ function VideoDateContent() {
               <h2 className="text-4xl font-bold font-headline">{loadingPartner ? 'Загрузка...' : partnerData?.full_name || 'Пользователь'}</h2>
             </div>
 
-            {localStream && (
-              <div className="absolute bottom-24 right-8 w-32 aspect-[3/4] glass rounded-2xl overflow-hidden border-2 border-white/10 group">
-                <video 
-                  ref={localVideoRef}
-                  autoPlay 
-                  playsInline 
-                  muted
-                  className={`object-cover w-full h-full ${isVideoOff ? 'hidden' : ''}`}
-                />
-                {isVideoOff && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-                    <VideoOff className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="absolute top-2 left-2 px-2 py-0.5 glass rounded text-[10px] uppercase font-bold tracking-widest">Вы</div>
-              </div>
-            )}
-
-            {remoteStream ? (
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                className="absolute inset-0 w-full h-full object-cover"
+            <div className="absolute bottom-24 right-8 w-32 aspect-[3/4] glass rounded-2xl overflow-hidden border-2 border-white/10 group">
+              <video 
+                ref={localVideoRef}
+                autoPlay 
+                playsInline 
+                muted
+                className={`object-cover w-full h-full ${isVideoOff ? 'hidden' : ''}`}
               />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <img 
-                  src={partnerImg} 
-                  alt="Ожидание видео..." 
-                  className="w-full h-full object-cover opacity-50"
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60" />
-                <div className="relative z-10 flex flex-col items-center">
-                  <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
-                  <p className="text-lg">Ожидание подключения партнёра...</p>
+              {isVideoOff && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+                  <VideoOff className="w-8 h-8 text-muted-foreground" />
                 </div>
-              </div>
-            )}
+              )}
+              <div className="absolute top-2 left-2 px-2 py-0.5 glass rounded text-[10px] uppercase font-bold tracking-widest">Вы</div>
+            </div>
+
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
 
             {icebreaker && (
               <div className="absolute top-24 left-1/2 -translate-x-1/2 w-full max-w-xl px-6 animate-in fade-in slide-in-from-top-4 duration-500">
