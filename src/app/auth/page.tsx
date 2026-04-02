@@ -15,14 +15,14 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
 const COUNTRY_CODES = [
-  { code: "+7", country: "Россия", mask: "(___) ___-__-__" },
-  { code: "+375", country: "Беларусь", mask: "(___) ___-__-__" },
-  { code: "+380", country: "Украина", mask: "(___) ___-__-__" },
-  { code: "+996", country: "Кыргызстан", mask: "(___) ___-__-__" },
-  { code: "+998", country: "Узбекистан", mask: "(___) ___-__-__" },
-  { code: "+993", country: "Туркменистан", mask: "(___) __-__-__" },
-  { code: "+992", country: "Таджикистан", mask: "(___) ___-__-__" },
-  { code: "+7", country: "Казахстан", mask: "(___) ___-__-__" },
+  { code: "+7", country: "RU", mask: "(___) ___-__-__" },
+  { code: "+375", country: "BY", mask: "(___) ___-__-__" },
+  { code: "+380", country: "UA", mask: "(___) ___-__-__" },
+  { code: "+996", country: "KG", mask: "(___) ___-__-__" },
+  { code: "+998", country: "UZ", mask: "(___) ___-__-__" },
+  { code: "+993", country: "TM", mask: "(___) __-__-__" },
+  { code: "+992", country: "TJ", mask: "(___) ___-__-__" },
+  { code: "+7", country: "KZ", mask: "(___) ___-__-__" },
 ];
 
 function AuthForm() {
@@ -344,10 +344,11 @@ function AuthForm() {
                     <select
                       value={selectedCountryCode.code}
                       onChange={(e) => setSelectedCountryCode(COUNTRY_CODES.find(c => c.code === e.target.value) || COUNTRY_CODES[0])}
-                      className="glass rounded-lg px-3 py-2 text-sm bg-background text-foreground border border-input"
+                      className="glass rounded-lg px-3 py-2 text-sm bg-background text-white border border-white/20"
+                      style={{ colorScheme: 'dark' }}
                     >
                       {COUNTRY_CODES.map(cc => (
-                        <option key={cc.code} value={cc.code} className="text-foreground">
+                        <option key={cc.code} value={cc.code} style={{ backgroundColor: '#1a1a1a', color: 'white' }}>
                           {cc.code} {cc.country}
                         </option>
                       ))}
