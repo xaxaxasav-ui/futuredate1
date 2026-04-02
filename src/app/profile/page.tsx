@@ -595,48 +595,48 @@ useEffect(() => {
   }
 
   return (
-    <div className="min-h-screen relative pt-24 pb-12 px-6">
+    <div className="min-h-screen relative pt-20 pb-8 px-4">
       
       
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-4">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold font-headline">Профиль</h1>
-            <p className="text-muted-foreground">Управление вашими данными</p>
+            <h1 className="text-2xl font-bold font-headline">Профиль</h1>
+            <p className="text-muted-foreground text-sm">Управление данными</p>
           </div>
           <Link href="/dashboard">
-            <Button variant="outline" className="glass rounded-full">
+            <Button variant="outline" className="glass rounded-full text-sm px-3 py-1">
               К поиску
             </Button>
           </Link>
         </header>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <GlassCard className="p-4 text-center">
-            <Eye className="w-6 h-6 mx-auto mb-2 text-blue-400" />
-            <p className="text-2xl font-bold">{stats.views}</p>
-            <p className="text-xs text-muted-foreground">Просмотров</p>
+        <div className="grid grid-cols-4 gap-2">
+          <GlassCard className="p-2 text-center">
+            <Eye className="w-4 h-4 mx-auto mb-1 text-blue-400" />
+            <p className="text-lg font-bold">{stats.views}</p>
+            <p className="text-[10px] text-muted-foreground">Просмотров</p>
           </GlassCard>
-          <GlassCard className="p-4 text-center">
-            <Heart className="w-6 h-6 mx-auto mb-2 text-pink-400" />
-            <p className="text-2xl font-bold">{stats.likes}</p>
-            <p className="text-xs text-muted-foreground">Лайков</p>
+          <GlassCard className="p-2 text-center">
+            <Heart className="w-4 h-4 mx-auto mb-1 text-pink-400" />
+            <p className="text-lg font-bold">{stats.likes}</p>
+            <p className="text-[10px] text-muted-foreground">Лайков</p>
           </GlassCard>
-          <GlassCard className="p-4 text-center">
-            <MessageCircle className="w-6 h-6 mx-auto mb-2 text-green-400" />
-            <p className="text-2xl font-bold">{stats.messages}</p>
-            <p className="text-xs text-muted-foreground">Сообщений</p>
+          <GlassCard className="p-2 text-center">
+            <MessageCircle className="w-4 h-4 mx-auto mb-1 text-green-400" />
+            <p className="text-lg font-bold">{stats.messages}</p>
+            <p className="text-[10px] text-muted-foreground">Сообщений</p>
           </GlassCard>
-          <GlassCard className="p-4 text-center">
-            <Zap className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
-            <p className="text-2xl font-bold">{stats.matches}</p>
-            <p className="text-xs text-muted-foreground">Совпадений</p>
+          <GlassCard className="p-2 text-center">
+            <Zap className="w-4 h-4 mx-auto mb-1 text-yellow-400" />
+            <p className="text-lg font-bold">{stats.matches}</p>
+            <p className="text-[10px] text-muted-foreground">Совпадений</p>
           </GlassCard>
         </div>
 
-        <GlassCard className="p-4">
+        <GlassCard className="p-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Заполненность профиля</span>
+            <span className="text-xs font-medium">Заполненность</span>
             <span className={`text-sm font-bold ${completion >= 70 ? 'text-green-400' : completion >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
               {completion}%
             </span>
@@ -647,17 +647,14 @@ useEffect(() => {
               style={{ width: `${completion}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            {completion < 40 ? 'Заполните больше полей для привлечения внимания!' : completion < 70 ? 'Хорошо, но можно лучше!' : 'Отличный профиль!'}
-          </p>
         </GlassCard>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-3 gap-4">
           <div className="md:col-span-1">
-            <GlassCard className="p-6">
+            <GlassCard className="p-4">
               <div className="text-center">
-                <div className="relative inline-block mb-4">
-                  <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-primary/30">
+                <div className="relative inline-block mb-3">
+                  <div className="w-24 h-24 mx-auto rounded-full overflow-hidden border-2 border-primary/30">
                     <img 
                       src={avatarUrl} 
                       alt="Аватар" 
@@ -672,45 +669,37 @@ useEffect(() => {
               </div>
 
               {/* Verification Section - Link to separate page */}
-              <div className="mt-4 rounded-xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-3 w-full box-border">
-                <div className="text-center mb-3">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Shield className="w-4 h-4 text-amber-500" />
-                    <span className="font-bold text-sm">Верификация</span>
-                  </div>
-                  {profile?.is_verified === true ? (
-                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                      <CheckCircle className="w-3 h-3 mr-1" /> Верифицирован
-                    </Badge>
-                  ) : (
-                    <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-                      <AlertCircle className="w-3 h-3 mr-1" /> Не верифицирован
-                    </Badge>
-                  )}
+              <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 w-full">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Shield className="w-3 h-3 text-amber-500" />
+                  <span className="font-bold text-xs">Верификация</span>
                 </div>
+                {profile?.is_verified === true ? (
+                  <Badge className="bg-green-500/20 text-green-400 text-xs">
+                    <CheckCircle className="w-3 h-3 mr-1" /> Верифицирован
+                  </Badge>
+                ) : (
+                  <Badge className="bg-red-500/20 text-red-400 text-xs">
+                    <AlertCircle className="w-3 h-3 mr-1" /> Не верифицирован
+                  </Badge>
+                )}
                 
                 {profile?.is_verified !== true && (
-                  <Link href="/verification" className="block w-full box-border">
-                    <Button
-                      className="w-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs"
-                    >
-                      Пройти верификацию
+                  <Link href="/verification" className="block mt-2 w-full">
+                    <Button className="w-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-xs py-1">
+                      Верификация
                     </Button>
                   </Link>
                 )}
-                
-                {profile?.is_verified === true && (
-                  <p className="text-xs text-green-400">Аккаунт верифицирован</p>
-                )}
               </div>
 
-              <div className="text-center">
+              <div className="text-center mt-3">
               {!editing ? (
                 <>
-                  <h2 className="text-2xl font-bold font-headline">{profile?.full_name || "Пользователь"}</h2>
-                  <p className="text-muted-foreground text-sm">@{profile?.username || "username"}</p>
+                  <h2 className="text-lg font-bold font-headline">{profile?.full_name || "Пользователь"}</h2>
+                  <p className="text-muted-foreground text-xs">@{profile?.username || "username"}</p>
                   {age && (
-                    <p className="text-muted-foreground text-sm">{age} лет</p>
+                    <p className="text-muted-foreground text-xs">{age} лет</p>
                   )}
                 </>
               ) : (
