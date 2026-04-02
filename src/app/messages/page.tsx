@@ -89,6 +89,8 @@ function MessagesContent() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const EMOJIS = ['😀', '😍', '🥰', '😘', '😊', '😎', '😢', '😭', '😡', '👍', '👎', '❤️', '💔', '🔥', '⭐', '✨', '🎉', '💯', '🙏', '👋', '🤗', '😏', '😴', '🤔', '👀', '💪', '🫶', '😇', '🤭', '🥺', '😬', '🙈', '💋', '🌹', '🌸', '🍀', '🎯', '💡', '🎁', '👅'];
@@ -243,6 +245,7 @@ function MessagesContent() {
         match_id: activeChat.id,
         sender_id: user.id,
         content: input,
+        is_read: false,
       });
       
       // Уведомление о новом сообщении
@@ -264,6 +267,61 @@ function MessagesContent() {
     }
 
     setLoading(false);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeChat || !user) return;
+    
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
+      const filePath = `messages/${user.id}/${fileName}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath);
+      
+      const imageMessage = `[Фото]`;
+      setInput(imageMessage);
+      
+      await supabase.from('messages').insert({
+        match_id: activeChat.id,
+        sender_id: user.id,
+        content: imageMessage,
+        is_read: false,
+      });
+      
+      const otherUserId = activeChat.id.includes('_') 
+        ? activeChat.id.split('_').find(id => id !== user.id) 
+        : null;
+      
+      if (otherUserId) {
+        createNotification({
+          userId: otherUserId,
+          type: 'message',
+          title: 'Новое сообщение с фото!',
+          message: `${user.user_metadata?.full_name || 'Пользователь'} отправил${user.user_metadata?.gender === 'female' ? 'а' : ''} фото`,
+          fromUserId: user.id,
+          fromUserName: user.user_metadata?.full_name || 'Пользователь',
+          fromUserAvatar: user.user_metadata?.avatar_url || undefined,
+          link: `/messages?chat=${activeChat.id}`
+        });
+      }
+    } catch (e) {
+      console.error('Error uploading image:', e);
+      alert('Ошибка загрузки фото');
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleBlockUser = async () => {
@@ -448,8 +506,21 @@ function MessagesContent() {
               >
                 <Smile className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Image className="w-5 h-5" />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? <Loader2 className="w-5 h-5 animate-spin" /> : <Image className="w-5 h-5" />}
               </Button>
             </div>
             <div className="flex-1 flex gap-2">
