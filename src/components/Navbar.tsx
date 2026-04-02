@@ -70,17 +70,15 @@ export function Navbar() {
           .limit(1)
           .maybeSingle();
         
-        console.log('Navbar: call result:', data, 'error:', error);
+        console.log('Calls result:', data, error);
         
-        // Force set regardless
         if (data) {
-          console.log('Navbar: SET call, id:', data.id);
-          setIncomingCall({...data});
-        } else {
-          console.log('Navbar: no call found');
+          console.log('Setting incoming call:', data.id);
+          window.alert('Входящий звонок от ' + data.caller_id);
+          setIncomingCall(data);
         }
       } catch (e) {
-        console.error('Navbar: error', e);
+        console.error('Error:', e);
       }
     };
     
