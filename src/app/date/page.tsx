@@ -167,7 +167,7 @@ function VideoDateContent() {
         .select()
         .single();
 
-      console.log('Call created:', call, 'error:', error);
+      console.log('Call created - data:', JSON.stringify(call), 'error:', error);
       
       if (error || !call) {
         console.error('Failed to create call, error:', error);

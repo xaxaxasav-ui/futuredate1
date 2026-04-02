@@ -61,21 +61,20 @@ export function Navbar() {
     
     const checkIncomingCalls = async () => {
       try {
+        // Get all pending calls where user is receiver
         const { data, error } = await supabase
           .from('calls')
-          .select('*')
+          .select('id, caller_id, receiver_id, status, created_at')
           .eq('receiver_id', user.id)
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .eq('status', 'pending');
         
-        console.log('Calls result:', data, error);
+        console.log('All pending calls for user:', data, 'error:', error);
         
-        if (data) {
-          console.log('Setting incoming call:', data.id);
-          window.alert('Входящий звонок от ' + data.caller_id);
-          setIncomingCall(data);
+        if (data && data.length > 0) {
+          const call = data[0];
+          console.log('Found call:', call.id);
+          window.alert('Входящий звонок! ID: ' + call.id);
+          setIncomingCall(call);
         }
       } catch (e) {
         console.error('Error:', e);
