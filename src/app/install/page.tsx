@@ -55,7 +55,7 @@ export default function InstallPage() {
             Если <strong>lavmee.ru</strong> не открывается, используйте резервный адрес:
           </p>
           <div className="bg-muted p-4 rounded-lg">
-            <code className="text-primary">https://futuredate1.vercel.app</code>
+            <code className="text-primary">https://lavmee.onrender.com</code>
           </div>
           <p className="text-sm text-muted-foreground mt-4">
             Иногда может потребоваться VPN для доступа к сайту.
