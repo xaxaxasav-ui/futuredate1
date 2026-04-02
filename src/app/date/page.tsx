@@ -3,12 +3,20 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/GlassCard";
-import { Video, Mic, MicOff, VideoOff, PhoneOff, Sparkles, MessageCircle, Volume2, Loader2 } from "lucide-react";
+import { Video, Mic, MicOff, VideoOff, PhoneOff, Sparkles, MessageCircle, Volume2, Loader2, Copy, Check } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createNotification } from "@/lib/notifications";
 import { Suspense } from "react";
+
+const ICE_SERVERS = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+  ]
+};
 
 function VideoDateContent() {
   const { user, loading: authLoading } = useSupabase();
@@ -24,12 +32,140 @@ function VideoDateContent() {
   const [callDuration, setCallDuration] = useState(0);
   const [callStarted, setCallStarted] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const peerConnection = useRef<RTCPeerConnection | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [partnerData, setPartnerData] = useState<any>(null);
   const [loadingPartner, setLoadingPartner] = useState(false);
+  
+  const [offer, setOffer] = useState<string>('');
+  const [answer, setAnswer] = useState<string>('');
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/auth");
+    }
+  }, [authLoading, user, router]);
+
+  useEffect(() => {
+    if (searchParams) {
+      setPartnerId(searchParams.get('user'));
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (callStarted) {
+      timerRef.current = setInterval(() => {
+        setCallDuration(prev => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [callStarted]);
+
+  useEffect(() => {
+    async function loadPartner() {
+      if (!partnerId) return;
+      setLoadingPartner(true);
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url, photos')
+          .eq('id', partnerId)
+          .single();
+        setPartnerData(data);
+      } catch (e) {
+        console.error('Error loading partner:', e);
+      } finally {
+        setLoadingPartner(false);
+      }
+    }
+    loadPartner();
+  }, [partnerId]);
+
+  const partnerImg = partnerData?.avatar_url || partnerData?.photos?.[0] || PlaceHolderImages[1].imageUrl;
+
+  const startCall = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      setLocalStream(stream);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+
+      const pc = new RTCPeerConnection(ICE_SERVERS);
+      peerConnection.current = pc;
+
+      stream.getTracks().forEach(track => {
+        pc.addTrack(track, stream);
+      });
+
+      pc.ontrack = (event) => {
+        setRemoteStream(event.streams[0]);
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = event.streams[0];
+        }
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      setOffer(JSON.stringify(offer));
+      
+      setCallStarted(true);
+      setError(null);
+    } catch (e: any) {
+      console.error('Error starting call:', e);
+      setError('Не удалось получить доступ к камере: ' + e.message);
+    }
+  };
+
+  const handleCopyOffer = () => {
+    navigator.clipboard.writeText(offer);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handlePasteAnswer = async () => {
+    if (!answer.trim()) return;
+    try {
+      const answerDesc = new RTCSessionDescription(JSON.parse(answer));
+      await peerConnection.current?.setRemoteDescription(answerDesc);
+      alert('Ответ принят! Ожидание соединения...');
+    } catch (e) {
+      alert('Ошибка приема ответа: ' + e.message);
+    }
+  };
+
+  const endCall = () => {
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    }
+    if (peerConnection.current) {
+      peerConnection.current.close();
+    }
+    setLocalStream(null);
+    setRemoteStream(null);
+    setCallStarted(false);
+    setCallDuration(0);
+    setOffer('');
+    setAnswer('');
+  };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -66,17 +202,6 @@ function VideoDateContent() {
   const partnerImg = partnerData?.avatar_url || partnerData?.photos?.[0] || PlaceHolderImages[1].imageUrl;
 
   useEffect(() => {
-    if (callStarted) {
-      timerRef.current = setInterval(() => {
-        setCallDuration(prev => prev + 1);
-      }, 1000);
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [callStarted]);
-
-  useEffect(() => {
     async function initCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -89,7 +214,6 @@ function VideoDateContent() {
         }
       } catch (err) {
         console.error('Error accessing camera:', err);
-        setError('Не удалось получить доступ к камере');
       }
     }
     initCamera();
@@ -200,6 +324,44 @@ function VideoDateContent() {
               Начать свидание
             </Button>
 
+            {offer && (
+              <div className="glass rounded-xl p-4 max-w-md mx-auto">
+                <p className="text-sm text-muted-foreground mb-2 text-center">Код для приглашения (отправьте партнёру):</p>
+                <textarea
+                  readOnly
+                  value={offer}
+                  className="w-full h-24 bg-black/50 text-xs p-2 rounded-lg resize-none font-mono"
+                />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleCopyOffer}
+                  className="w-full mt-2"
+                >
+                  {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                  {copied ? 'Скопировано!' : 'Копировать код'}
+                </Button>
+                
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <p className="text-sm text-muted-foreground mb-2">Вставьте код ответа от партнёра:</p>
+                  <textarea
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    placeholder="Вставьте полученный код..."
+                    className="w-full h-20 bg-black/50 text-xs p-2 rounded-lg resize-none font-mono"
+                  />
+                  <Button 
+                    onClick={handlePasteAnswer}
+                    className="w-full mt-2"
+                    size="sm"
+                    disabled={!answer.trim()}
+                  >
+                    Подключиться
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <Button 
               variant="ghost"
               onClick={() => router.push('/messages')}
@@ -244,6 +406,29 @@ function VideoDateContent() {
                   </div>
                 )}
                 <div className="absolute top-2 left-2 px-2 py-0.5 glass rounded text-[10px] uppercase font-bold tracking-widest">Вы</div>
+              </div>
+            )}
+
+            {remoteStream ? (
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <img 
+                  src={partnerImg} 
+                  alt="Ожидание видео..." 
+                  className="w-full h-full object-cover opacity-50"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60" />
+                <div className="relative z-10 flex flex-col items-center">
+                  <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+                  <p className="text-lg">Ожидание подключения партнёра...</p>
+                  <p className="text-sm text-muted-foreground mt-2">Попросите партнёра скопировать и отправить ваш код</p>
+                </div>
               </div>
             )}
 
