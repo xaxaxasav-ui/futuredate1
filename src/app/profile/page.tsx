@@ -559,6 +559,19 @@ useEffect(() => {
   };
   const completion = profileCompletion();
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen pt-20 pb-6 px-6 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    router.push("/auth");
+    return null;
+  }
+
   return (
     <div className="min-h-screen relative pt-24 pb-12 px-6">
       

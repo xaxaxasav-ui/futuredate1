@@ -1,9 +1,28 @@
 "use client";
 
+import { useEffect } from "react";
 import { GlassCard } from "@/components/GlassCard";
 import { Clock } from "lucide-react";
+import { useSupabase } from "@/components/SupabaseProvider";
+import { useRouter } from "next/navigation";
 
 export default function HistoryPage() {
+  const { user, loading: authLoading } = useSupabase();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/auth");
+    }
+  }, [authLoading, user, router]);
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen pt-20 pb-6 px-6 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen pt-20 pb-6 px-6">
       <div className="max-w-4xl mx-auto">
