@@ -41,8 +41,6 @@ export async function sendGift({
   const gift = gifts.find((g: any) => g.id === giftId);
   if (!gift) throw new Error('Gift not found');
   
-  console.log('Sending gift:', { senderId, receiverId, gift });
-  
   try {
     const { data, error } = await supabase.from('gifts').insert({
       sender_id: senderId,
@@ -53,8 +51,6 @@ export async function sendGift({
       message: message || null,
     }).select();
 
-    console.log('Gift insert result:', data, 'error:', error);
-    
     if (error) {
       console.error('Error inserting gift:', error);
       throw error;
