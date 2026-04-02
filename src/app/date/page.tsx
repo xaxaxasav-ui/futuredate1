@@ -31,7 +31,7 @@ const ICEBREAKERS = [
 ];
 
 function VideoDateContent() {
-  const { user, supabase, loading: authLoading } = useSupabase();
+  const { user, loading: authLoading } = useSupabase();
   const router = useRouter();
   const searchParams = useSearchParams();
   
