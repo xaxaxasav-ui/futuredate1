@@ -73,12 +73,16 @@ export function Navbar() {
         console.log('Navbar: call query result', { data, error });
         
         if (data && !error) {
+          console.log('Navbar: found incoming call:', data.id, 'caller:', data.caller_id);
           setIncomingCall((prev: any) => {
             if (!prev) {
+              console.log('Navbar: setting incomingCall');
               return {...data};
             }
             return prev;
           });
+        } else {
+          console.log('Navbar: no incoming calls');
         }
       } catch (e) {
         console.error('Navbar: error checking calls', e);
@@ -123,7 +127,46 @@ export function Navbar() {
 
   return (
     <>
-      {incomingCall ? (
+      <div style={{ 
+        position: 'fixed', 
+        inset: 0, 
+        zIndex: 9999, 
+        backgroundColor: 'rgba(0,0,0,0.9)', 
+        display: incomingCall ? 'flex' : 'none', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <div style={{ 
+          padding: 32, 
+          borderRadius: 16, 
+          backgroundColor: '#1a1a1a', 
+          border: '1px solid #333', 
+          textAlign: 'center',
+          color: 'white'
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>📞</div>
+          <h3 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }}>Входящий звонок!</h3>
+          <p style={{ color: '#888', marginBottom: 16 }}>
+            {callerData?.full_name || 'Пользователь'} звонит вам
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button 
+              onClick={declineCall}
+              style={{ padding: '8px 16px', borderRadius: 20, backgroundColor: '#dc2626', color: 'white', border: 'none', cursor: 'pointer' }}
+            >
+              Отклонить
+            </button>
+            <button 
+              onClick={acceptCall}
+              style={{ padding: '8px 16px', borderRadius: 20, backgroundColor: '#16a34a', color: 'white', border: 'none', cursor: 'pointer' }}
+            >
+              Принять
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {incomingCall && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center">
           <div className="p-8 rounded-2xl bg-black/90 border border-white/20 text-center">
             <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
@@ -149,8 +192,6 @@ export function Navbar() {
             </div>
           </div>
         </div>
-      ) : (
-        <div className="hidden">No incoming call</div>
       )}
 
       <nav className="fixed top-0 left-0 right-0 z-50">
