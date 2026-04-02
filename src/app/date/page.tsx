@@ -403,11 +403,13 @@ function VideoDateContent() {
       </div>
       
       <div className="flex-1 relative overflow-hidden flex items-center justify-center">
-        <img 
-          src={partnerImg} 
-          alt="Видео партнера" 
-          className="absolute inset-0 w-full h-full object-cover blur-[2px] scale-105"
-        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <img 
+            src={partnerImg} 
+            alt="Видео партнера" 
+            className="w-64 h-64 object-cover rounded-full blur-[2px]"
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60" />
         
         {!callStarted ? (
@@ -452,7 +454,6 @@ function VideoDateContent() {
               <Button 
                 onClick={initiateCall}
                 className="rounded-full px-8 h-14 neo-glow text-lg"
-                disabled={!localStream}
               >
                 <Video className="w-5 h-5 mr-2" />
                 Позвонить
@@ -468,7 +469,7 @@ function VideoDateContent() {
             </Button>
 
             {localStream && !callStarted && !callingTo && (
-              <div className="w-48 aspect-[3/4] glass rounded-2xl overflow-hidden border-2 border-white/10 mx-auto">
+              <div className="w-32 aspect-[3/4] glass rounded-2xl overflow-hidden border-2 border-white/10 mx-auto">
                 <video 
                   ref={localVideoRef}
                   autoPlay 
@@ -489,7 +490,7 @@ function VideoDateContent() {
             </div>
 
             {localStream && (
-              <div className="absolute bottom-24 right-8 w-48 aspect-[3/4] glass rounded-2xl overflow-hidden border-2 border-white/10 group">
+              <div className="absolute bottom-24 right-8 w-32 aspect-[3/4] glass rounded-2xl overflow-hidden border-2 border-white/10 group">
                 <video 
                   ref={localVideoRef}
                   autoPlay 
