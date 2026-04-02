@@ -74,16 +74,21 @@ export function Navbar() {
         console.log('Navbar: call query result', { data, error });
         
         if (data && !error) {
-          console.log('Navbar: incoming call found!', data);
-          setIncomingCall(data);
-          try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('full_name, avatar_url')
-              .eq('id', data.caller_id)
-              .maybeSingle();
-            setCallerData(profile);
-          } catch (e) {}
+          console.log('Navbar: incoming call found!', data.id, 'caller_id:', data.caller_id);
+          if (!incomingCall) {
+            console.log('Navbar: setting incomingCall for the first time');
+            setIncomingCall({...data});
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name, avatar_url')
+                .eq('id', data.caller_id)
+                .maybeSingle();
+              setCallerData(profile);
+            } catch (e) {}
+          }
+        } else {
+          console.log('Navbar: no call found or error', { data, error });
         }
       } catch (e) {
         console.error('Navbar: error checking calls', e);
