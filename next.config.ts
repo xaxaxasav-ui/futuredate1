@@ -53,7 +53,7 @@ const nextConfig: NextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=(self)' },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.vercel-insights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob: https://images.unsplash.com; font-src 'self' data:; connect-src 'self' https://kvpdfqbbwynlxicjxqmg.supabase.co https://*.supabase.co https://*.vercel.app https://cdn.vercel-insights.com https://geocode-maps.yandex.ru https://*.yandex.ru https://images.unsplash.com wss://*.supabase.co; media-src 'self' blob:; frame-src 'self' https://yandex.ru https://*.yandex.ru https://yandex.com;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.vercel-insights.com https://cdn.agora.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob: https://images.unsplash.com https://*.agora.io; font-src 'self' data:; connect-src 'self' https://kvpdfqbbwynlxicjxqmg.supabase.co https://*.supabase.co https://*.vercel.app https://cdn.vercel-insights.com https://geocode-maps.yandex.ru https://*.yandex.ru https://images.unsplash.com https://*.agora.io wss://*.supabase.co; media-src 'self' blob: https://*.agora.io; frame-src 'self' https://yandex.ru https://*.yandex.ru https://yandex.com;",
           },
         ],
       },
