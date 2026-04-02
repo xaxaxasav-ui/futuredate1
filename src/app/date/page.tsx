@@ -167,16 +167,18 @@ function VideoDateContent() {
         .select()
         .single();
 
-      console.log('Call created:', call, error);
+      console.log('Call created:', call, 'error:', error);
       
-      if (!call) {
-        console.error('Failed to create call');
+      if (error || !call) {
+        console.error('Failed to create call, error:', error);
+        alert('Ошибка при создании звонка: ' + (error?.message || 'unknown'));
         setCallingTo(false);
         setCallStatus(null);
         return;
       }
 
       setCurrentCallId(call.id);
+      console.log('Call ID set to:', call.id);
 
       console.log('Creating notification for', partnerId);
       await createNotification({
@@ -188,6 +190,7 @@ function VideoDateContent() {
         fromUserName: user.user_metadata?.full_name || 'Пользователь',
         fromUserAvatar: user.user_metadata?.avatar_url || undefined,
         link: `/date?user=${user.id}&call=${call.id}`
+      });
       });
 
       const statusCheck = setInterval(async () => {

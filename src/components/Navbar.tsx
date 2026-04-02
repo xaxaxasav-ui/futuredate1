@@ -73,17 +73,12 @@ export function Navbar() {
         console.log('Navbar: call query result', { data, error });
         
         if (data && !error) {
-          console.log('Navbar: incoming call found!', data.id);
           setIncomingCall((prev: any) => {
             if (!prev) {
-              console.log('Navbar: setting incomingCall, was:', prev);
               return {...data};
             }
-            console.log('Navbar: incomingCall already set, keeping:', prev);
             return prev;
           });
-        } else {
-          console.log('Navbar: no call found');
         }
         } else {
           console.log('Navbar: no call found or error', { data, error });
