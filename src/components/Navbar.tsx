@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, MessageSquare, User, Sparkles, LogOut, Sun, Moon, Navigation, Shield, HelpCircle, Bell, Menu, ChevronDown, MoreHorizontal, Star, Clock, FileText, Settings, Home, Download } from "lucide-react";
+import { Heart, MessageSquare, User, Sparkles, LogOut, Sun, Moon, Navigation, Shield, HelpCircle, Bell, Menu, ChevronDown, MoreHorizontal, Star, Clock, FileText, Settings, Home, Download, Phone, PhoneIncoming } from "lucide-react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useTheme } from "@/components/ThemeProvider";
 import { getUnreadCount, getUnreadMessagesCount } from "@/lib/notifications";
+import { supabase } from "@/lib/supabase";
+import { GlassCard } from "@/components/GlassCard";
 
 const ADMIN_EMAILS = [
   "admin@date-future.ru",
@@ -39,9 +41,12 @@ export function Navbar() {
   const { user, signOut } = useSupabase();
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
+  const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<any>(null);
+  const [callerData, setCallerData] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
@@ -49,6 +54,58 @@ export function Navbar() {
       getUnreadMessagesCount(user.id).then(count => setUnreadMessagesCount(count));
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const checkIncomingCalls = async () => {
+      try {
+        const { data } = await supabase
+          .from('calls')
+          .select('*')
+          .eq('receiver_id', user.id)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (data) {
+          setIncomingCall(data);
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', data.caller_id)
+            .single();
+          setCallerData(profile);
+        }
+      } catch (e) {}
+    };
+    
+    checkIncomingCalls();
+    const interval = setInterval(checkIncomingCalls, 3000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const acceptCall = async () => {
+    if (!incomingCall) return;
+    await supabase
+      .from('calls')
+      .update({ status: 'accepted' })
+      .eq('id', incomingCall.id);
+    router.push(`/date?user=${incomingCall.caller_id}&call=${incomingCall.id}`);
+    setIncomingCall(null);
+    setCallerData(null);
+  };
+
+  const declineCall = async () => {
+    if (!incomingCall) return;
+    await supabase
+      .from('calls')
+      .update({ status: 'declined' })
+      .eq('id', incomingCall.id);
+    setIncomingCall(null);
+    setCallerData(null);
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -61,7 +118,34 @@ export function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50">
+    <>
+      {incomingCall && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center">
+          <GlassCard className="p-6 max-w-sm text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto animate-pulse">
+              <PhoneIncoming className="w-8 h-8 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">Входящий звонок!</h3>
+              <p className="text-muted-foreground text-sm mt-1">
+                {callerData?.full_name || 'Пользователь'} звонит вам
+              </p>
+            </div>
+            <div className="flex gap-3 justify-center">
+              <Button variant="destructive" size="sm" className="rounded-full" onClick={declineCall}>
+                <Phone className="w-4 h-4 mr-1" />
+                Отклонить
+              </Button>
+              <Button size="sm" className="rounded-full neo-glow" onClick={acceptCall}>
+                <PhoneIncoming className="w-4 h-4 mr-1" />
+                Принять
+              </Button>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      <nav className="fixed top-0 left-0 right-0 z-50">
       <div className={`backdrop-blur-md border-b ${theme === 'dark' ? 'bg-black/80 border-white/10' : 'bg-white/80 border-black/10'}`}>
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
@@ -266,5 +350,6 @@ export function Navbar() {
         )}
       </div>
     </nav>
+    </>
   );
 }
