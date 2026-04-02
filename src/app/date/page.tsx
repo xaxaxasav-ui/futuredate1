@@ -112,16 +112,15 @@ function VideoDateContent() {
 
   useEffect(() => {
     if (partnerId && user) {
-      checkForIncomingCalls();
       const interval = setInterval(checkForIncomingCalls, 3000);
       return () => clearInterval(interval);
     }
-  }, [partnerId, user, supabase]);
+  }, [partnerId, user]);
 
   const checkForIncomingCalls = async () => {
     if (!partnerId || !user) return;
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('calls')
         .select('*')
         .eq('receiver_id', user.id)
@@ -131,7 +130,7 @@ function VideoDateContent() {
         .limit(1)
         .maybeSingle();
       
-      if (data) {
+      if (data && !error) {
         setIncomingCall(data);
         setCurrentCallId(data.id);
       }

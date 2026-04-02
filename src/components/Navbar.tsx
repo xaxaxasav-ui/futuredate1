@@ -60,7 +60,7 @@ export function Navbar() {
     
     const checkIncomingCalls = async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('calls')
           .select('*')
           .eq('receiver_id', user.id)
@@ -69,14 +69,16 @@ export function Navbar() {
           .limit(1)
           .maybeSingle();
         
-        if (data) {
+        if (data && !error) {
           setIncomingCall(data);
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', data.caller_id)
-            .single();
-          setCallerData(profile);
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name, avatar_url')
+              .eq('id', data.caller_id)
+              .maybeSingle();
+            setCallerData(profile);
+          } catch (e) {}
         }
       } catch (e) {}
     };
