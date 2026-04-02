@@ -27,6 +27,7 @@ interface ChatMessage {
   role: 'user' | 'partner';
   text: string;
   time: string;
+  isRead?: boolean;
 }
 
 interface Chat {
@@ -185,9 +186,18 @@ function MessagesContent() {
           const loadedMessages: ChatMessage[] = chatMessages.map((m: any) => ({
             role: m.sender_id === user.id ? 'user' : 'partner',
             text: m.content,
-            time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isRead: m.is_read === true
           }));
           setMessages(loadedMessages);
+          
+          // Mark messages as read
+          await supabase
+            .from('messages')
+            .update({ is_read: true, read_at: new Date().toISOString() })
+            .eq('match_id', activeChat.id)
+            .neq('sender_id', user.id)
+            .eq('is_read', false);
         } else {
           setMessages([]);
         }
@@ -399,7 +409,12 @@ function MessagesContent() {
                     <div className={`p-4 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'glass'}`}>
                       {msg.text}
                     </div>
-                    <span className="text-[10px] text-muted-foreground uppercase px-2">{msg.time}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground uppercase px-2">{msg.time}</span>
+                      {msg.role === 'user' && msg.isRead && (
+                        <span className="text-[10px] text-primary">✓✓</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
