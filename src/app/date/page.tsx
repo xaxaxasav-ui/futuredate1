@@ -28,8 +28,8 @@ function VideoDateContent() {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const partnerImg = PlaceHolderImages[1].imageUrl;
-  const selfImg = PlaceHolderImages[4].imageUrl;
+  const [partnerData, setPartnerData] = useState<any>(null);
+  const [loadingPartner, setLoadingPartner] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -42,6 +42,28 @@ function VideoDateContent() {
       setPartnerId(searchParams.get('user'));
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    async function loadPartner() {
+      if (!partnerId) return;
+      setLoadingPartner(true);
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url, photos')
+          .eq('id', partnerId)
+          .single();
+        setPartnerData(data);
+      } catch (e) {
+        console.error('Error loading partner:', e);
+      } finally {
+        setLoadingPartner(false);
+      }
+    }
+    loadPartner();
+  }, [partnerId]);
+
+  const partnerImg = partnerData?.avatar_url || partnerData?.photos?.[0] || PlaceHolderImages[1].imageUrl;
 
   useEffect(() => {
     if (callStarted) {
@@ -160,7 +182,7 @@ function VideoDateContent() {
         {!callStarted ? (
           <div className="relative z-10 text-center space-y-8">
             <div className="space-y-4">
-              <h2 className="text-4xl font-bold font-headline">Елена</h2>
+              <h2 className="text-4xl font-bold font-headline">{loadingPartner ? 'Загрузка...' : partnerData?.full_name || 'Пользователь'}</h2>
               <p className="text-muted-foreground">Ожидает начала видеосвидания</p>
             </div>
             
@@ -176,6 +198,14 @@ function VideoDateContent() {
             >
               <Video className="w-5 h-5 mr-2" />
               Начать свидание
+            </Button>
+
+            <Button 
+              variant="ghost"
+              onClick={() => router.push('/messages')}
+              className="rounded-full px-6 glass"
+            >
+              Отменить
             </Button>
 
             {localStream && (
@@ -196,7 +226,7 @@ function VideoDateContent() {
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass border-primary/20 text-xs font-semibold text-primary uppercase">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /> Соединение
               </div>
-              <h2 className="text-4xl font-bold font-headline">Елена</h2>
+              <h2 className="text-4xl font-bold font-headline">{loadingPartner ? 'Загрузка...' : partnerData?.full_name || 'Пользователь'}</h2>
             </div>
 
             {localStream && (
