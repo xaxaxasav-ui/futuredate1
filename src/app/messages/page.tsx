@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X } from "lucide-react";
+import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X, Smile, Image, Paperclip } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -88,7 +88,10 @@ function MessagesContent() {
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const EMOJIS = ['😀', '😍', '🥰', '😘', '😊', '😎', '😢', '😭', '😡', '👍', '👎', '❤️', '💔', '🔥', '⭐', '✨', '🎉', '💯', '🙏', '👋', '🤗', '😏', '😴', '🤔', '👀', '💪', '🫶', '😇', '🤭', '🥺', '😬', '🙈', '💋', '🌹', '🌸', '🍀', '🎯', '💡', '🎁', '👅'];
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -423,7 +426,33 @@ function MessagesContent() {
           </ScrollArea>
 
           <div className="p-6 border-t border-white/5 bg-black/10 space-y-3">
-            <div className="flex gap-4">
+            {showEmojiPicker && (
+              <GlassCard className="p-3 flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                {EMOJIS.map((emoji, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setInput(input + emoji)}
+                    className="text-2xl hover:bg-white/10 rounded p-1"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </GlassCard>
+            )}
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              >
+                <Smile className="w-5 h-5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Image className="w-5 h-5" />
+              </Button>
+            </div>
+            <div className="flex-1 flex gap-2">
               <Input 
                 placeholder="Передать сообщение..." 
                 className="glass rounded-full h-12 px-6"
