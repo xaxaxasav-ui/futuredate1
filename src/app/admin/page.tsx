@@ -173,14 +173,19 @@ export default function AdminPage() {
   const loadGifts = async () => {
     setLoadingGifts(true);
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('gifts_catalog')
         .select('*')
         .order('id');
+      
+      if (error) {
+        console.error('Supabase error:', error);
+        alert('Ошибка: ' + error.message);
+      }
       setGifts(data || []);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error loading gifts:', e);
-      alert('Ошибка загрузки подарков');
+      alert('Ошибка загрузки подарков: ' + e.message);
     } finally {
       setLoadingGifts(false);
     }
