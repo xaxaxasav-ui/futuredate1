@@ -488,8 +488,7 @@ export default function AdminPage() {
   const filteredProfiles = profiles.filter(p => 
     p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.city?.toLowerCase().includes(searchQuery.toLowerCase())
+    p.phone?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (authLoading && !showContent) {
@@ -642,7 +641,7 @@ export default function AdminPage() {
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Поиск по имени, email, городу..." 
+                  placeholder="Поиск по имени, username, телефону..." 
                   className="glass pl-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -652,6 +651,13 @@ export default function AdminPage() {
               {loading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : profiles.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Пользователи не найдены</p>
+                  <Button variant="ghost" size="sm" onClick={() => fetchData()} className="mt-2">
+                    Обновить
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[500px] overflow-y-auto">
