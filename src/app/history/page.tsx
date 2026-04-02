@@ -45,16 +45,37 @@ export default function HistoryPage() {
     if (!user) return;
     
     try {
-      const { data } = await supabase
+      const { data: profileViews } = await supabase
         .from('profile_views')
-        .select('*, profile:profiles!profile_views_profile_id_fk(id, full_name, age, city, avatar_url)')
+        .select('profile_id, created_at')
         .eq('viewer_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (data) {
-        setViews(data);
+      if (!profileViews || profileViews.length === 0) {
+        setViews([]);
+        setLoading(false);
+        return;
       }
+
+      const profileIds = [...new Set(profileViews.map(v => v.profile_id))];
+      
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, age, city, avatar_url')
+        .in('id', profileIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      
+      const viewsWithProfiles = profileViews.map(v => ({
+        id: v.profile_id,
+        profile_id: v.profile_id,
+        viewer_id: user.id,
+        created_at: v.created_at,
+        profile: profileMap.get(v.profile_id)
+      }));
+
+      setViews(viewsWithProfiles);
     } catch (e) {
       console.error('Error loading history:', e);
     } finally {

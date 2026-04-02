@@ -321,5 +321,23 @@ CREATE POLICY "Users can view received gifts" ON public.gifts
 CREATE POLICY "Users can send gifts" ON public.gifts
   FOR INSERT WITH CHECK (auth.uid() = sender_id);
 
+-- Storage policies for media bucket
+DROP POLICY IF EXISTS "Allow public read media" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated insert media" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated update media" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated delete media" ON storage.objects;
+
+CREATE POLICY "Allow public read media" ON storage.objects
+  FOR SELECT USING (bucket_id = 'media');
+
+CREATE POLICY "Allow authenticated insert media" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'media' AND auth.role() = 'authenticated');
+
+CREATE POLICY "Allow authenticated update media" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'media' AND auth.role() = 'authenticated');
+
+CREATE POLICY "Allow authenticated delete media" ON storage.objects
+  FOR DELETE USING (bucket_id = 'media' AND auth.role() = 'authenticated');
+
 -- Enable realtime for messages table
 -- ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;

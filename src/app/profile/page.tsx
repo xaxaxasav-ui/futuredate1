@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, Mail, Phone, Calendar, Edit, Save, Settings, Shield, Trash2, Heart, Sparkles, Music, Book, Camera, Gamepad, Code, TreePine, Utensils, Dumbbell, Globe, MapPin, Upload, X, Image as ImageIcon, Ruler, Briefcase, GraduationCap, Baby, Wine, Cigarette, CheckCircle, AlertCircle, TrendingUp, Eye, MessageCircle, Star, Clock, Zap, Award, Target, Activity, BrainCircuit, Share2, Copy, Check } from "lucide-react";
+import { Loader2, User, Mail, Phone, Calendar, Edit, Save, Settings, Shield, Trash2, Heart, Sparkles, Music, Book, Camera, Gamepad, Code, TreePine, Utensils, Dumbbell, Globe, MapPin, Upload, X, Image as ImageIcon, Ruler, Briefcase, GraduationCap, Baby, Wine, Cigarette, CheckCircle, AlertCircle, TrendingUp, Eye, MessageCircle, Star, Clock, Zap, Award, Target, Activity, BrainCircuit, Share2, Copy, Check, Gift } from "lucide-react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
@@ -108,12 +108,33 @@ export default function ProfilePage() {
   const [showCityDialog, setShowCityDialog] = useState(false);
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState({ views: 0, likes: 0, messages: 0, matches: 0 });
+  const [receivedGifts, setReceivedGifts] = useState<any[]>([]);
+  const [loadingGifts, setLoadingGifts] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchStats();
+      loadReceivedGifts();
     }
   }, [user]);
+
+  const loadReceivedGifts = async () => {
+    if (!user) return;
+    setLoadingGifts(true);
+    try {
+      const { data } = await supabase
+        .from('gifts')
+        .select('*, sender:profiles!gifts_sender_id_fk(id, full_name, avatar_url)')
+        .eq('receiver_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      setReceivedGifts(data || []);
+    } catch (e) {
+      console.error('Error loading gifts:', e);
+    } finally {
+      setLoadingGifts(false);
+    }
+  };
 
   const fetchStats = async () => {
     if (!user) {
@@ -874,6 +895,7 @@ useEffect(() => {
                 <TabsTrigger value="details" className="text-xs px-3 py-2 flex-shrink-0">Анкета</TabsTrigger>
                 <TabsTrigger value="ai" className="text-xs px-3 py-2 flex-shrink-0">ИИ</TabsTrigger>
                 <TabsTrigger value="photos" className="text-xs px-3 py-2 flex-shrink-0">Фото</TabsTrigger>
+                <TabsTrigger value="gifts" className="text-xs px-3 py-2 flex-shrink-0">Подарки {receivedGifts.length > 0 && <span className="ml-1 text-primary">({receivedGifts.length})</span>}</TabsTrigger>
                 <TabsTrigger value="settings" className="text-xs px-3 py-2 flex-shrink-0">Настройки</TabsTrigger>
               </TabsList>
 
@@ -1607,6 +1629,40 @@ useEffect(() => {
                       </div>
                     )}
                   </div>
+                </GlassCard>
+              </TabsContent>
+
+              <TabsContent value="gifts" className="space-y-6 mt-6">
+                <GlassCard className="p-6">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <Gift className="w-5 h-5" /> Полученные подарки
+                  </h3>
+                  
+                  {loadingGifts ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    </div>
+                  ) : receivedGifts.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">Подарков пока нет</p>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {receivedGifts.map(gift => (
+                        <div 
+                          key={gift.id}
+                          className="p-4 bg-muted/50 rounded-lg text-center"
+                        >
+                          <div className="text-3xl mb-2">{gift.gift_emoji || gift.gift_type}</div>
+                          <p className="text-sm font-medium">{gift.gift_name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            от {gift.sender?.full_name || 'неизвестно'}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {new Date(gift.created_at).toLocaleDateString('ru-RU')}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </GlassCard>
               </TabsContent>
 
