@@ -611,25 +611,20 @@ useEffect(() => {
           </Link>
         </header>
 
-        <div className="grid grid-cols-4 gap-2">
-          <GlassCard className="p-2 text-center">
-            <Eye className="w-4 h-4 mx-auto mb-1 text-blue-400" />
-            <p className="text-lg font-bold">{stats.views}</p>
+        <div className="grid grid-cols-3 gap-3">
+          <GlassCard className="p-3 text-center">
+            <Eye className="w-5 h-5 mx-auto mb-1 text-blue-400" />
+            <p className="text-xl font-bold">{stats.views}</p>
             <p className="text-[10px] text-muted-foreground">Просмотров</p>
           </GlassCard>
-          <GlassCard className="p-2 text-center">
-            <Heart className="w-4 h-4 mx-auto mb-1 text-pink-400" />
-            <p className="text-lg font-bold">{stats.likes}</p>
+          <GlassCard className="p-3 text-center">
+            <Heart className="w-5 h-5 mx-auto mb-1 text-pink-400" />
+            <p className="text-xl font-bold">{stats.likes}</p>
             <p className="text-[10px] text-muted-foreground">Лайков</p>
           </GlassCard>
-          <GlassCard className="p-2 text-center">
-            <MessageCircle className="w-4 h-4 mx-auto mb-1 text-green-400" />
-            <p className="text-lg font-bold">{stats.messages}</p>
-            <p className="text-[10px] text-muted-foreground">Сообщений</p>
-          </GlassCard>
-          <GlassCard className="p-2 text-center">
-            <Zap className="w-4 h-4 mx-auto mb-1 text-yellow-400" />
-            <p className="text-lg font-bold">{stats.matches}</p>
+          <GlassCard className="p-3 text-center">
+            <Zap className="w-5 h-5 mx-auto mb-1 text-yellow-400" />
+            <p className="text-xl font-bold">{stats.matches}</p>
             <p className="text-[10px] text-muted-foreground">Совпадений</p>
           </GlassCard>
         </div>
@@ -654,7 +649,7 @@ useEffect(() => {
             <GlassCard className="p-4">
               <div className="text-center">
                 <div className="relative inline-block mb-3">
-                  <div className="w-24 h-24 mx-auto rounded-full overflow-hidden border-2 border-primary/30">
+                  <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-2 border-primary/30">
                     <img 
                       src={avatarUrl} 
                       alt="Аватар" 
