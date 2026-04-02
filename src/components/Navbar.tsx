@@ -10,7 +10,6 @@ import { useSupabase } from "@/components/SupabaseProvider";
 import { useTheme } from "@/components/ThemeProvider";
 import { getUnreadCount, getUnreadMessagesCount } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
-import { GlassCard } from "@/components/GlassCard";
 
 const ADMIN_EMAILS = [
   "admin@date-future.ru",
@@ -74,19 +73,18 @@ export function Navbar() {
         console.log('Navbar: call query result', { data, error });
         
         if (data && !error) {
-          console.log('Navbar: incoming call found!', data.id, 'caller_id:', data.caller_id);
-          if (!incomingCall) {
-            console.log('Navbar: setting incomingCall for the first time');
-            setIncomingCall({...data});
-            try {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('full_name, avatar_url')
-                .eq('id', data.caller_id)
-                .maybeSingle();
-              setCallerData(profile);
-            } catch (e) {}
-          }
+          console.log('Navbar: incoming call found!', data.id);
+          setIncomingCall((prev: any) => {
+            if (!prev) {
+              console.log('Navbar: setting incomingCall, was:', prev);
+              return {...data};
+            }
+            console.log('Navbar: incomingCall already set, keeping:', prev);
+            return prev;
+          });
+        } else {
+          console.log('Navbar: no call found');
+        }
         } else {
           console.log('Navbar: no call found or error', { data, error });
         }
@@ -133,31 +131,37 @@ export function Navbar() {
 
   return (
     <>
-      {incomingCall && (
+      {incomingCall ? (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center">
-          <GlassCard className="p-6 max-w-sm text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto animate-pulse">
-              <PhoneIncoming className="w-8 h-8 text-primary" />
+          <div className="p-8 rounded-2xl bg-black/90 border border-white/20 text-center">
+            <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+              <PhoneIncoming className="w-8 h-8 text-green-500" />
             </div>
-            <div>
-              <h3 className="text-xl font-bold">Входящий звонок!</h3>
-              <p className="text-muted-foreground text-sm mt-1">
-                {callerData?.full_name || 'Пользователь'} звонит вам
-              </p>
-            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Входящий звонок!</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              {callerData?.full_name || 'Пользователь'} звонит вам
+            </p>
             <div className="flex gap-3 justify-center">
-              <Button variant="destructive" size="sm" className="rounded-full" onClick={declineCall}>
-                <Phone className="w-4 h-4 mr-1" />
+              <button 
+                onClick={declineCall}
+                className="px-4 py-2 rounded-full bg-red-600 text-white text-sm"
+              >
                 Отклонить
-              </Button>
-              <Button size="sm" className="rounded-full neo-glow" onClick={acceptCall}>
-                <PhoneIncoming className="w-4 h-4 mr-1" />
+              </button>
+              <button 
+                onClick={acceptCall}
+                className="px-4 py-2 rounded-full bg-green-600 text-white text-sm"
+              >
                 Принять
-              </Button>
+              </button>
             </div>
-          </GlassCard>
+          </div>
         </div>
+      ) : (
+        <div className="hidden">No incoming call</div>
       )}
+
+      <nav className="fixed top-0 left-0 right-0 z-50">
 
       <nav className="fixed top-0 left-0 right-0 z-50">
       <div className={`backdrop-blur-md border-b ${theme === 'dark' ? 'bg-black/80 border-white/10' : 'bg-white/80 border-black/10'}`}>
