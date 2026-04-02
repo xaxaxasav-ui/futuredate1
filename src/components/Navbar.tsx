@@ -80,9 +80,6 @@ export function Navbar() {
             return prev;
           });
         }
-        } else {
-          console.log('Navbar: no call found or error', { data, error });
-        }
       } catch (e) {
         console.error('Navbar: error checking calls', e);
       }
@@ -155,8 +152,6 @@ export function Navbar() {
       ) : (
         <div className="hidden">No incoming call</div>
       )}
-
-      <nav className="fixed top-0 left-0 right-0 z-50">
 
       <nav className="fixed top-0 left-0 right-0 z-50">
       <div className={`backdrop-blur-md border-b ${theme === 'dark' ? 'bg-black/80 border-white/10' : 'bg-white/80 border-black/10'}`}>

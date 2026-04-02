@@ -191,7 +191,6 @@ function VideoDateContent() {
         fromUserAvatar: user.user_metadata?.avatar_url || undefined,
         link: `/date?user=${user.id}&call=${call.id}`
       });
-      });
 
       const statusCheck = setInterval(async () => {
         const status = await checkCallStatus(call.id);
