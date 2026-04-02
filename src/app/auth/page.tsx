@@ -22,7 +22,7 @@ const COUNTRY_CODES = [
   { code: "+998", country: "Узбекистан", mask: "(___) ___-__-__" },
   { code: "+993", country: "Туркменистан", mask: "(___) __-__-__" },
   { code: "+992", country: "Таджикистан", mask: "(___) ___-__-__" },
-  { code: "+77", country: "Казахстан", mask: "(___) ___-__-__" },
+  { code: "+7", country: "Казахстан", mask: "(___) ___-__-__" },
 ];
 
 function AuthForm() {
@@ -344,11 +344,11 @@ function AuthForm() {
                     <select
                       value={selectedCountryCode.code}
                       onChange={(e) => setSelectedCountryCode(COUNTRY_CODES.find(c => c.code === e.target.value) || COUNTRY_CODES[0])}
-                      className="glass rounded-lg px-3 py-2 text-sm bg-background"
+                      className="glass rounded-lg px-3 py-2 text-sm bg-background text-foreground border border-input"
                     >
                       {COUNTRY_CODES.map(cc => (
-                        <option key={cc.code} value={cc.code}>
-                          {cc.code} ({cc.country})
+                        <option key={cc.code} value={cc.code} className="text-foreground">
+                          {cc.code} {cc.country}
                         </option>
                       ))}
                     </select>
