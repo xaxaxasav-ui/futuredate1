@@ -70,22 +70,17 @@ export function Navbar() {
           .limit(1)
           .maybeSingle();
         
-        console.log('Navbar: call query result', { data, error });
+        console.log('Navbar: call result:', data, 'error:', error);
         
-        if (data && !error) {
-          console.log('Navbar: found incoming call:', data.id, 'caller:', data.caller_id);
-          setIncomingCall((prev: any) => {
-            if (!prev) {
-              console.log('Navbar: setting incomingCall');
-              return {...data};
-            }
-            return prev;
-          });
+        // Force set regardless
+        if (data) {
+          console.log('Navbar: SET call, id:', data.id);
+          setIncomingCall({...data});
         } else {
-          console.log('Navbar: no incoming calls');
+          console.log('Navbar: no call found');
         }
       } catch (e) {
-        console.error('Navbar: error checking calls', e);
+        console.error('Navbar: error', e);
       }
     };
     
