@@ -153,10 +153,11 @@ function VideoDateContent() {
   const initiateCall = async () => {
     if (!user || !partnerId) return;
     
+    console.log('Initiating call to', partnerId);
     setCallingTo(true);
     setCallStatus('calling');
     try {
-      const { data: call } = await supabase
+      const { data: call, error } = await supabase
         .from('calls')
         .insert({
           caller_id: user.id,
@@ -166,9 +167,19 @@ function VideoDateContent() {
         .select()
         .single();
 
+      console.log('Call created:', call, error);
+      
+      if (!call) {
+        console.error('Failed to create call');
+        setCallingTo(false);
+        setCallStatus(null);
+        return;
+      }
+
       setCurrentCallId(call.id);
 
-      createNotification({
+      console.log('Creating notification for', partnerId);
+      await createNotification({
         userId: partnerId,
         type: 'message',
         title: 'Входящий звонок! 📞',

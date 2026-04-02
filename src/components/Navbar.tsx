@@ -58,6 +58,8 @@ export function Navbar() {
   useEffect(() => {
     if (!user) return;
     
+    console.log('Navbar: checking for calls, user:', user.id);
+    
     const checkIncomingCalls = async () => {
       try {
         const { data, error } = await supabase
@@ -69,7 +71,10 @@ export function Navbar() {
           .limit(1)
           .maybeSingle();
         
+        console.log('Navbar: call query result', { data, error });
+        
         if (data && !error) {
+          console.log('Navbar: incoming call found!', data);
           setIncomingCall(data);
           try {
             const { data: profile } = await supabase
@@ -80,7 +85,9 @@ export function Navbar() {
             setCallerData(profile);
           } catch (e) {}
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error('Navbar: error checking calls', e);
+      }
     };
     
     checkIncomingCalls();
