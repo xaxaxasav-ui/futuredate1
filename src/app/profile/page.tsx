@@ -122,12 +122,15 @@ export default function ProfilePage() {
     if (!user) return;
     setLoadingGifts(true);
     try {
-      const { data } = await supabase
+      console.log('Loading received gifts for user:', user.id);
+      const { data, error } = await supabase
         .from('gifts')
         .select('*, sender:profiles!gifts_sender_id_fk(id, full_name, avatar_url)')
         .eq('receiver_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20);
+      
+      console.log('Received gifts data:', data, 'error:', error);
       setReceivedGifts(data || []);
     } catch (e) {
       console.error('Error loading gifts:', e);
