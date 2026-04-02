@@ -1,20 +1,66 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { GlassCard } from "@/components/GlassCard";
-import { Clock } from "lucide-react";
+import { Clock, Eye, Heart, Star, MessageCircle } from "lucide-react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
+import Link from "next/link";
+
+interface ViewedProfile {
+  id: string;
+  profile_id: string;
+  viewer_id: string;
+  created_at: string;
+  profile?: {
+    id: string;
+    full_name: string;
+    age: number;
+    city: string;
+    avatar_url: string;
+  };
+}
 
 export default function HistoryPage() {
   const { user, loading: authLoading } = useSupabase();
   const router = useRouter();
+  const [views, setViews] = useState<ViewedProfile[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/auth");
     }
   }, [authLoading, user, router]);
+
+  useEffect(() => {
+    if (user) {
+      loadHistory();
+    }
+  }, [user]);
+
+  const loadHistory = async () => {
+    if (!user) return;
+    
+    try {
+      const { data } = await supabase
+        .from('profile_views')
+        .select('*, profile:profiles!profile_views_profile_id_fk(id, full_name, age, city, avatar_url)')
+        .eq('viewer_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (data) {
+        setViews(data);
+      }
+    } catch (e) {
+      console.error('Error loading history:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (authLoading || !user) {
     return (
@@ -23,6 +69,7 @@ export default function HistoryPage() {
       </div>
     );
   }
+
   return (
     <div className="min-h-screen pt-20 pb-6 px-6">
       <div className="max-w-4xl mx-auto">
@@ -31,16 +78,61 @@ export default function HistoryPage() {
             <Clock className="w-8 h-8" />
             История
           </h1>
-          <p className="text-muted-foreground">Просмотренные профили и действия</p>
+          <p className="text-muted-foreground">Просмотренные профили</p>
         </div>
 
-        <GlassCard className="p-12 text-center">
-          <Clock className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
-          <h3 className="text-xl font-medium mb-2">История пуста</h3>
-          <p className="text-muted-foreground">
-            Здесь будет отображаться история ваших просмотров и действий.
-          </p>
-        </GlassCard>
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : views.length === 0 ? (
+          <GlassCard className="p-12 text-center">
+            <Eye className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+            <h3 className="text-xl font-medium mb-2">История пуста</h3>
+            <p className="text-muted-foreground">
+              Здесь будет отображаться история просмотренных профилей.
+            </p>
+          </GlassCard>
+        ) : (
+          <div className="grid gap-4">
+            {views.map((view) => (
+              <Link key={view.id} href={`/profile/${view.profile_id}`}>
+                <GlassCard className="p-4 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-muted">
+                    {view.profile?.avatar_url ? (
+                      <img 
+                        src={view.profile.avatar_url} 
+                        alt={view.profile.full_name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-2xl">
+                        {view.profile?.full_name?.[0] || '?'}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium">
+                      {view.profile?.full_name || 'Пользователь'}
+                      {view.profile?.age && `, ${view.profile.age}`}
+                    </h3>
+                    {view.profile?.city && (
+                      <p className="text-sm text-muted-foreground">{view.profile.city}</p>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(view.created_at).toLocaleDateString('ru-RU', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </div>
+                </GlassCard>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
