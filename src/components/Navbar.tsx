@@ -46,6 +46,7 @@ export function Navbar() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [callerData, setCallerData] = useState<any>(null);
+  const [debugStatus, setDebugStatus] = useState<string>('');
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
 
   const playRingtone = () => {
@@ -77,17 +78,19 @@ export function Navbar() {
     
     const checkIncomingCalls = async () => {
       try {
-        console.log('Checking for calls for user:', user.id);
+        setDebugStatus('🔍 Проверка звонков...');
+        console.log('🔍 Polling: checking for calls for user:', user.id);
         const { data, error } = await supabase
           .from('calls')
           .select('id, caller_id, receiver_id, status, created_at')
           .eq('receiver_id', user.id)
           .eq('status', 'pending');
         
-        console.log('Calls query result:', data, error);
+        console.log('📊 Polling result:', { data, error, count: data?.length });
         
         if (data && data.length > 0 && !incomingCall) {
-          console.log('Incoming call found:', data[0]);
+          console.log('📲 Polling: incoming call found!', data[0]);
+          setDebugStatus('📲 Звонок найден!');
           setIncomingCall(data[0]);
           playRingtone();
           
@@ -96,12 +99,19 @@ export function Navbar() {
             .select('full_name, avatar_url')
             .eq('id', data[0].caller_id)
             .single();
+          console.log('👤 Caller profile:', profile);
           setCallerData(profile);
+          setDebugStatus('✅ Показываю уведомление');
+        } else if (data && data.length > 0 && incomingCall) {
+          console.log('⏭️ Polling: call exists but incomingCall already set, skipping');
+          setDebugStatus('⏭️ Уведомление уже показано');
+        } else {
+          console.log('⏭️ Polling: no pending calls');
+          setDebugStatus('⏭️ Нет входящих звонков');
         }
       } catch (e) {
-        console.error('Error checking calls:', e);
-      }
-    };
+        console.error('❌ Error checking calls:', e);
+        setDebugStatus('❌ Ошибка: ' + (e as Error).message);
       }
     };
     
@@ -115,19 +125,26 @@ export function Navbar() {
         table: 'calls',
         filter: `receiver_id=eq.${user.id}`
       }, (payload) => {
-        console.log('Realtime incoming call:', payload);
+        console.log('🔔 Realtime incoming call received:', payload);
+        console.log('Payload new:', payload.new);
+        console.log('Payload new status:', payload.new?.status);
         if (payload.new && payload.new.status === 'pending') {
+          console.log('✅ Setting incoming call from realtime');
+          setDebugStatus('🔔 Получено через realtime!');
           setIncomingCall(payload.new);
           playRingtone();
           supabase.from('profiles')
             .select('full_name, avatar_url')
             .eq('id', payload.new.caller_id)
             .single()
-            .then(({ data }) => setCallerData(data));
+            .then(({ data }) => {
+              console.log('Caller profile loaded:', data);
+              setCallerData(data);
+            });
         }
       })
       .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
+        console.log('📡 Realtime subscription status:', status);
       });
     
     return () => {
@@ -188,6 +205,9 @@ export function Navbar() {
           textAlign: 'center',
           color: 'white'
         }}>
+          {debugStatus && (
+            <div style={{ fontSize: 12, color: '#fbbf24', marginBottom: 12 }}>{debugStatus}</div>
+          )}
           <div style={{ fontSize: 48, marginBottom: 16 }}>📞</div>
           <h3 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }}>Входящий звонок!</h3>
           {callerData?.avatar_url && (
@@ -216,6 +236,9 @@ export function Navbar() {
       {incomingCall && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center">
           <div className="p-8 rounded-2xl bg-black/90 border border-white/20 text-center">
+            {debugStatus && (
+              <div className="text-xs text-yellow-400 mb-2">{debugStatus}</div>
+            )}
             {callerData?.avatar_url && (
               <img src={callerData.avatar_url} alt="" className="w-16 h-16 rounded-full mx-auto mb-4 object-cover" />
             )}
