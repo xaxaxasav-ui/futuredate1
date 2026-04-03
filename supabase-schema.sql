@@ -341,3 +341,27 @@ CREATE POLICY "Allow authenticated delete media" ON storage.objects
 
 -- Enable realtime for messages table
 -- ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+
+-- RLS for calls table
+ALTER TABLE public.calls ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view incoming calls" ON public.calls;
+DROP POLICY IF EXISTS "Users can view outgoing calls" ON public.calls;
+DROP POLICY IF EXISTS "Users can create calls" ON public.calls;
+DROP POLICY IF EXISTS "Users can update own calls" ON public.calls;
+
+CREATE POLICY "Users can view incoming calls" ON public.calls
+  FOR SELECT USING (receiver_id = auth.uid());
+
+CREATE POLICY "Users can view outgoing calls" ON public.calls
+  FOR SELECT USING (caller_id = auth.uid());
+
+CREATE POLICY "Users can create calls" ON public.calls
+  FOR INSERT WITH CHECK (caller_id = auth.uid());
+
+CREATE POLICY "Users can update own calls" ON public.calls
+  FOR UPDATE USING (caller_id = auth.uid() OR receiver_id = auth.uid());
+
+-- Enable realtime for calls
+ALTER PUBLICATION supabase_realtime ADD TABLE public.calls;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
