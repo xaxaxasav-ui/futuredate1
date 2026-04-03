@@ -112,6 +112,7 @@ export default function ProfilePage() {
   const [sentGifts, setSentGifts] = useState<any[]>([]);
   const [loadingGifts, setLoadingGifts] = useState(false);
   const [giftsTab, setGiftsTab] = useState<'received' | 'sent'>('received');
+  const [giftsError, setGiftsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -124,6 +125,7 @@ export default function ProfilePage() {
   const loadReceivedGifts = async () => {
     if (!user) return;
     setLoadingGifts(true);
+    setGiftsError(null);
     console.log('📦 Loading gifts for user:', user.id);
     try {
       const { data, error } = await supabase
@@ -134,6 +136,11 @@ export default function ProfilePage() {
         .limit(20);
       
       console.log('📦 Gifts query result:', { data, error, count: data?.length });
+      
+      if (error) {
+        console.error('📦 Gifts query error:', error);
+        setGiftsError(error.message);
+      }
       
       if (data && data.length > 0) {
         const senderIds = [...new Set(data.map(g => g.sender_id).filter(Boolean))];
@@ -156,6 +163,7 @@ export default function ProfilePage() {
       }
     } catch (e) {
       console.error('Error loading gifts:', e);
+      setGiftsError((e as Error).message);
       setReceivedGifts([]);
     } finally {
       setLoadingGifts(false);
@@ -1704,6 +1712,13 @@ useEffect(() => {
                   {loadingGifts ? (
                     <div className="flex justify-center py-8">
                       <Loader2 className="w-6 h-6 animate-spin" />
+                    </div>
+                  ) : giftsError ? (
+                    <div className="text-center py-8">
+                      <p className="text-red-500 mb-2">Ошибка: {giftsError}</p>
+                      <Button variant="outline" size="sm" onClick={loadReceivedGifts}>
+                        Повторить
+                      </Button>
                     </div>
                   ) : giftsTab === 'received' ? (
                     receivedGifts.length === 0 ? (

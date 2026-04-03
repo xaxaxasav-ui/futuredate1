@@ -47,10 +47,7 @@ export function Navbar() {
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [callerData, setCallerData] = useState<any>(null);
   const [debugStatus, setDebugStatus] = useState<string>('');
-  const [notificationPermissionRequested, setNotificationPermissionRequested] = useState(false);
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
-
-  const [notificationPermissionRequested, setNotificationPermissionRequested] = useState(false);
 
   const showPushNotification = async (title: string, body: string, icon?: string) => {
     if ('Notification' in window) {
@@ -68,9 +65,8 @@ export function Navbar() {
         });
       } else if (Notification.permission === 'denied') {
         console.log('Notifications blocked by user');
-      } else if (!notificationPermissionRequested) {
+      } else {
         console.log('Requesting notification permission...');
-        setNotificationPermissionRequested(true);
         const permission = await Notification.requestPermission();
         console.log('Permission result:', permission);
         if (permission === 'granted') {
@@ -118,19 +114,35 @@ export function Navbar() {
     if (user) {
       getUnreadCount(user.id).then(count => setUnreadCount(count));
       getUnreadMessagesCount(user.id).then(count => setUnreadMessagesCount(count));
+      
+      if ('Notification' in window && Notification.permission === 'default') {
+        requestNotificationPermission();
+      }
     }
   }, [user]);
 
+  useEffect(() => {
+    if (user && 'Notification' in window && Notification.permission === 'default') {
+      const timer = setTimeout(() => {
+        requestNotificationPermission();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
+
+  const [notificationPermissionStatus, setNotificationPermissionStatus] = useState<'default' | 'granted' | 'denied'>('default');
+
   const requestNotificationPermission = async () => {
     if ('Notification' in window) {
-      const permission = Notification.permission;
-      console.log('Current notification permission:', permission);
+      const currentPermission = Notification.permission;
+      console.log('Current notification permission:', currentPermission);
+      setNotificationPermissionStatus(currentPermission);
       
-      if (permission === 'granted') {
+      if (currentPermission === 'granted') {
         return true;
       }
       
-      if (permission === 'denied') {
+      if (currentPermission === 'denied') {
         console.log('Notifications denied by user');
         return false;
       }
@@ -138,10 +150,23 @@ export function Navbar() {
       console.log('Requesting notification permission...');
       const result = await Notification.requestPermission();
       console.log('Permission result:', result);
+      setNotificationPermissionStatus(result);
       return result === 'granted';
     }
     console.log('Notification API not available');
     return false;
+  };
+
+  const testNotification = () => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Тест уведомления', {
+        body: 'Если вы видите это - уведомления работают!',
+        icon: '/images/favicon.svg',
+        tag: 'test'
+      });
+    } else {
+      requestNotificationPermission();
+    }
   };
 
   useEffect(() => {
@@ -458,7 +483,7 @@ export function Navbar() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={requestNotificationPermission} 
+                  onClick={testNotification} 
                   className="rounded-full"
                   title="Включить уведомления"
                 >
