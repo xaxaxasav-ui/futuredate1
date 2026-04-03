@@ -10,6 +10,8 @@ import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createNotification } from "@/lib/notifications";
 
+const APP_ID = "9ff80e5c2be740deb61195e461353e19";
+
 function VideoDateContent() {
   const { user, loading: authLoading } = useSupabase();
   const router = useRouter();
@@ -25,8 +27,11 @@ function VideoDateContent() {
   const [error, setError] = useState<string | null>(null);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const agoraClientRef = useRef<any>(null);
+  const localTracksRef = useRef<any[]>([]);
 
   const [partnerData, setPartnerData] = useState<any>(null);
   const [loadingPartner, setLoadingPartner] = useState(false);
@@ -46,9 +51,12 @@ function VideoDateContent() {
       const callId = searchParams.get('call');
       if (callId) {
         setCurrentCallId(callId);
+        if (user) {
+          joinAgoraChannel(callId);
+        }
       }
     }
-  }, [searchParams]);
+  }, [searchParams, user]);
 
   useEffect(() => {
     if (callStarted) {
@@ -96,6 +104,45 @@ function VideoDateContent() {
     }
   };
 
+  const joinAgoraChannel = async (channelId: string) => {
+    try {
+      const { default: AgoraRTC } = await import('agora-rtc-sdk-ng');
+      const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      agoraClientRef.current = client;
+
+      await client.join(APP_ID, channelId, null, user?.id);
+
+      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+      localTracksRef.current = [audioTrack, videoTrack];
+
+      if (localVideoRef.current) {
+        videoTrack.play(localVideoRef.current);
+      }
+
+      await client.publish(localTracksRef.current);
+
+      client.on('user-published', async (remoteUser: any, mediaType: string) => {
+        await client.subscribe(remoteUser, mediaType);
+        if (mediaType === 'video' && remoteVideoRef.current) {
+          remoteUser.videoTrack.play(remoteVideoRef.current);
+        }
+        if (mediaType === 'audio') {
+          remoteUser.audioTrack.play();
+        }
+      });
+
+      client.on('user-left', (remoteUser: any) => {
+        console.log('User left:', remoteUser.uid);
+        endCall();
+      });
+
+      setCallStarted(true);
+    } catch (e: any) {
+      console.error('Agora join error:', e);
+      setError('Ошибка подключения: ' + e.message);
+    }
+  };
+
   const initiateCall = async () => {
     if (!user || !partnerId) return;
     
@@ -137,7 +184,7 @@ function VideoDateContent() {
         if (status === 'accepted') {
           clearInterval(statusCheck);
           setCallStatus('connected');
-          startVideoCall();
+          joinAgoraChannel(call.id);
         } else if (status === 'declined') {
           clearInterval(statusCheck);
           setCallStatus('declined');
@@ -161,31 +208,22 @@ function VideoDateContent() {
     }
   };
 
-  const startVideoCall = async () => {
+  const endCall = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true
-      });
-      
-      localStreamRef.current = stream;
-      
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
+      if (agoraClientRef.current) {
+        await agoraClientRef.current.leave();
+        agoraClientRef.current = null;
       }
       
-      setCallStarted(true);
-      setError(null);
-    } catch (e: any) {
-      console.error('Error starting video call:', e);
-      setError('Камера недоступна: ' + e.message);
-    }
-  };
-
-  const endCall = async () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-      localStreamRef.current = null;
+      localTracksRef.current.forEach((track: any) => {
+        try {
+          track.stop();
+          track.close();
+        } catch (e) {}
+      });
+      localTracksRef.current = [];
+    } catch (e) {
+      console.error('Error leaving Agora:', e);
     }
     
     if (currentCallId) {
@@ -199,7 +237,7 @@ function VideoDateContent() {
     setCallDuration(0);
     setCallStatus(null);
     setCurrentCallId(null);
-    router.push('/dashboard');
+    router.push('/messages');
   };
 
   const formatDuration = (seconds: number) => {
@@ -209,44 +247,14 @@ function VideoDateContent() {
   };
 
   useEffect(() => {
-    async function initCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-        }
-      } catch (err) {
-        console.error('Error accessing camera:', err);
-      }
-    }
-    initCamera();
-
-    return () => {
-      if (localVideoRef.current?.srcObject) {
-        const stream = localVideoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (localVideoRef.current?.srcObject) {
-      const stream = localVideoRef.current.srcObject as MediaStream;
-      stream.getAudioTracks().forEach(track => {
-        track.enabled = !isMuted;
-      });
+    if (localTracksRef.current[0]) {
+      localTracksRef.current[0].setEnabled(!isMuted);
     }
   }, [isMuted]);
 
   useEffect(() => {
-    if (localVideoRef.current?.srcObject) {
-      const stream = localVideoRef.current.srcObject as MediaStream;
-      stream.getVideoTracks().forEach(track => {
-        track.enabled = !isVideoOff;
-      });
+    if (localTracksRef.current[1]) {
+      localTracksRef.current[1].setEnabled(!isVideoOff);
     }
   }, [isVideoOff]);
 
@@ -280,14 +288,12 @@ function VideoDateContent() {
       </div>
       
       <div className="flex-1 relative overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <img 
-            src={partnerImg} 
-            alt="Видео партнера" 
-            className="w-64 h-64 object-cover rounded-full blur-[2px]"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60" />
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        />
         
         {!callStarted ? (
           <div className="relative z-10 text-center space-y-8">
@@ -344,18 +350,6 @@ function VideoDateContent() {
             >
               Назад к сообщениям
             </Button>
-
-            {localVideoRef.current?.srcObject && !callStarted && !callingTo && (
-              <div className="w-32 aspect-[3/4] glass rounded-2xl overflow-hidden border-2 border-white/10 mx-auto">
-                <video 
-                  ref={localVideoRef}
-                  autoPlay 
-                  playsInline 
-                  muted
-                  className="object-cover w-full h-full"
-                />
-              </div>
-            )}
           </div>
         ) : (
           <>
