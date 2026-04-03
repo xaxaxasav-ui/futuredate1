@@ -76,12 +76,14 @@ function VideoDateContent() {
     async function loadPartner() {
       if (!partnerId) return;
       setLoadingPartner(true);
+      console.log('Loading partner data for:', partnerId);
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('full_name, avatar_url, photos')
           .eq('id', partnerId)
           .single();
+        console.log('Partner data loaded:', data, error);
         setPartnerData(data);
       } catch (e) {
         console.error('Error loading partner:', e);
@@ -174,6 +176,9 @@ function VideoDateContent() {
         .single();
 
       console.log('Call created:', call, error);
+
+      if (error || !call) {
+        console.error('Failed to create call:', error);
         setCallingTo(false);
         setCallStatus(null);
         return;
@@ -310,6 +315,11 @@ function VideoDateContent() {
         
         {!callStarted ? (
           <div className="relative z-10 text-center space-y-8">
+            {partnerImg && (
+              <div className="w-32 h-32 rounded-full mx-auto overflow-hidden border-4 border-primary/30">
+                <img src={partnerImg} alt="" className="w-full h-full object-cover" />
+              </div>
+            )}
             <div className="space-y-4">
               <h2 className="text-4xl font-bold">{loadingPartner ? 'Загрузка...' : partnerData?.full_name || 'Пользователь'}</h2>
               <p className="text-muted-foreground">

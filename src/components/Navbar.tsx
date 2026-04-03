@@ -190,6 +190,9 @@ export function Navbar() {
         }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>📞</div>
           <h3 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }}>Входящий звонок!</h3>
+          {callerData?.avatar_url && (
+            <img src={callerData.avatar_url} alt="" style={{ width: 80, height: 80, borderRadius: '50%', margin: '0 auto 16px' }} />
+          )}
           <p style={{ color: '#888', marginBottom: 16 }}>
             {callerData?.full_name || 'Пользователь'} звонит вам
           </p>
@@ -213,6 +216,9 @@ export function Navbar() {
       {incomingCall && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center">
           <div className="p-8 rounded-2xl bg-black/90 border border-white/20 text-center">
+            {callerData?.avatar_url && (
+              <img src={callerData.avatar_url} alt="" className="w-16 h-16 rounded-full mx-auto mb-4 object-cover" />
+            )}
             <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
               <PhoneIncoming className="w-8 h-8 text-green-500" />
             </div>
