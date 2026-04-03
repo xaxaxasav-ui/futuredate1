@@ -71,6 +71,26 @@ export default function NotificationsPage() {
     }
   };
 
+  const deleteNotification = async (id: string) => {
+    try {
+      await supabase.from('notifications').delete().eq('id', id);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+    }
+  };
+
+  const deleteAllNotifications = async () => {
+    if (!user) return;
+    if (!confirm('Удалить все уведомления?')) return;
+    try {
+      await supabase.from('notifications').delete().eq('user_id', user.id);
+      setNotifications([]);
+    } catch (error) {
+      console.error("Error deleting all notifications:", error);
+    }
+  };
+
   if (checking) {
     return (
       <div className="min-h-screen relative pt-24 pb-6 px-6 flex items-center justify-center">
@@ -96,13 +116,18 @@ export default function NotificationsPage() {
             </p>
           </div>
           {unreadCount > 0 && (
-            <Button variant="outline" onClick={async () => {
-              if (!user) return;
-              await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
-              setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-            }}>
-              Прочитать все
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={async () => {
+                if (!user) return;
+                await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+                setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+              }}>
+                Прочитать все
+              </Button>
+              <Button variant="outline" size="sm" onClick={deleteAllNotifications}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
           )}
         </div>
 
@@ -142,6 +167,12 @@ export default function NotificationsPage() {
                 className="block"
               >
                 <GlassCard className={`p-4 flex gap-4 ${!notification.is_read ? 'border-primary/50' : ''}`}>
+                  <button 
+                    onClick={(e) => { e.preventDefault(); deleteNotification(notification.id); }}
+                    className="absolute top-2 right-2 p-1 hover:bg-red-500/20 rounded text-muted-foreground hover:text-red-500"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                   <div className="relative">
                     <img 
                       src={notification.from_user_avatar || PlaceHolderImages[0].imageUrl}
