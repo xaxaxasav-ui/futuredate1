@@ -118,11 +118,38 @@ export function Navbar() {
     if (user) {
       getUnreadCount(user.id).then(count => setUnreadCount(count));
       getUnreadMessagesCount(user.id).then(count => setUnreadMessagesCount(count));
+    }
+  }, [user]);
+
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window) {
+      const permission = Notification.permission;
+      console.log('Current notification permission:', permission);
       
-      if ('Notification' in window && Notification.permission === 'default') {
-        console.log('Requesting notification permission on first load');
-        Notification.requestPermission();
+      if (permission === 'granted') {
+        return true;
       }
+      
+      if (permission === 'denied') {
+        console.log('Notifications denied by user');
+        return false;
+      }
+      
+      console.log('Requesting notification permission...');
+      const result = await Notification.requestPermission();
+      console.log('Permission result:', result);
+      return result === 'granted';
+    }
+    console.log('Notification API not available');
+    return false;
+  };
+
+  useEffect(() => {
+    if (user && 'Notification' in window && Notification.permission === 'default') {
+      const timer = setTimeout(() => {
+        requestNotificationPermission();
+      }, 3000);
+      return () => clearTimeout(timer);
     }
   }, [user]);
 
@@ -427,6 +454,17 @@ export function Navbar() {
               >
                 {theme === 'dark' ? <Sun className="w-4 h-4 text-white" /> : <Moon className="w-4 h-4 text-gray-900" />}
               </Button>
+              {'Notification' in window && Notification.permission !== 'granted' && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={requestNotificationPermission} 
+                  className="rounded-full"
+                  title="Включить уведомления"
+                >
+                  <Bell className="w-4 h-4 text-yellow-500" />
+                </Button>
+              )}
               
               {user ? (
                 <>
