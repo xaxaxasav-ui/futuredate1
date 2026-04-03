@@ -68,7 +68,15 @@ export function Navbar() {
           .eq('status', 'pending');
         
         if (data && data.length > 0 && !incomingCall) {
+          console.log('Incoming call found:', data[0]);
           setIncomingCall(data[0]);
+          
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', data[0].caller_id)
+            .single();
+          setCallerData(profile);
         }
       } catch (e) {
         console.error('Error:', e);
@@ -77,7 +85,30 @@ export function Navbar() {
     
     checkIncomingCalls();
     const interval = setInterval(checkIncomingCalls, 3000);
-    return () => clearInterval(interval);
+    
+    const channel = supabase.channel('calls-realtime')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'calls',
+        filter: `receiver_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('Realtime incoming call:', payload);
+        if (payload.new && payload.new.status === 'pending') {
+          setIncomingCall(payload.new);
+          supabase.from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', payload.new.caller_id)
+            .single()
+            .then(({ data }) => setCallerData(data));
+        }
+      })
+      .subscribe();
+    
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const acceptCall = async () => {
