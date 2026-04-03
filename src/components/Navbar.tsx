@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,22 @@ export function Navbar() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [callerData, setCallerData] = useState<any>(null);
+  const ringtoneRef = useRef<HTMLAudioElement | null>(null);
+
+  const playRingtone = () => {
+    if (!ringtoneRef.current) {
+      ringtoneRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      ringtoneRef.current.loop = true;
+    }
+    ringtoneRef.current.play().catch(() => {});
+  };
+
+  const stopRingtone = () => {
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -70,6 +86,7 @@ export function Navbar() {
         if (data && data.length > 0 && !incomingCall) {
           console.log('Incoming call found:', data[0]);
           setIncomingCall(data[0]);
+          playRingtone();
           
           const { data: profile } = await supabase
             .from('profiles')
@@ -96,6 +113,7 @@ export function Navbar() {
         console.log('Realtime incoming call:', payload);
         if (payload.new && payload.new.status === 'pending') {
           setIncomingCall(payload.new);
+          playRingtone();
           supabase.from('profiles')
             .select('full_name, avatar_url')
             .eq('id', payload.new.caller_id)
@@ -113,6 +131,7 @@ export function Navbar() {
 
   const acceptCall = async () => {
     if (!incomingCall) return;
+    stopRingtone();
     await supabase
       .from('calls')
       .update({ status: 'accepted' })
@@ -124,6 +143,7 @@ export function Navbar() {
 
   const declineCall = async () => {
     if (!incomingCall) return;
+    stopRingtone();
     await supabase
       .from('calls')
       .update({ status: 'declined' })
