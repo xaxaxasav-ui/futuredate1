@@ -158,6 +158,8 @@ function VideoDateContent() {
   const initiateCall = async () => {
     if (!user || !partnerId) return;
     
+    console.log('Initiating call from', user.id, 'to', partnerId);
+    
     setCallingTo(true);
     setCallStatus('calling');
     try {
@@ -171,8 +173,7 @@ function VideoDateContent() {
         .select()
         .single();
 
-      if (error || !call) {
-        console.error('Failed to create call:', error);
+      console.log('Call created:', call, error);
         setCallingTo(false);
         setCallStatus(null);
         return;
