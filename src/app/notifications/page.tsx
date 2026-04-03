@@ -115,17 +115,19 @@ export default function NotificationsPage() {
               {unreadCount > 0 ? `У вас ${unreadCount} непрочитанных уведомлений` : 'Нет новых уведомлений'}
             </p>
           </div>
-          {unreadCount > 0 && (
+          {notifications.length > 0 && (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={async () => {
-                if (!user) return;
-                await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
-                setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-              }}>
-                Прочитать все
-              </Button>
+              {unreadCount > 0 && (
+                <Button variant="outline" onClick={async () => {
+                  if (!user) return;
+                  await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+                  setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+                }}>
+                  Прочитать все
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={deleteAllNotifications}>
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 mr-2" /> Удалить все
               </Button>
             </div>
           )}
