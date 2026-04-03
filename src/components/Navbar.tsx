@@ -49,6 +49,29 @@ export function Navbar() {
   const [debugStatus, setDebugStatus] = useState<string>('');
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
 
+  const showPushNotification = async (title: string, body: string, icon?: string) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, {
+        body,
+        icon: icon || '/images/favicon.svg',
+        tag: 'incoming-call',
+        renotify: true,
+        requireInteraction: true
+      });
+    } else if ('Notification' in window && Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        new Notification(title, {
+          body,
+          icon: icon || '/images/favicon.svg',
+          tag: 'incoming-call',
+          renotify: true,
+          requireInteraction: true
+        });
+      }
+    }
+  };
+
   const playRingtone = () => {
     if (!ringtoneRef.current) {
       ringtoneRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -63,6 +86,16 @@ export function Navbar() {
       ringtoneRef.current.currentTime = 0;
     }
   };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then((registration) => {
+        console.log('Service Worker registered:', registration);
+      }).catch((error) => {
+        console.log('Service Worker registration failed:', error);
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -101,7 +134,10 @@ export function Navbar() {
             .single();
           console.log('👤 Caller profile:', profile);
           setCallerData(profile);
+          
+          const callerName = profile?.full_name || 'Пользователь';
           setDebugStatus('✅ Показываю уведомление');
+          showPushNotification('📞 Входящий звонок!', `${callerName} звонит вам`);
         } else if (data && data.length > 0 && incomingCall) {
           console.log('⏭️ Polling: call exists but incomingCall already set, skipping');
           setDebugStatus('⏭️ Уведомление уже показано');
@@ -140,6 +176,8 @@ export function Navbar() {
             .then(({ data }) => {
               console.log('Caller profile loaded:', data);
               setCallerData(data);
+              const callerName = data?.full_name || 'Пользователь';
+              showPushNotification('📞 Входящий звонок!', `${callerName} звонит вам`);
             });
         }
       })
