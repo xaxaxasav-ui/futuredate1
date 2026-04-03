@@ -77,11 +77,14 @@ export function Navbar() {
     
     const checkIncomingCalls = async () => {
       try {
+        console.log('Checking for calls for user:', user.id);
         const { data, error } = await supabase
           .from('calls')
           .select('id, caller_id, receiver_id, status, created_at')
           .eq('receiver_id', user.id)
           .eq('status', 'pending');
+        
+        console.log('Calls query result:', data, error);
         
         if (data && data.length > 0 && !incomingCall) {
           console.log('Incoming call found:', data[0]);
@@ -96,7 +99,9 @@ export function Navbar() {
           setCallerData(profile);
         }
       } catch (e) {
-        console.error('Error:', e);
+        console.error('Error checking calls:', e);
+      }
+    };
       }
     };
     
@@ -121,7 +126,9 @@ export function Navbar() {
             .then(({ data }) => setCallerData(data));
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
     
     return () => {
       clearInterval(interval);
