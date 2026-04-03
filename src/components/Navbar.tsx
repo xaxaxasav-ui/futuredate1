@@ -47,28 +47,45 @@ export function Navbar() {
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [callerData, setCallerData] = useState<any>(null);
   const [debugStatus, setDebugStatus] = useState<string>('');
+  const [notificationPermissionRequested, setNotificationPermissionRequested] = useState(false);
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
 
+  const [notificationPermissionRequested, setNotificationPermissionRequested] = useState(false);
+
   const showPushNotification = async (title: string, body: string, icon?: string) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-        icon: icon || '/images/favicon.svg',
-        tag: 'incoming-call',
-        renotify: true,
-        requireInteraction: true
-      });
-    } else if ('Notification' in window && Notification.permission !== 'denied') {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
+    if ('Notification' in window) {
+      console.log('Notification API available, permission:', Notification.permission);
+      
+      if (Notification.permission === 'granted') {
+        console.log('Showing notification (already granted)');
         new Notification(title, {
           body,
           icon: icon || '/images/favicon.svg',
           tag: 'incoming-call',
           renotify: true,
-          requireInteraction: true
+          requireInteraction: true,
+          vibrate: [200, 100, 200]
         });
+      } else if (Notification.permission === 'denied') {
+        console.log('Notifications blocked by user');
+      } else if (!notificationPermissionRequested) {
+        console.log('Requesting notification permission...');
+        setNotificationPermissionRequested(true);
+        const permission = await Notification.requestPermission();
+        console.log('Permission result:', permission);
+        if (permission === 'granted') {
+          new Notification(title, {
+            body,
+            icon: icon || '/images/favicon.svg',
+            tag: 'incoming-call',
+            renotify: true,
+            requireInteraction: true,
+            vibrate: [200, 100, 200]
+          });
+        }
       }
+    } else {
+      console.log('Notification API not available');
     }
   };
 
@@ -101,6 +118,11 @@ export function Navbar() {
     if (user) {
       getUnreadCount(user.id).then(count => setUnreadCount(count));
       getUnreadMessagesCount(user.id).then(count => setUnreadMessagesCount(count));
+      
+      if ('Notification' in window && Notification.permission === 'default') {
+        console.log('Requesting notification permission on first load');
+        Notification.requestPermission();
+      }
     }
   }, [user]);
 
