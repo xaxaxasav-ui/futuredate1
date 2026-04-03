@@ -109,18 +109,22 @@ export default function ProfilePage() {
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState({ views: 0, likes: 0, messages: 0, matches: 0 });
   const [receivedGifts, setReceivedGifts] = useState<any[]>([]);
+  const [sentGifts, setSentGifts] = useState<any[]>([]);
   const [loadingGifts, setLoadingGifts] = useState(false);
+  const [giftsTab, setGiftsTab] = useState<'received' | 'sent'>('received');
 
   useEffect(() => {
     if (user) {
       fetchStats();
       loadReceivedGifts();
+      loadSentGifts();
     }
   }, [user]);
 
   const loadReceivedGifts = async () => {
     if (!user) return;
     setLoadingGifts(true);
+    console.log('📦 Loading gifts for user:', user.id);
     try {
       const { data, error } = await supabase
         .from('gifts')
@@ -129,12 +133,16 @@ export default function ProfilePage() {
         .order('created_at', { ascending: false })
         .limit(20);
       
+      console.log('📦 Gifts query result:', { data, error, count: data?.length });
+      
       if (data && data.length > 0) {
         const senderIds = [...new Set(data.map(g => g.sender_id).filter(Boolean))];
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, full_name, avatar_url')
           .in('id', senderIds);
+        
+        console.log('📦 Sender profiles:', profiles);
         
         const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
         const enrichedGifts = data.map(g => ({
@@ -143,6 +151,7 @@ export default function ProfilePage() {
         }));
         setReceivedGifts(enrichedGifts);
       } else {
+        console.log('📦 No gifts found');
         setReceivedGifts([]);
       }
     } catch (e) {
@@ -150,6 +159,40 @@ export default function ProfilePage() {
       setReceivedGifts([]);
     } finally {
       setLoadingGifts(false);
+    }
+  };
+
+  const loadSentGifts = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('gifts')
+        .select('*')
+        .eq('sender_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      console.log('📦 Sent gifts query result:', { data, error, count: data?.length });
+      
+      if (data && data.length > 0) {
+        const receiverIds = [...new Set(data.map(g => g.receiver_id).filter(Boolean))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', receiverIds);
+        
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const enrichedGifts = data.map(g => ({
+          ...g,
+          receiver: profileMap.get(g.receiver_id) || null
+        }));
+        setSentGifts(enrichedGifts);
+      } else {
+        setSentGifts([]);
+      }
+    } catch (e) {
+      console.error('Error loading sent gifts:', e);
+      setSentGifts([]);
     }
   };
 
@@ -1635,34 +1678,77 @@ useEffect(() => {
 
               <TabsContent value="gifts" className="space-y-6 mt-6">
                 <GlassCard className="p-6">
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <Gift className="w-5 h-5" /> Полученные подарки
-                  </h3>
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={() => setGiftsTab('received')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        giftsTab === 'received' 
+                          ? 'bg-primary text-white' 
+                          : 'bg-muted text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Полученные ({receivedGifts.length})
+                    </button>
+                    <button
+                      onClick={() => setGiftsTab('sent')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        giftsTab === 'sent' 
+                          ? 'bg-primary text-white' 
+                          : 'bg-muted text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Отправленные ({sentGifts.length})
+                    </button>
+                  </div>
                   
                   {loadingGifts ? (
                     <div className="flex justify-center py-8">
                       <Loader2 className="w-6 h-6 animate-spin" />
                     </div>
-                  ) : receivedGifts.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">Подарков пока нет</p>
+                  ) : giftsTab === 'received' ? (
+                    receivedGifts.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">Подарков пока нет</p>
+                    ) : (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {receivedGifts.map(gift => (
+                          <div 
+                            key={gift.id}
+                            className="p-4 bg-muted/50 rounded-lg text-center"
+                          >
+                            <div className="text-3xl mb-2">{gift.gift_emoji || gift.gift_type}</div>
+                            <p className="text-sm font-medium">{gift.gift_name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              от {gift.sender?.full_name || 'неизвестно'}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {new Date(gift.created_at).toLocaleDateString('ru-RU')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )
                   ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {receivedGifts.map(gift => (
-                        <div 
-                          key={gift.id}
-                          className="p-4 bg-muted/50 rounded-lg text-center"
-                        >
-                          <div className="text-3xl mb-2">{gift.gift_emoji || gift.gift_type}</div>
-                          <p className="text-sm font-medium">{gift.gift_name}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            от {gift.sender?.full_name || 'неизвестно'}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {new Date(gift.created_at).toLocaleDateString('ru-RU')}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                    sentGifts.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">Вы ещё не отправляли подарки</p>
+                    ) : (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {sentGifts.map(gift => (
+                          <div 
+                            key={gift.id}
+                            className="p-4 bg-muted/50 rounded-lg text-center"
+                          >
+                            <div className="text-3xl mb-2">{gift.gift_emoji || gift.gift_type}</div>
+                            <p className="text-sm font-medium">{gift.gift_name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              для {gift.receiver?.full_name || 'неизвестно'}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {new Date(gift.created_at).toLocaleDateString('ru-RU')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )
                   )}
                 </GlassCard>
               </TabsContent>
