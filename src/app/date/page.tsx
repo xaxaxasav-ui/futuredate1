@@ -158,13 +158,17 @@ function VideoDateContent() {
   };
 
   const initiateCall = async () => {
-    if (!user || !partnerId) return;
+    if (!user || !partnerId) {
+      console.log('❌ No user or partnerId', { user: user?.id, partnerId });
+      return;
+    }
     
-    console.log('Initiating call from', user.id, 'to', partnerId);
+    console.log('📱 Initiating call from', user.id, 'to', partnerId);
     
     setCallingTo(true);
     setCallStatus('calling');
     try {
+      console.log('🔄 Creating call record in database...');
       const { data: call, error } = await supabase
         .from('calls')
         .insert({
