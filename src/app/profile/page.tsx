@@ -124,14 +124,30 @@ export default function ProfilePage() {
     try {
       const { data, error } = await supabase
         .from('gifts')
-        .select('*, sender:profiles!gifts_sender_id_fk(id, full_name, avatar_url)')
+        .select('*')
         .eq('receiver_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20);
       
-      setReceivedGifts(data || []);
+      if (data && data.length > 0) {
+        const senderIds = [...new Set(data.map(g => g.sender_id).filter(Boolean))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', senderIds);
+        
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const enrichedGifts = data.map(g => ({
+          ...g,
+          sender: profileMap.get(g.sender_id) || null
+        }));
+        setReceivedGifts(enrichedGifts);
+      } else {
+        setReceivedGifts([]);
+      }
     } catch (e) {
       console.error('Error loading gifts:', e);
+      setReceivedGifts([]);
     } finally {
       setLoadingGifts(false);
     }
