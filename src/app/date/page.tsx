@@ -116,7 +116,7 @@ function VideoDateContent() {
       agoraClientRef.current = client;
 
       console.log('Attempting to join...');
-      await client.join(APP_ID, channelId, undefined);
+      await client.join(APP_ID, channelId, null);
       console.log('Joined successfully');
 
       const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
