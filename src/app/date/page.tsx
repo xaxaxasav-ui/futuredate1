@@ -51,12 +51,15 @@ function VideoDateContent() {
       const callId = searchParams.get('call');
       if (callId) {
         setCurrentCallId(callId);
-        if (user) {
-          joinAgoraChannel(callId);
-        }
       }
     }
-  }, [searchParams, user]);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (callStatus === 'connected' && currentCallId) {
+      joinAgoraChannel(currentCallId);
+    }
+  }, [callStatus, currentCallId]);
 
   useEffect(() => {
     if (callStarted) {
@@ -106,13 +109,18 @@ function VideoDateContent() {
 
   const joinAgoraChannel = async (channelId: string) => {
     try {
+      console.log('Joining Agora channel:', channelId, 'App ID:', APP_ID);
       const { default: AgoraRTC } = await import('agora-rtc-sdk-ng');
       const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      console.log('Client created');
       agoraClientRef.current = client;
 
-      await client.join(APP_ID, channelId, null, user?.id);
+      console.log('Attempting to join...');
+      await client.join(APP_ID, channelId, undefined);
+      console.log('Joined successfully');
 
       const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+      console.log('Local tracks created');
       localTracksRef.current = [audioTrack, videoTrack];
 
       if (localVideoRef.current) {
@@ -139,7 +147,11 @@ function VideoDateContent() {
       setCallStarted(true);
     } catch (e: any) {
       console.error('Agora join error:', e);
-      setError('Ошибка подключения: ' + e.message);
+      if (e.message?.includes('dynamic use static key') || e.code === 'CAN_NOT_GET_GATEWAY_SERVER') {
+        setError('Ошибка подключения: требуется настройка токена в Agora Console');
+      } else {
+        setError('Ошибка подключения: ' + (e.message || e.code || 'unknown'));
+      }
     }
   };
 
