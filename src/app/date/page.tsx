@@ -185,6 +185,8 @@ function VideoDateContent() {
         .single();
 
       console.log('📱 Call created:', call, error);
+      console.log('📱 Call ID:', call?.id);
+      console.log('📱 Receiver ID in DB:', partnerId);
 
       if (error || !call) {
         console.error('Failed to create call:', error);

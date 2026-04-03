@@ -120,6 +120,7 @@ export function Navbar() {
           .eq('status', 'pending');
         
         console.log('📊 Polling result:', { data, error, count: data?.length });
+        console.log('📊 Raw data:', JSON.stringify(data));
         
         if (data && data.length > 0 && !incomingCall) {
           console.log('📲 Polling: incoming call found!', data[0]);
