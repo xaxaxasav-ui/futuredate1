@@ -51,12 +51,13 @@ function VideoDateContent() {
       const callId = searchParams.get('call');
       if (callId) {
         setCurrentCallId(callId);
+        setCallStatus('incoming');
       }
     }
   }, [searchParams]);
 
   useEffect(() => {
-    if (callStatus === 'connected' && currentCallId) {
+    if ((callStatus === 'connected' || callStatus === 'incoming') && currentCallId) {
       joinAgoraChannel(currentCallId);
     }
   }, [callStatus, currentCallId]);
@@ -121,7 +122,11 @@ function VideoDateContent() {
       await client.join(APP_ID, channelId, null, null);
       console.log('Joined successfully');
 
-      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks({
+        AEC: true,
+        ANS: true,
+        AGC: true,
+      });
       console.log('Local tracks created');
       localTracksRef.current = [audioTrack, videoTrack];
 
@@ -340,6 +345,44 @@ function VideoDateContent() {
             {callStatus === 'declined' && (
               <div className="text-destructive px-4 py-2 glass rounded-lg">
                 Абонент отклонил звонок
+              </div>
+            )}
+
+            {callStatus === 'incoming' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-center gap-2 text-green-500">
+                  <Phone className="w-6 h-6 animate-pulse" />
+                  <span>Входящий звонок</span>
+                </div>
+                <div className="flex gap-4 justify-center">
+                  <Button 
+                    variant="destructive"
+                    onClick={async () => {
+                      if (currentCallId) {
+                        await supabase.from('calls').update({ status: 'declined' }).eq('id', currentCallId);
+                      }
+                      setCallStatus(null);
+                      setCurrentCallId(null);
+                      router.push('/messages');
+                    }}
+                    className="rounded-full px-6"
+                  >
+                    <PhoneOff className="w-5 h-5 mr-2" />
+                    Отклонить
+                  </Button>
+                  <Button 
+                    onClick={async () => {
+                      if (currentCallId) {
+                        await supabase.from('calls').update({ status: 'accepted' }).eq('id', currentCallId);
+                      }
+                      setCallStatus('connected');
+                    }}
+                    className="rounded-full px-6 neo-glow"
+                  >
+                    <Phone className="w-5 h-5 mr-2" />
+                    Принять
+                  </Button>
+                </div>
               </div>
             )}
 
