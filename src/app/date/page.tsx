@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createNotification } from "@/lib/notifications";
 
-const APP_ID = "9ff80e5c2be740deb61195e461353e19";
+const APP_ID = "96e592a19ed244138a1349e960da941f";
 
 function VideoDateContent() {
   const { user, loading: authLoading } = useSupabase();
