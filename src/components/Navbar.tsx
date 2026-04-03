@@ -106,7 +106,7 @@ export function Navbar() {
     };
     
     checkIncomingCalls();
-    const interval = setInterval(checkIncomingCalls, 3000);
+    const interval = setInterval(checkIncomingCalls, 1500);
     
     const channel = supabase.channel('calls-realtime')
       .on('postgres_changes', {
