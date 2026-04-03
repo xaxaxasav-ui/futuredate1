@@ -351,9 +351,13 @@ function VideoDateContent() {
                 </div>
                 <Button 
                   variant="ghost"
-                  onClick={() => {
+                  onClick={async () => {
+                    if (currentCallId) {
+                      await supabase.from('calls').update({ status: 'cancelled' }).eq('id', currentCallId);
+                    }
                     setCallingTo(false);
                     setCallStatus(null);
+                    setCurrentCallId(null);
                   }}
                   className="rounded-full px-6 glass"
                 >
