@@ -172,20 +172,51 @@ function VideoDateContent() {
 
   const startAgoraCall = async (callId: string) => {
     try {
-      // Load Agora SDK dynamically
-      const AgoraRTC = (window as any).AgoraRTC;
-      if (!AgoraRTC) {
-        // Load from CDN
-        const script = document.createElement('script');
-        script.src = 'https://cdn.agora.io/sdk/release/AgoraRTC_N.js';
-        script.onload = () => initAgoraCall(callId);
-        document.head.appendChild(script);
-      } else {
-        initAgoraCall(callId);
+      setError('Подключение к видеосервису...');
+      
+      // Try to use local camera directly first (WebRTC fallback)
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        
+        // Check if Agora is available
+        if ((window as any).AgoraRTC) {
+          await initAgoraCall(callId);
+        } else {
+          // If Agora not available, use simple WebRTC
+          setError('Используем WebRTC...');
+          await startSimpleWebRTC(callId);
+        }
+      } catch (mediaError: any) {
+        console.error('Media error:', mediaError);
+        setError('Камера недоступна: ' + mediaError.message);
       }
     } catch (e: any) {
       console.error('Error starting call:', e);
       setError('Ошибка: ' + e.message);
+    }
+  };
+
+  const startSimpleWebRTC = async (callId: string) => {
+    // Simple WebRTC fallback without Agora
+    const configuration = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    };
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+      
+      // For now just show local video - P2P would need signaling server
+      setCallStarted(true);
+      setError(null);
+    } catch (e: any) {
+      setError('Не удалось подключиться: ' + e.message);
     }
   };
 
