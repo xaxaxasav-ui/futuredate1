@@ -78,7 +78,7 @@ export default function HistoryPage() {
       const supabaseUrl = 'https://kvpdfqbbwynlxicjxqmg.supabase.co';
       const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2cGRmY3JieW5saWNqeHFtZyIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjQwMzc4NjQwfQ.LB3LV-NNN46W1pwDhyCqz3MN-4PPD3Y-ZMtZ8M4lJg';
       
-      const idsParam = uniqueIds.map(id => `"${id}"`).join(',');
+      const idsParam = uniqueIds.join(',');
       const response = await fetch(
         `${supabaseUrl}/rest/v1/profiles?select=id,full_name,age,city,avatar_url&id=in.(${idsParam})`,
         {
