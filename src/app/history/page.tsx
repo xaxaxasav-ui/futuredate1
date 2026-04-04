@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GlassCard } from "@/components/GlassCard";
-import { Clock, Eye, Heart, Star, MessageCircle } from "lucide-react";
+import { Clock, Eye, Heart, Star, MessageCircle, Trash2 } from "lucide-react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -41,6 +41,47 @@ export default function HistoryPage() {
       loadHistory();
     }
   }, [user]);
+
+  const clearHistory = async () => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profile_views')
+        .delete()
+        .eq('viewer_id', user.id);
+      
+      if (error) {
+        console.error('Error clearing history:', error);
+        return;
+      }
+      
+      setViews([]);
+    } catch (e) {
+      console.error('Error clearing history:', e);
+    }
+  };
+
+  const deleteView = async (viewId: string) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profile_views')
+        .delete()
+        .eq('profile_id', viewId)
+        .eq('viewer_id', user.id);
+      
+      if (error) {
+        console.error('Error deleting view:', error);
+        return;
+      }
+      
+      setViews(views.filter(v => v.profile_id !== viewId));
+    } catch (e) {
+      console.error('Error deleting view:', e);
+    }
+  };
 
   const loadHistory = async () => {
     if (!user) return;
@@ -142,10 +183,21 @@ export default function HistoryPage() {
     <div className="min-h-screen pt-20 pb-6 px-6">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold font-headline flex items-center justify-center gap-3">
-            <Clock className="w-8 h-8" />
-            История
-          </h1>
+          <div className="flex items-center justify-center gap-3">
+            <h1 className="text-3xl font-bold font-headline">
+              <Clock className="w-8 h-8 inline" />
+              История
+            </h1>
+            {views.length > 0 && (
+              <button
+                onClick={clearHistory}
+                className="flex items-center gap-1 text-sm text-red-500 hover:text-red-400 px-2 py-1 rounded hover:bg-red-500/10"
+              >
+                <Trash2 className="w-4 h-4" />
+                Очистить
+              </button>
+            )}
+          </div>
           <p className="text-muted-foreground">Просмотренные профили</p>
         </div>
 
@@ -164,8 +216,8 @@ export default function HistoryPage() {
         ) : (
           <div className="grid gap-4">
             {views.map((view) => (
-              <Link key={view.id} href={`/profile/${view.profile_id}`}>
-                <GlassCard className="p-4 flex items-center gap-4 hover:bg-white/5 transition-colors">
+              <GlassCard key={view.id} className="p-4 flex items-center gap-4 hover:bg-white/5 transition-colors group">
+                <Link href={`/profile/${view.profile_id}`} className="flex items-center gap-4 flex-1">
                   <div className="w-16 h-16 rounded-full overflow-hidden bg-muted">
                     {view.profile?.avatar_url ? (
                       <img 
@@ -196,8 +248,14 @@ export default function HistoryPage() {
                       minute: '2-digit'
                     })}
                   </div>
-                </GlassCard>
-              </Link>
+                </Link>
+                <button
+                  onClick={(e) => { e.preventDefault(); deleteView(view.profile_id); }}
+                  className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-red-500 transition-opacity"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </GlassCard>
             ))}
           </div>
         )}
