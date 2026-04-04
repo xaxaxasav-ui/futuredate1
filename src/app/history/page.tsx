@@ -48,66 +48,75 @@ export default function HistoryPage() {
     try {
       console.log('Loading history for user:', user.id);
       
-      // Get views for this user
-      const { data: profileViews, error: viewsError } = await supabase
+      // Step 1: Get profile_view records
+      const { data: profileViewsData, error: viewsError } = await supabase
         .from('profile_views')
-        .select('profile_id, created_at')
+        .select('profile_id, viewer_id, created_at')
         .eq('viewer_id', user.id)
         .order('created_at', { ascending: false })
         .limit(30);
 
-      console.log('Profile views:', profileViews, 'Error:', viewsError);
+      console.log('Profile views:', profileViewsData, 'Error:', viewsError);
 
-      if (!profileViews || profileViews.length === 0) {
+      if (!profileViewsData || profileViewsData.length === 0) {
         setViews([]);
         setLoading(false);
         return;
       }
 
-      // Get unique profile IDs
-      const uniqueIds = [...new Set(profileViews.map(v => v.profile_id))];
-      console.log('Unique profile IDs:', uniqueIds);
-      
-      if (uniqueIds.length === 0) {
-        setViews([]);
-        setLoading(false);
-        return;
-      }
-      
-      // Fetch profiles one by one
-      const profilesPromises = uniqueIds.map(async (id) => {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('id, full_name, age, city, avatar_url')
-          .eq('id', id)
-          .maybeSingle();
-        console.log('Profile for', id, ':', profile, 'Error:', error);
-        return profile;
-      });
-      
-      const profiles = await Promise.all(profilesPromises);
-      const validProfiles = profiles.filter(p => p !== null);
-      
-      console.log('Profiles loaded:', validProfiles);
+      // Step 2: Extract unique profile IDs
+      const profileIds = [...new Set(profileViewsData.map(v => v.profile_id))];
+      console.log('Profile IDs to fetch:', profileIds);
 
-      // If no profiles loaded due to RLS, create mock profiles with just IDs
-      const profilesToUse = validProfiles.length > 0 ? validProfiles : profileViews.map(v => ({
-        id: v.profile_id,
-        full_name: 'Пользователь',
-        age: null,
-        city: '',
-        avatar_url: null
-      }));
+      // Try fetching with Supabase client after RLS fix
+      // First test - simple query to check if profiles table is accessible
+      const { data: testData, error: testError } = await supabase
+        .from('profiles')
+        .select('id')
+        .limit(1);
       
-      const profileMap = new Map(profilesToUse.map(p => [p.id, p]));
+      console.log('Test query result:', testData, 'Error:', testError);
       
-      // Map views with profiles
-      const viewsWithProfiles = profileViews.map(v => ({
+      // Now fetch specific profile
+      for (const profileId of profileIds) {
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, full_name, city, avatar_url, birth_date')
+            .eq('id', profileId)
+            .single();
+          
+          console.log(`Profile for ${profileId}:`, profileData, 'Error:', profileError);
+          
+          if (profileData) {
+            let age = null;
+            if (profileData.birth_date) {
+              const birth = new Date(profileData.birth_date);
+              const today = new Date();
+              age = Math.floor((today.getTime() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+            }
+            profilesMap[profileId] = { ...profileData, age };
+          }
+        } catch (e) {
+          console.log('Error fetching profile', profileId, e);
+        }
+      }
+
+      console.log('Profiles map:', profilesMap);
+
+      // Step 4: Combine data
+      const viewsWithProfiles = profileViewsData.map((v) => ({
         id: v.profile_id,
         profile_id: v.profile_id,
-        viewer_id: user.id,
+        viewer_id: v.viewer_id,
         created_at: v.created_at,
-        profile: profileMap.get(v.profile_id)
+        profile: profilesMap[v.profile_id] || {
+          id: v.profile_id,
+          full_name: 'Пользователь',
+          age: null,
+          city: '',
+          avatar_url: null
+        }
       }));
 
       console.log('Setting views:', viewsWithProfiles);
