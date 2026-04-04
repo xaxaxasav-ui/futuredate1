@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X, Smile, Image, Paperclip, CheckCheck, BellOff, Mic, Plus, File, Volume2, Download, Check } from "lucide-react";
+import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X, Smile, Image, Paperclip, CheckCheck, BellOff, Mic, Plus, File, Volume2, Download, Check, ZoomIn } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -94,6 +94,7 @@ function MessagesContent() {
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [showDeleteMsg, setShowDeleteMsg] = useState<number | null>(null);
+  const [viewImage, setViewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -746,14 +747,27 @@ function MessagesContent() {
                   <div className={`max-w-[70%] space-y-1 ${msg.role === 'user' ? 'items-end' : 'items-start'} relative`}>
                     {msg.imageUrl && (
                       <div className="relative group rounded-2xl overflow-hidden max-w-[200px]">
-                        <img src={msg.imageUrl} alt="Фото" className="w-full h-auto rounded-2xl" />
-                        <a 
-                          href={msg.imageUrl} 
-                          download 
-                          className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"
-                        >
-                          <Download className="w-8 h-8 text-white" />
-                        </a>
+                        <img 
+                          src={msg.imageUrl} 
+                          alt="Фото" 
+                          className="w-full h-auto rounded-2xl cursor-pointer"
+                          onClick={() => setViewImage(msg.imageUrl)}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl">
+                          <button 
+                            onClick={() => setViewImage(msg.imageUrl)}
+                            className="p-2 bg-white/20 rounded-full hover:bg-white/30"
+                          >
+                            <ZoomIn className="w-6 h-6 text-white" />
+                          </button>
+                          <a 
+                            href={msg.imageUrl} 
+                            download 
+                            className="p-2 bg-white/20 rounded-full hover:bg-white/30"
+                          >
+                            <Download className="w-6 h-6 text-white" />
+                          </a>
+                        </div>
                         {msg.role === 'user' && (
                           <button 
                             onClick={() => setShowDeleteMsg(i)}
@@ -985,6 +999,33 @@ function MessagesContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {viewImage && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
+          onClick={() => setViewImage(null)}
+        >
+          <button 
+            className="absolute top-4 right-4 p-2 bg-white/10 rounded-full hover:bg-white/20"
+            onClick={() => setViewImage(null)}
+          >
+            <X className="w-8 h-8 text-white" />
+          </button>
+          <img 
+            src={viewImage} 
+            alt="Просмотр" 
+            className="max-w-[90vw] max-h-[90vh] object-contain"
+          />
+          <a 
+            href={viewImage} 
+            download
+            className="absolute bottom-8 flex items-center gap-2 px-6 py-3 bg-primary rounded-full hover:bg-primary/80"
+          >
+            <Download className="w-5 h-5" />
+            <span>Скачать</span>
+          </a>
+        </div>
+      )}
     </div>
   );
 }
