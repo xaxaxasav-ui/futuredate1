@@ -74,13 +74,27 @@ export default function HistoryPage() {
         return;
       }
       
-      // Fetch profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, age, city, avatar_url')
-        .in('id', uniqueIds);
+      // Fetch profiles - handle single ID differently
+      let profiles = null;
+      
+      if (uniqueIds.length === 1) {
+        // Single ID - use eq instead of in
+        const { data: singleProfile } = await supabase
+          .from('profiles')
+          .select('id, full_name, age, city, avatar_url')
+          .eq('id', uniqueIds[0])
+          .single();
+        profiles = singleProfile ? [singleProfile] : null;
+      } else {
+        // Multiple IDs - use in
+        const { data: multipleProfiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, age, city, avatar_url')
+          .in('id', uniqueIds);
+        profiles = multipleProfiles;
+      }
 
-      console.log('Profiles:', profiles, 'Error:', profilesError);
+      console.log('Profiles loaded:', profiles);
 
       if (!profiles || profiles.length === 0) {
         setViews([]);
