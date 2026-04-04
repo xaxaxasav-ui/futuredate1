@@ -834,27 +834,6 @@ function MessagesContent() {
               <ShieldAlert className="w-3 h-3 flex-shrink-0" />
               <span>⚠️ Запрещено: ссылки, телефоны, почта, другие мессенджеры</span>
             </div>
-            <div className="flex-1 flex gap-2">
-              <Input 
-                placeholder="Передать сообщение..." 
-                className="glass rounded-full h-12 px-6"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              />
-              <Button 
-                size="icon" 
-                className="rounded-full h-12 w-12 neo-glow flex-shrink-0"
-                onClick={handleSend}
-                disabled={loading}
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-              </Button>
-            </div>
-            <div className="text-sm text-red-400/90 text-center flex items-center justify-center gap-2">
-              <ShieldAlert className="w-4 h-4 flex-shrink-0" />
-              <span>⚠️ ЗАПРЕЩЕНО: ссылки, номера телефонов, почта, приглашения в другие мессенджеры (WhatsApp, Viber, Telegram). Нарушители банятся на 1 неделю!</span>
-            </div>
             </div>
             </>
             )}
