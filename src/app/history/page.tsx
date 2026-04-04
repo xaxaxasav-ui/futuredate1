@@ -37,6 +37,7 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (user) {
+      console.log('User ID for history:', user.id);
       loadHistory();
     }
   }, [user]);
@@ -45,13 +46,17 @@ export default function HistoryPage() {
     if (!user) return;
     
     try {
-      // Get views with explicit smaller limit
-      const { data: profileViews } = await supabase
+      console.log('Loading history for user:', user.id);
+      
+      // Get views for this user
+      const { data: profileViews, error: viewsError } = await supabase
         .from('profile_views')
         .select('profile_id, created_at')
         .eq('viewer_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(30);
+
+      console.log('Profile views:', profileViews, 'Error:', viewsError);
 
       if (!profileViews || profileViews.length === 0) {
         setViews([]);
@@ -59,16 +64,25 @@ export default function HistoryPage() {
         return;
       }
 
-      // Get unique profile IDs (limit to 10 to avoid issues)
-      const uniqueIds = [...new Set(profileViews.map(v => v.profile_id))].slice(0, 10);
+      // Get unique profile IDs
+      const uniqueIds = [...new Set(profileViews.map(v => v.profile_id))];
+      console.log('Unique profile IDs:', uniqueIds);
+      
+      if (uniqueIds.length === 0) {
+        setViews([]);
+        setLoading(false);
+        return;
+      }
       
       // Fetch profiles
-      const { data: profiles } = await supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, age, city, avatar_url')
         .in('id', uniqueIds);
 
-      if (!profiles) {
+      console.log('Profiles:', profiles, 'Error:', profilesError);
+
+      if (!profiles || profiles.length === 0) {
         setViews([]);
         setLoading(false);
         return;

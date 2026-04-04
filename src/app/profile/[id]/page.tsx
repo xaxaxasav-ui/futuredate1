@@ -90,10 +90,15 @@ export default function ViewProfilePage() {
         }
         
         if (user && user.id !== params.id) {
-          await supabase.from('profile_views').insert({
+          const { error: viewError } = await supabase.from('profile_views').insert({
             profile_id: params.id,
             viewer_id: user.id,
           });
+          if (viewError) {
+            console.error('Error saving profile view:', viewError);
+          } else {
+            console.log('Profile view saved');
+          }
           
           // Уведомление о просмотре профиля
           createNotification({
