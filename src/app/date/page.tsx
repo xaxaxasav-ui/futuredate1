@@ -124,62 +124,64 @@ function VideoDateContent() {
       console.log('Client created');
       agoraClientRef.current = client;
 
+      // Handle when remote user publishes video or audio
       client.on('user-published', async (remoteUser: any, mediaType: string) => {
-        console.log('User published event:', remoteUser.uid, mediaType);
-        console.log('Has videoTrack:', !!remoteUser.videoTrack, 'Has audioTrack:', !!remoteUser.audioTrack);
+        console.log('User published:', remoteUser.uid, mediaType);
         
         try {
-          // Always try to subscribe to both video and audio
-          if (!remoteUser.videoTrack || !remoteUser.audioTrack) {
-            await client.subscribe(remoteUser, 'video');
-            await client.subscribe(remoteUser, 'audio');
-          }
+          // Subscribe to both tracks
+          await client.subscribe(remoteUser, 'video');
+          await client.subscribe(remoteUser, 'audio');
           
+          // Play video if available
           if (remoteUser.videoTrack && remoteVideoRef.current) {
-            console.log('Playing remote video');
-            remoteUser.videoTrack.play(remoteVideoRef.current, { 
+            const videoTrack = remoteUser.videoTrack;
+            videoTrack.play(remoteVideoRef.current, { 
               fit: 'cover',
               mirror: false 
             });
+            console.log('Video playing');
           }
           
+          // Play audio
           if (remoteUser.audioTrack) {
-            console.log('Playing remote audio');
             remoteUser.audioTrack.play();
+            console.log('Audio playing');
           }
         } catch (e) {
           console.error('Subscribe error:', e);
         }
       });
 
+      // Handle track ended
       client.on('user-unpublished', (remoteUser: any, mediaType: string) => {
-        console.log('User unpublished:', remoteUser.uid, mediaType);
-        if (mediaType === 'video' && remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = null;
-        }
+        console.log('User unpublished:', mediaType);
       });
 
+      // Handle user left
       client.on('user-left', (remoteUser: any) => {
         console.log('User left:', remoteUser.uid);
         endCall();
       });
 
+      // Connection state changes
       client.on('connection-state-change', (curState: string, prevState: string) => {
-        console.log('Connection state:', prevState, '->', curState);
+        console.log('Connection:', prevState, '->', curState);
+        if (curState === 'DISCONNECTED') {
+          console.log('Connection lost');
+        }
       });
 
-      client.on('media-reconnect-start', () => {
-        console.log('Media reconnecting...');
-      });
-      
-      client.on('media-reconnect-end', () => {
-        console.log('Media reconnected');
+      // Handle media track ended
+      client.on('track-ended', (track: any) => {
+        console.log('Track ended:', track);
       });
 
-      console.log('Attempting to join...', { appId: APP_ID, channelId, token: null });
+      console.log('Joining channel...');
       await client.join(APP_ID, channelId, null, null);
-      console.log('Joined successfully');
+      console.log('Joined channel');
 
+      // Create local tracks with better settings for mobile
       const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks({
         AEC: 1,
         ANS: 1,
@@ -189,35 +191,36 @@ function VideoDateContent() {
         autoGainControl: true,
       }, {
         video: {
-          width: { ideal: 640 },
-          height: { ideal: 480 },
+          width: { ideal: 480 },
+          height: { ideal: 360 },
           frameRate: { ideal: 15 },
+          facingMode: 'user',
         },
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 16000,
-          channelCount: 1,
         }
       });
       console.log('Local tracks created');
       localTracksRef.current = [audioTrack, videoTrack];
 
+      // Play local preview
       if (localVideoRef.current) {
         videoTrack.play(localVideoRef.current, { fit: 'cover', mirror: true });
       }
 
+      // Publish
       await client.publish(localTracksRef.current);
-      console.log('Published successfully');
+      console.log('Published');
 
       setCallStarted(true);
     } catch (e: any) {
-      console.error('Agora join error:', e);
-      if (e.message?.includes('dynamic use static key') || e.code === 'CAN_NOT_GET_GATEWAY_SERVER') {
-        setError('Ошибка подключения: требуется настройка токена в Agora Console');
+      console.error('Agora error:', e);
+      if (e.message?.includes('dynamic use static key')) {
+        setError('Требуется настройка токена в Agora Console');
       } else {
-        setError('Ошибка подключения: ' + (e.message || e.code || 'unknown'));
+        setError('Ошибка: ' + (e.message || e.code || 'unknown'));
       }
     }
   };
