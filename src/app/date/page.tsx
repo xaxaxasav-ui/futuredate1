@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useRef, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/GlassCard";
-import { Video, Mic, MicOff, VideoOff, PhoneOff, Phone, Sparkles, MessageCircle, Volume2, Loader2 } from "lucide-react";
+import { Video, Mic, MicOff, VideoOff, PhoneOff, Phone, Sparkles, MessageCircle, Volume2, Loader2, X } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { supabase } from "@/lib/supabase";
@@ -431,6 +431,14 @@ function VideoDateContent() {
           </div>
         ) : (
           <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 z-50 rounded-full glass h-10 w-10"
+              onClick={endCall}
+            >
+              <X className="w-5 h-5" />
+            </Button>
             <div className="relative z-10 text-center space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass border-primary/20 text-xs font-semibold text-primary uppercase">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /> Соединение
