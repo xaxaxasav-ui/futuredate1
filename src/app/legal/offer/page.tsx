@@ -1,5 +1,7 @@
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
 import { GlassCard } from "@/components/GlassCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 

@@ -1,9 +1,11 @@
 import type {Metadata} from 'next';
+export const dynamic = 'force-dynamic';
+
 import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { SupabaseProvider } from '@/components/SupabaseProvider';
-import { ThemeProvider } from '@/components/ThemeProvider';
+import { ClientThemeProvider } from '@/components/ClientThemeProvider';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { CookieBanner } from '@/components/CookieBanner';
@@ -45,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="font-body antialiased bg-background text-foreground overflow-x-hidden flex flex-col min-h-screen">
-        <ThemeProvider>
+        <ClientThemeProvider>
           <SupabaseProvider>
             <Navbar />
             <main className="flex-1 pt-16">
@@ -55,7 +57,7 @@ export default function RootLayout({
             <CookieBanner />
             <Toaster />
           </SupabaseProvider>
-        </ThemeProvider>
+        </ClientThemeProvider>
       </body>
     </html>
   );
