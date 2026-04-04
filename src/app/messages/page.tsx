@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X, Smile, Image, Paperclip } from "lucide-react";
+import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X, Smile, Image, Paperclip, CheckCheck, BellOff } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -176,6 +176,22 @@ function MessagesContent() {
     loadChats();
   }, [user]);
 
+  // Mark all notifications as read when entering messages
+  useEffect(() => {
+    if (user && !authLoading) {
+      supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false)
+        .then(({ error }) => {
+          if (!error) {
+            console.log('All notifications marked as read');
+          }
+        });
+    }
+  }, [user, authLoading]);
+
   useEffect(() => {
     const loadMessages = async () => {
       if (!activeChat || !user) return;
@@ -196,13 +212,22 @@ function MessagesContent() {
           }));
           setMessages(loadedMessages);
           
-          // Mark messages as read
-          await supabase
+          // Mark messages as read and clear notifications
+          const { error: updateError } = await supabase
             .from('messages')
             .update({ is_read: true, read_at: new Date().toISOString() })
             .eq('match_id', activeChat.id)
             .neq('sender_id', user.id)
             .eq('is_read', false);
+          
+          if (!updateError) {
+            await supabase
+              .from('notifications')
+              .update({ is_read: true })
+              .eq('user_id', user.id)
+              .eq('is_read', false)
+              .or('type.eq.message,type.eq.like,type.eq.match');
+          }
         } else {
           setMessages([]);
         }
