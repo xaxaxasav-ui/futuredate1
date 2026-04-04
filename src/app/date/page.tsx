@@ -190,16 +190,21 @@ function VideoDateContent() {
         AEC: 1,
         ANS: 1,
         AGC: 1,
+        noiseSuppression: true,
+        echoCancellation: true,
+        autoGainControl: true,
       }, {
         video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          frameRate: { ideal: 30 },
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 15 },
         },
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
+          sampleRate: 16000,
+          channelCount: 1,
         }
       });
       console.log('Local tracks created');
@@ -329,6 +334,58 @@ function VideoDateContent() {
     setCurrentCallId(null);
     router.push('/messages');
   };
+
+  // Cleanup when component unmounts or user leaves
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (agoraClientRef.current) {
+        try {
+          agoraClientRef.current.leave();
+        } catch (e) {}
+      }
+      localTracksRef.current.forEach((track: any) => {
+        try {
+          track.stop();
+          track.close();
+        } catch (e) {}
+      });
+      if (currentCallId) {
+        supabase.from('calls').update({ status: 'completed' }).eq('id', currentCallId);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && callStarted) {
+        if (agoraClientRef.current) {
+          try {
+            agoraClientRef.current.leave();
+          } catch (e) {}
+        }
+        localTracksRef.current.forEach((track: any) => {
+          try {
+            track.stop();
+            track.close();
+          } catch (e) {}
+        });
+        if (currentCallId) {
+          supabase.from('calls').update({ status: 'completed' }).eq('id', currentCallId);
+        }
+        setCallStarted(false);
+        router.push('/messages');
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (callStarted) {
+        handleBeforeUnload();
+      }
+    };
+  }, [callStarted, currentCallId]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
