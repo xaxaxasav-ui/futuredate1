@@ -89,7 +89,7 @@ export default function HistoryPage() {
       
       console.log('Profiles loaded:', validProfiles);
 
-      const profileMap = new Map(profiles.map(p => [p.id, p]));
+      const profileMap = new Map(validProfiles.map(p => [p.id, p]));
       
       // Map views with profiles
       const viewsWithProfiles = profileViews.map(v => ({
