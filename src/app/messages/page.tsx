@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X, Smile, Image, Paperclip, CheckCheck, BellOff, Mic, Plus, File, Volume2 } from "lucide-react";
+import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X, Smile, Image, Paperclip, CheckCheck, BellOff, Mic, Plus, File, Volume2, Download, Check } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -93,6 +93,7 @@ function MessagesContent() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [showDeleteMsg, setShowDeleteMsg] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -572,6 +573,34 @@ function MessagesContent() {
     }
   };
 
+  const handleDeleteMessage = async (index: number) => {
+    const msg = messages[index];
+    if (!msg || !activeChat || !user) return;
+    
+    try {
+      // Delete from database by matching content and time
+      const { data: msgToDelete } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('match_id', activeChat.id)
+        .eq('sender_id', user.id)
+        .eq('content', msg.text || '[Фото]')
+        .single();
+      
+      if (msgToDelete) {
+        await supabase.from('messages').delete().eq('id', msgToDelete.id);
+      }
+      
+      // Remove from local state
+      const newMessages = [...messages];
+      newMessages.splice(index, 1);
+      setMessages(newMessages);
+      setShowDeleteMsg(null);
+    } catch (e) {
+      console.error('Error deleting message:', e);
+    }
+  };
+
   const handleBlockUser = async () => {
     if (!user || !activeChat) return;
     
@@ -713,16 +742,39 @@ function MessagesContent() {
             <ScrollArea className="flex-1 p-6">
             <div className="space-y-6">
               {messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[70%] space-y-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group`}>
+                  <div className={`max-w-[70%] space-y-1 ${msg.role === 'user' ? 'items-end' : 'items-start'} relative`}>
                     {msg.imageUrl && (
-                      <div className="rounded-2xl overflow-hidden max-w-[200px]">
+                      <div className="relative group rounded-2xl overflow-hidden max-w-[200px]">
                         <img src={msg.imageUrl} alt="Фото" className="w-full h-auto rounded-2xl" />
+                        <a 
+                          href={msg.imageUrl} 
+                          download 
+                          className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"
+                        >
+                          <Download className="w-8 h-8 text-white" />
+                        </a>
+                        {msg.role === 'user' && (
+                          <button 
+                            onClick={() => setShowDeleteMsg(i)}
+                            className="absolute top-2 right-2 p-1 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="w-4 h-4 text-white" />
+                          </button>
+                        )}
                       </div>
                     )}
                     {msg.text && !msg.imageUrl && (
-                      <div className={`p-4 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'glass'}`}>
+                      <div className={`p-4 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'glass'} relative group/message`}>
                         {msg.text}
+                        {msg.role === 'user' && (
+                          <button 
+                            onClick={() => setShowDeleteMsg(i)}
+                            className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full opacity-0 group-hover/message:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="w-3 h-3 text-white" />
+                          </button>
+                        )}
                       </div>
                     )}
                     <div className="flex items-center gap-1">
@@ -906,6 +958,27 @@ function MessagesContent() {
               Отмена
             </Button>
             <Button variant="destructive" onClick={handleDeleteChat}>
+              <Trash2 className="w-4 h-4 mr-2" />
+              Удалить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeleteMsg !== null} onOpenChange={() => setShowDeleteMsg(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Удалить сообщение</DialogTitle>
+            <DialogDescription>
+              Вы уверены, что хотите удалить это сообщение?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-between">
+            <Button variant="outline" onClick={() => setShowDeleteMsg(null)}>
+              <X className="w-4 h-4 mr-2" />
+              Отмена
+            </Button>
+            <Button variant="destructive" onClick={() => showDeleteMsg !== null && handleDeleteMessage(showDeleteMsg)}>
               <Trash2 className="w-4 h-4 mr-2" />
               Удалить
             </Button>
