@@ -90,7 +90,16 @@ export default function HistoryPage() {
       
       console.log('Profiles loaded:', validProfiles);
 
-      const profileMap = new Map(validProfiles.map(p => [p.id, p]));
+      // If no profiles loaded due to RLS, create mock profiles with just IDs
+      const profilesToUse = validProfiles.length > 0 ? validProfiles : profileViews.map(v => ({
+        id: v.profile_id,
+        full_name: 'Пользователь',
+        age: null,
+        city: '',
+        avatar_url: null
+      }));
+      
+      const profileMap = new Map(profilesToUse.map(p => [p.id, p]));
       
       // Map views with profiles
       const viewsWithProfiles = profileViews.map(v => ({
