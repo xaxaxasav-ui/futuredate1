@@ -116,18 +116,55 @@ function VideoDateContent() {
     try {
       console.log('Joining Agora channel:', channelId, 'App ID:', APP_ID);
       const { default: AgoraRTC } = await import('agora-rtc-sdk-ng');
-      const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      
+      const client = AgoraRTC.createClient({ 
+        mode: 'rtc', 
+        codec: 'vp8',
+      });
       console.log('Client created');
       agoraClientRef.current = client;
+
+      client.on('user-published', async (remoteUser: any, mediaType: string) => {
+        console.log('User published event:', remoteUser.uid, mediaType);
+        console.log('Has videoTrack:', !!remoteUser.videoTrack, 'Has audioTrack:', !!remoteUser.audioTrack);
+        try {
+          await client.subscribe(remoteUser, mediaType);
+          console.log('Subscribed to', mediaType);
+          
+          if (mediaType === 'video' && remoteUser.videoTrack && remoteVideoRef.current) {
+            console.log('Playing remote video');
+            remoteUser.videoTrack.play(remoteVideoRef.current);
+          }
+          if (mediaType === 'audio' && remoteUser.audioTrack) {
+            console.log('Playing remote audio');
+            remoteUser.audioTrack.play();
+          }
+        } catch (e) {
+          console.error('Subscribe error:', e);
+        }
+      });
+
+      client.on('user-unpublished', (remoteUser: any, mediaType: string) => {
+        console.log('User unpublished:', remoteUser.uid, mediaType);
+      });
+
+      client.on('user-left', (remoteUser: any) => {
+        console.log('User left:', remoteUser.uid);
+        endCall();
+      });
+
+      client.on('connection-state-change', (curState: string, prevState: string) => {
+        console.log('Connection state:', prevState, '->', curState);
+      });
 
       console.log('Attempting to join...', { appId: APP_ID, channelId, token: null });
       await client.join(APP_ID, channelId, null, null);
       console.log('Joined successfully');
 
       const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks({
-        AEC: true,
-        ANS: true,
-        AGC: true,
+        AEC: 1,
+        ANS: 1,
+        AGC: 1,
       });
       console.log('Local tracks created');
       localTracksRef.current = [audioTrack, videoTrack];
@@ -137,21 +174,7 @@ function VideoDateContent() {
       }
 
       await client.publish(localTracksRef.current);
-
-      client.on('user-published', async (remoteUser: any, mediaType: string) => {
-        await client.subscribe(remoteUser, mediaType);
-        if (mediaType === 'video' && remoteVideoRef.current) {
-          remoteUser.videoTrack.play(remoteVideoRef.current);
-        }
-        if (mediaType === 'audio') {
-          remoteUser.audioTrack.play();
-        }
-      });
-
-      client.on('user-left', (remoteUser: any) => {
-        console.log('User left:', remoteUser.uid);
-        endCall();
-      });
+      console.log('Published successfully');
 
       setCallStarted(true);
     } catch (e: any) {
@@ -319,12 +342,21 @@ function VideoDateContent() {
       </div>
       
       <div className="flex-1 relative overflow-hidden flex items-center justify-center">
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <div className="absolute inset-0 bg-black">
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            className="w-full h-full object-cover"
+          />
+          {!callStarted && partnerImg && (
+            <img 
+              src={partnerImg} 
+              alt="" 
+              className="absolute inset-0 w-full h-full object-cover opacity-50"
+            />
+          )}
+        </div>
         
         {!callStarted ? (
           <div className="relative z-10 text-center space-y-8">
