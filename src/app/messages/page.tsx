@@ -28,6 +28,7 @@ interface ChatMessage {
   text: string;
   time: string;
   isRead?: boolean;
+  imageUrl?: string;
 }
 
 interface Chat {
@@ -409,7 +410,8 @@ function MessagesContent() {
             role: m.sender_id === user.id ? 'user' : 'partner',
             text: m.content,
             time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isRead: m.is_read === true
+            isRead: m.is_read === true,
+            imageUrl: m.image_url || undefined
           }));
           setMessages(loadedMessages);
           
@@ -524,6 +526,7 @@ function MessagesContent() {
         sender_id: user.id,
         content: imageMessage,
         is_read: false,
+        image_url: publicUrl,
       });
       
       // Refresh messages
@@ -538,7 +541,8 @@ function MessagesContent() {
           role: m.sender_id === user.id ? 'user' : 'partner',
           text: m.content,
           time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isRead: m.is_read === true
+          isRead: m.is_read === true,
+          imageUrl: m.image_url || undefined
         }));
         setMessages(loadedMessages);
       }
@@ -711,9 +715,16 @@ function MessagesContent() {
               {messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[70%] space-y-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                    <div className={`p-4 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'glass'}`}>
-                      {msg.text}
-                    </div>
+                    {msg.imageUrl && (
+                      <div className="rounded-2xl overflow-hidden max-w-[200px]">
+                        <img src={msg.imageUrl} alt="Фото" className="w-full h-auto rounded-2xl" />
+                      </div>
+                    )}
+                    {msg.text && !msg.imageUrl && (
+                      <div className={`p-4 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'glass'}`}>
+                        {msg.text}
+                      </div>
+                    )}
                     <div className="flex items-center gap-1">
                       <span className="text-[10px] text-muted-foreground uppercase px-2">{msg.time}</span>
                       {msg.role === 'user' && msg.isRead && (
