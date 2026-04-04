@@ -4,6 +4,8 @@ import { GlassCard } from "@/components/GlassCard";
 import { Smartphone, Apple, Chrome, Globe } from "lucide-react";
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic';
+
 export default function InstallPage() {
   return (
     <div className="min-h-screen pt-20 pb-6 px-6">
