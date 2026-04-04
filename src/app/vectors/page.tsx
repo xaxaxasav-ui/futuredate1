@@ -33,7 +33,7 @@ const HOBBY_OPTIONS = [
   "Танцы", "Рисование", "Писательство", "Йога", "Автомобили"
 ];
 
-export default function VectorsPage() {
+function VectorsPage() {
   const { user, loading: authLoading } = useSupabase();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -466,3 +466,5 @@ export default function VectorsPage() {
     </div>
   );
 }
+
+export default VectorsPage;
