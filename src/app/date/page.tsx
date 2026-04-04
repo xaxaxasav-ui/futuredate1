@@ -127,17 +127,34 @@ function VideoDateContent() {
       client.on('user-published', async (remoteUser: any, mediaType: string) => {
         console.log('User published event:', remoteUser.uid, mediaType);
         console.log('Has videoTrack:', !!remoteUser.videoTrack, 'Has audioTrack:', !!remoteUser.audioTrack);
+        
         try {
-          await client.subscribe(remoteUser, mediaType);
-          console.log('Subscribed to', mediaType);
-          
-          if (mediaType === 'video' && remoteUser.videoTrack && remoteVideoRef.current) {
-            console.log('Playing remote video');
-            remoteUser.videoTrack.play(remoteVideoRef.current);
+          if (mediaType === 'video') {
+            await client.subscribe(remoteUser, 'video');
+            console.log('Subscribed to video');
+            if (remoteUser.videoTrack && remoteVideoRef.current) {
+              console.log('Playing remote video');
+              remoteUser.videoTrack.play(remoteVideoRef.current, { 
+                fit: 'cover',
+                mirror: false 
+              });
+            }
+            
+            await client.subscribe(remoteUser, 'audio');
+            console.log('Subscribed to audio');
+            if (remoteUser.audioTrack) {
+              console.log('Playing remote audio');
+              remoteUser.audioTrack.play();
+            }
           }
-          if (mediaType === 'audio' && remoteUser.audioTrack) {
-            console.log('Playing remote audio');
-            remoteUser.audioTrack.play();
+          
+          if (mediaType === 'audio') {
+            await client.subscribe(remoteUser, 'audio');
+            console.log('Subscribed to audio');
+            if (remoteUser.audioTrack) {
+              console.log('Playing remote audio');
+              remoteUser.audioTrack.play();
+            }
           }
         } catch (e) {
           console.error('Subscribe error:', e);
@@ -157,6 +174,14 @@ function VideoDateContent() {
         console.log('Connection state:', prevState, '->', curState);
       });
 
+      client.on('media-reconnect-start', () => {
+        console.log('Media reconnecting...');
+      });
+      
+      client.on('media-reconnect-end', () => {
+        console.log('Media reconnected');
+      });
+
       console.log('Attempting to join...', { appId: APP_ID, channelId, token: null });
       await client.join(APP_ID, channelId, null, null);
       console.log('Joined successfully');
@@ -165,12 +190,23 @@ function VideoDateContent() {
         AEC: 1,
         ANS: 1,
         AGC: 1,
+      }, {
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 },
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        }
       });
       console.log('Local tracks created');
       localTracksRef.current = [audioTrack, videoTrack];
 
       if (localVideoRef.current) {
-        videoTrack.play(localVideoRef.current);
+        videoTrack.play(localVideoRef.current, { fit: 'cover', mirror: true });
       }
 
       await client.publish(localTracksRef.current);
@@ -347,6 +383,7 @@ function VideoDateContent() {
             ref={remoteVideoRef}
             autoPlay
             playsInline
+            muted
             className="w-full h-full object-cover"
           />
           {!callStarted && partnerImg && (
@@ -478,7 +515,7 @@ function VideoDateContent() {
               <h2 className="text-4xl font-bold">{loadingPartner ? 'Загрузка...' : partnerData?.full_name || 'Пользователь'}</h2>
             </div>
 
-            <div className="absolute bottom-24 right-8 w-32 aspect-[3/4] glass rounded-2xl overflow-hidden border-2 border-white/10 group">
+            <div className="absolute bottom-24 right-8 w-24 md:w-32 aspect-[3/4] glass rounded-2xl overflow-hidden border-2 border-white/10 group">
               <video 
                 ref={localVideoRef}
                 autoPlay 
