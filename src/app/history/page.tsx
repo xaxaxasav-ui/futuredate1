@@ -70,6 +70,8 @@ export default function HistoryPage() {
 
       // Try fetching with Supabase client after RLS fix
       // First test - simple query to check if profiles table is accessible
+      let profilesMap: Record<string, any> = {};
+      
       const { data: testData, error: testError } = await supabase
         .from('profiles')
         .select('id')
