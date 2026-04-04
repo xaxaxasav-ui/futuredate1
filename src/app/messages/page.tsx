@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X, Smile, Image, Paperclip, CheckCheck, BellOff } from "lucide-react";
+import { Send, Search, MoreVertical, Loader2, ShieldAlert, Trash2, Ban, X, Smile, Image, Paperclip, CheckCheck, BellOff, Mic, Plus, File, Volume2 } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -90,10 +90,211 @@ function MessagesContent() {
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  const EMOJIS = ['😀', '😍', '🥰', '😘', '😊', '😎', '😢', '😭', '😡', '👍', '👎', '❤️', '💔', '🔥', '⭐', '✨', '🎉', '💯', '🙏', '👋', '🤗', '😏', '😴', '🤔', '👀', '💪', '🫶', '😇', '🤭', '🥺', '😬', '🙈', '💋', '🌹', '🌸', '🍀', '🎯', '💡', '🎁', '👅'];
+  // WhatsApp-style emoji groups
+  const EMOJI_GROUPS = [
+    { name: 'Смайлики', emojis: ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😜', '🤪', '😝', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '😮', '🤥', '😔', '😪', '🤤'] },
+    { name: 'Жесты', emojis: ['👍', '👎', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐️', '🖖', '👋', '🤏', '✍️', '🙏', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️', '👅', '👄'] },
+    { name: 'Любовь', emojis: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐'] },
+    { name: 'Природа', emojis: ['🌸', '💮', '🏵️', '🌹', '🥀', '🌺', '🌻', '🌼', '🌷', '🌱', '🌿', '☘️', '🍀', '🍁', '🍂', '🍃', '🌾', '🌵', '🎋', '🎍', '🌴', '🌳', '🌲', '🌱', '🌿', '🍄', '🐚', '🌊', '💧', '💦', '☔', '☂️', '🌬️', '❄️', '☃️', '⛄', '🌪️', '🌈', '☀️', '🌤️', '⛅', '🌥️'] },
+    { name: 'Еда', emojis: ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶️', '🫑', '🌽', '🥕', '🫒', '🧄', '🧅', '🥔', '🍠', '🥐', '🥯', '🍞', '🥖', '🥨', '🧀', '🥚', '🍳', '🧈'] },
+    { name: 'Животные', emojis: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🪱', '🐛', '🦋', '🐌', '🐞', '🐜', '🪰', '🪲'] },
+    { name: 'Праздники', emojis: ['🎃', '🎄', '🎆', '🎇', '🧨', '🎈', '🎉', '🎊', '🎁', '🏮', '🪔', '🏮', '🎀', '🎗️', '🎟️', '🎫', '🎭', '🎨', '🎬', '🎤', '🎧', '🎼', '🎹', '🥁', '🪘', '🎷', '🎺', '🎸', '🪕', '🎻', '🎲', '♟️', '🎯', '🎳', '🎮', '🎰', '🧩', '🎳', '🏆', '🥇', '🥈'] },
+    { name: 'Другое', emojis: ['⌚', '📱', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '💽', '💾', '💿', '📀', '📼', '📷', '📸', '📹', '🎥', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️', '⏲️', '⏰', '🕰️', '💰', '💳', '💎', '🔧', '🔨', '⚒️', '🛠️', '⛏️', '🔩', '⚙️'] },
+  ];
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+      
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await handleAudioSend(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      
+      // Auto-stop after 60 seconds
+      setTimeout(() => {
+        if (mediaRecorderRef.current && isRecording) {
+          mediaRecorderRef.current.stop();
+          setIsRecording(false);
+        }
+      }, 60000);
+    } catch (e) {
+      console.error('Error starting recording:', e);
+      alert('Не удалось начать запись. Проверьте разрешения микрофона.');
+    }
+  };
+
+  const handleAudioSend = async (audioBlob: Blob) => {
+    if (!activeChat || !user) return;
+    
+    try {
+      const fileName = `audio-${Date.now()}.webm`;
+      const filePath = `audio/${user.id}/${fileName}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, audioBlob);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath);
+      
+      await supabase.from('messages').insert({
+        match_id: activeChat.id,
+        sender_id: user.id,
+        content: `[Аудио]`,
+        is_read: false,
+      });
+      
+      // Send notification
+      const otherUserId = activeChat.id.includes('_') 
+        ? activeChat.id.split('_').find(id => id !== user.id) 
+        : null;
+      
+      if (otherUserId) {
+        createNotification({
+          userId: otherUserId,
+          type: 'message',
+          title: 'Новое голосовое сообщение!',
+          message: `${user.user_metadata?.full_name || 'Пользователь'} отправил голосовое`,
+          fromUserId: user.id,
+          fromUserName: user.user_metadata?.full_name || 'Пользователь',
+          fromUserAvatar: user.user_metadata?.avatar_url || undefined,
+          link: `/messages?chat=${activeChat.id}`
+        });
+      }
+    } catch (e) {
+      console.error('Error sending audio:', e);
+      alert('Ошибка отправки аудио');
+    }
+  };
+
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeChat || !user) return;
+    
+    setShowAttachmentMenu(false);
+    setUploadingImage(true);
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
+      const filePath = `documents/${user.id}/${fileName}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath);
+      
+      await supabase.from('messages').insert({
+        match_id: activeChat.id,
+        sender_id: user.id,
+        content: `[Файл: ${file.name}]`,
+        is_read: false,
+      });
+      
+      // Send notification
+      const otherUserId = activeChat.id.includes('_') 
+        ? activeChat.id.split('_').find(id => id !== user.id) 
+        : null;
+      
+      if (otherUserId) {
+        createNotification({
+          userId: otherUserId,
+          type: 'message',
+          title: 'Новый файл!',
+          message: `${user.user_metadata?.full_name || 'Пользователь'} отправил файл: ${file.name}`,
+          fromUserId: user.id,
+          fromUserName: user.user_metadata?.full_name || 'Пользователь',
+          fromUserAvatar: user.user_metadata?.avatar_url || undefined,
+          link: `/messages?chat=${activeChat.id}`
+        });
+      }
+    } catch (e) {
+      console.error('Error uploading document:', e);
+      alert('Ошибка загрузки файла');
+    } finally {
+      setUploadingImage(false);
+      if (docInputRef.current) docInputRef.current.value = '';
+    }
+  };
+
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeChat || !user) return;
+    
+    setShowAttachmentMenu(false);
+    
+    try {
+      const fileName = `audio-${Date.now()}.webm`;
+      const filePath = `audio/${user.id}/${fileName}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file);
+      
+      if (uploadError) throw uploadError;
+      
+      await supabase.from('messages').insert({
+        match_id: activeChat.id,
+        sender_id: user.id,
+        content: `[Аудио]`,
+        is_read: false,
+      });
+      
+      const otherUserId = activeChat.id.includes('_') 
+        ? activeChat.id.split('_').find(id => id !== user.id) 
+        : null;
+      
+      if (otherUserId) {
+        createNotification({
+          userId: otherUserId,
+          type: 'message',
+          title: 'Новое аудио!',
+          message: `${user.user_metadata?.full_name || 'Пользователь'} отправил аудио`,
+          fromUserId: user.id,
+          fromUserName: user.user_metadata?.full_name || 'Пользователь',
+          fromUserAvatar: user.user_metadata?.avatar_url || undefined,
+          link: `/messages?chat=${activeChat.id}`
+        });
+      }
+    } catch (e) {
+      console.error('Error uploading audio:', e);
+      alert('Ошибка загрузки аудио');
+    } finally {
+      if (audioInputRef.current) audioInputRef.current.value = '';
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -298,7 +499,9 @@ function MessagesContent() {
     const file = e.target.files?.[0];
     if (!file || !activeChat || !user) return;
     
+    setShowAttachmentMenu(false);
     setUploadingImage(true);
+    
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
@@ -315,7 +518,6 @@ function MessagesContent() {
         .getPublicUrl(filePath);
       
       const imageMessage = `[Фото]`;
-      setInput(imageMessage);
       
       await supabase.from('messages').insert({
         match_id: activeChat.id,
@@ -332,7 +534,7 @@ function MessagesContent() {
         createNotification({
           userId: otherUserId,
           type: 'message',
-          title: 'Новое сообщение с фото!',
+          title: 'Новое фото!',
           message: `${user.user_metadata?.full_name || 'Пользователь'} отправил${user.user_metadata?.gender === 'female' ? 'а' : ''} фото`,
           fromUserId: user.id,
           fromUserName: user.user_metadata?.full_name || 'Пользователь',
@@ -345,7 +547,7 @@ function MessagesContent() {
       alert('Ошибка загрузки фото');
     } finally {
       setUploadingImage(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (imageInputRef.current) imageInputRef.current.value = '';
     }
   };
 
@@ -510,43 +712,127 @@ function MessagesContent() {
 
           <div className="p-6 border-t border-white/5 bg-black/10 space-y-3">
             {showEmojiPicker && (
-              <GlassCard className="p-3 flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-                {EMOJIS.map((emoji, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setInput(input + emoji)}
-                    className="text-2xl hover:bg-white/10 rounded p-1"
-                  >
-                    {emoji}
-                  </button>
-                ))}
+              <GlassCard className="absolute bottom-20 left-0 right-0 mx-4 p-4 border-primary/30 z-50">
+                <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto">
+                  {EMOJI_GROUPS.flatMap(group => 
+                    group.emojis.map((emoji, idx) => (
+                      <button
+                        key={`${group.name}-${idx}`}
+                        onClick={() => setInput(prev => prev + emoji)}
+                        className="text-2xl p-1 hover:bg-white/10 rounded transition-colors"
+                      >
+                        {emoji}
+                      </button>
+                    ))
+                  )}
+                </div>
               </GlassCard>
             )}
-            <div className="flex gap-2">
+            
+            <div className="flex items-center gap-2 p-2">
+              {/* Attachment button (+ symbol) - WhatsApp style */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full"
+                className="rounded-full h-10 w-10 flex-shrink-0"
+                onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+              >
+                <Plus className="w-6 h-6" />
+              </Button>
+              
+              {/* Attachment menu popup */}
+              {showAttachmentMenu && (
+                <div className="absolute bottom-20 left-4 flex gap-3 z-50">
+                  <div className="flex flex-col items-center gap-1">
+                    <label className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center cursor-pointer hover:bg-green-600 transition-colors">
+                      <Image className="w-6 h-6 text-white" />
+                      <input
+                        type="file"
+                        ref={imageInputRef}
+                        onChange={handleImageUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="text-xs text-muted-foreground">Фото</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <label className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center cursor-pointer hover:bg-green-600 transition-colors">
+                      <File className="w-6 h-6 text-white" />
+                      <input
+                        type="file"
+                        ref={docInputRef}
+                        onChange={handleDocumentUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="text-xs text-muted-foreground">Файл</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <label className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center cursor-pointer hover:bg-green-600 transition-colors">
+                      <Volume2 className="w-6 h-6 text-white" />
+                      <input
+                        type="file"
+                        ref={audioInputRef}
+                        onChange={handleAudioUpload}
+                        accept="audio/*"
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="text-xs text-muted-foreground">Аудио</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Emoji button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full h-10 w-10 flex-shrink-0"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               >
-                <Smile className="w-5 h-5" />
+                <Smile className="w-6 h-6" />
               </Button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
-                className="hidden"
-              />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="rounded-full"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingImage}
-              >
-                {uploadingImage ? <Loader2 className="w-5 h-5 animate-spin" /> : <Image className="w-5 h-5" />}
-              </Button>
+              
+              {/* Message input - WhatsApp style */}
+              <div className="flex-1 relative">
+                <Input 
+                  placeholder="Сообщение"
+                  className="glass rounded-full h-10 px-4 pr-10"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                />
+                {input && (
+                  <button 
+                    onClick={handleSend}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-primary/80"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+              
+              {/* Microphone button (when no text) */}
+              {!input && (
+                <Button 
+                  size="icon"
+                  className="rounded-full h-10 w-10 neo-glow flex-shrink-0"
+                  onClick={() => startRecording()}
+                  disabled={isRecording}
+                >
+                  {isRecording ? (
+                    <div className="w-5 h-5 bg-red-500 rounded-full animate-pulse" />
+                  ) : (
+                    <Mic className="w-5 h-5" />
+                  )}
+                </Button>
+              )}
+            </div>
+            
+            <div className="text-xs text-red-400/90 text-center flex items-center justify-center gap-2 pb-2">
+              <ShieldAlert className="w-3 h-3 flex-shrink-0" />
+              <span>⚠️ Запрещено: ссылки, телефоны, почта, другие мессенджеры</span>
             </div>
             <div className="flex-1 flex gap-2">
               <Input 
