@@ -76,25 +76,28 @@ export default function HistoryPage() {
       
       // Fetch profiles - handle single ID differently
       let profiles = null;
+      let profilesError = null;
       
       if (uniqueIds.length === 1) {
         // Single ID - use eq instead of in
-        const { data: singleProfile } = await supabase
+        const { data: singleProfile, error: singleError } = await supabase
           .from('profiles')
           .select('id, full_name, age, city, avatar_url')
           .eq('id', uniqueIds[0])
           .single();
+        profilesError = singleError;
         profiles = singleProfile ? [singleProfile] : null;
       } else {
         // Multiple IDs - use in
-        const { data: multipleProfiles } = await supabase
+        const { data: multipleProfiles, error: multipleError } = await supabase
           .from('profiles')
           .select('id, full_name, age, city, avatar_url')
           .in('id', uniqueIds);
+        profilesError = multipleError;
         profiles = multipleProfiles;
       }
 
-      console.log('Profiles loaded:', profiles);
+      console.log('Profiles loaded:', profiles, 'Error:', profilesError);
 
       if (!profiles || profiles.length === 0) {
         setViews([]);
