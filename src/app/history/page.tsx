@@ -74,25 +74,24 @@ export default function HistoryPage() {
         return;
       }
       
-      // Use direct fetch to bypass RLS
-      const supabaseUrl = 'https://kvpdfqbbwynlxicjxqmg.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2cGRmY3JieW5saWNqeHFtZyIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjQwMzc4NjQwfQ.LB3LV-NNN46W1pwDhyCqz3MN-4PPD3Y-ZMtZ8M4lJg';
+      // Get the user's access token
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
       
-      const idsParam = uniqueIds.join(',');
-      const response = await fetch(
-        `${supabaseUrl}/rest/v1/profiles?select=id,full_name,age,city,avatar_url&id=in.(${idsParam})`,
-        {
-          headers: {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
-          }
-        }
-      );
-      const profiles = response.ok ? await response.json() : [];
+      // Use Supabase client with auth
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, age, city, avatar_url')
+        .in('id', uniqueIds);
       
-      console.log('Profiles loaded:', profiles);
+      console.log('Profiles loaded:', profiles, 'Error:', profilesError);
 
       if (!profiles || profiles.length === 0) {
+        // If error, try with auth header
+        if (profilesError) {
+          const { data: authProfiles } = await supabase.auth.getSession();
+          console.log('Retrying with auth...', authProfiles);
+        }
         setViews([]);
         setLoading(false);
         return;
