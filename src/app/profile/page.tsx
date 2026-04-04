@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useGeolocation } from "@/components/Geolocation";
+import { DEFAULT_GIFTS } from "@/lib/gifts";
 
 const HOBBY_OPTIONS = [
   { id: "music", label: "Музыка", icon: Music },
@@ -152,10 +153,16 @@ export default function ProfilePage() {
         console.log('📦 Sender profiles:', profiles);
         
         const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-        const enrichedGifts = data.map(g => ({
-          ...g,
-          sender: profileMap.get(g.sender_id) || null
-        }));
+        const enrichedGifts = data.map(g => {
+          const giftEmoji = g.gift_emoji || DEFAULT_GIFTS.find(dg => dg.id === g.gift_type)?.emoji || '🎁';
+          const giftName = g.gift_name || DEFAULT_GIFTS.find(dg => dg.id === g.gift_type)?.name || 'Подарок';
+          return {
+            ...g,
+            sender: profileMap.get(g.sender_id) || null,
+            gift_emoji: giftEmoji,
+            gift_name: giftName
+          };
+        });
         setReceivedGifts(enrichedGifts);
       } else {
         console.log('📦 No gifts found');
@@ -190,10 +197,16 @@ export default function ProfilePage() {
           .in('id', receiverIds);
         
         const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-        const enrichedGifts = data.map(g => ({
-          ...g,
-          receiver: profileMap.get(g.receiver_id) || null
-        }));
+        const enrichedGifts = data.map(g => {
+          const giftEmoji = g.gift_emoji || DEFAULT_GIFTS.find(dg => dg.id === g.gift_type)?.emoji || '🎁';
+          const giftName = g.gift_name || DEFAULT_GIFTS.find(dg => dg.id === g.gift_type)?.name || 'Подарок';
+          return {
+            ...g,
+            receiver: profileMap.get(g.receiver_id) || null,
+            gift_emoji: giftEmoji,
+            gift_name: giftName
+          };
+        });
         setSentGifts(enrichedGifts);
       } else {
         setSentGifts([]);
