@@ -76,11 +76,12 @@ export default function HistoryPage() {
       
       // Fetch profiles one by one
       const profilesPromises = uniqueIds.map(async (id) => {
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('id, full_name, age, city, avatar_url')
           .eq('id', id)
-          .single();
+          .maybeSingle();
+        console.log('Profile for', id, ':', profile, 'Error:', error);
         return profile;
       });
       
@@ -89,42 +90,19 @@ export default function HistoryPage() {
       
       console.log('Profiles loaded:', validProfiles);
 
-      let viewsToSet;
+      const profileMap = new Map(validProfiles.map(p => [p.id, p]));
       
-      if (validProfiles.length === 0) {
-        console.log('Using mock profiles');
-        // If no profiles loaded due to RLS, create mock profiles with just IDs
-        const mockProfiles = profileViews.map(v => ({
-          id: v.profile_id,
-          full_name: 'Пользователь',
-          age: null,
-          city: '',
-          avatar_url: null
-        }));
-        
-        const profileMap = new Map(mockProfiles.map(p => [p.id, p]));
-        
-        viewsToSet = profileViews.map(v => ({
-          id: v.profile_id,
-          profile_id: v.profile_id,
-          viewer_id: user.id,
-          created_at: v.created_at,
-          profile: profileMap.get(v.profile_id)
-        }));
-      } else {
-        const profileMap = new Map(validProfiles.map(p => [p.id, p]));
-        
-        viewsToSet = profileViews.map(v => ({
-          id: v.profile_id,
-          profile_id: v.profile_id,
-          viewer_id: user.id,
-          created_at: v.created_at,
-          profile: profileMap.get(v.profile_id)
-        })).filter(v => v.profile);
-      }
+      // Map views with profiles
+      const viewsWithProfiles = profileViews.map(v => ({
+        id: v.profile_id,
+        profile_id: v.profile_id,
+        viewer_id: user.id,
+        created_at: v.created_at,
+        profile: profileMap.get(v.profile_id)
+      }));
 
-      console.log('Setting views:', viewsToSet);
-      setViews(viewsToSet);
+      console.log('Setting views:', viewsWithProfiles);
+      setViews(viewsWithProfiles);
     } catch (e) {
       console.error('Error loading history:', e);
     } finally {
