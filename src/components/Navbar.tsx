@@ -480,11 +480,11 @@ export function Navbar() {
               >
                 {theme === 'dark' ? <Sun className="w-4 h-4 text-white" /> : <Moon className="w-4 h-4 text-gray-900" />}
               </Button>
-              {'Notification' in window && Notification.permission !== 'granted' && (
+              {!user && 'Notification' in window && Notification.permission === 'default' && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={testNotification} 
+                  onClick={() => Notification.requestPermission()} 
                   className="rounded-full"
                   title="Включить уведомления"
                 >
