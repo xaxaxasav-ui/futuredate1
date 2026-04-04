@@ -89,8 +89,9 @@ export function Navbar() {
     if (!ringtoneRef.current) {
       ringtoneRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
       ringtoneRef.current.loop = true;
+      ringtoneRef.current.volume = 1.0;
     }
-    ringtoneRef.current.play().catch(() => {});
+    ringtoneRef.current.play().catch(e => console.log('Ringtone play error:', e));
   };
 
   const stopRingtone = () => {
