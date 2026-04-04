@@ -129,32 +129,23 @@ function VideoDateContent() {
         console.log('Has videoTrack:', !!remoteUser.videoTrack, 'Has audioTrack:', !!remoteUser.audioTrack);
         
         try {
-          if (mediaType === 'video') {
+          // Always try to subscribe to both video and audio
+          if (!remoteUser.videoTrack || !remoteUser.audioTrack) {
             await client.subscribe(remoteUser, 'video');
-            console.log('Subscribed to video');
-            if (remoteUser.videoTrack && remoteVideoRef.current) {
-              console.log('Playing remote video');
-              remoteUser.videoTrack.play(remoteVideoRef.current, { 
-                fit: 'cover',
-                mirror: false 
-              });
-            }
-            
             await client.subscribe(remoteUser, 'audio');
-            console.log('Subscribed to audio');
-            if (remoteUser.audioTrack) {
-              console.log('Playing remote audio');
-              remoteUser.audioTrack.play();
-            }
           }
           
-          if (mediaType === 'audio') {
-            await client.subscribe(remoteUser, 'audio');
-            console.log('Subscribed to audio');
-            if (remoteUser.audioTrack) {
-              console.log('Playing remote audio');
-              remoteUser.audioTrack.play();
-            }
+          if (remoteUser.videoTrack && remoteVideoRef.current) {
+            console.log('Playing remote video');
+            remoteUser.videoTrack.play(remoteVideoRef.current, { 
+              fit: 'cover',
+              mirror: false 
+            });
+          }
+          
+          if (remoteUser.audioTrack) {
+            console.log('Playing remote audio');
+            remoteUser.audioTrack.play();
           }
         } catch (e) {
           console.error('Subscribe error:', e);
@@ -163,6 +154,9 @@ function VideoDateContent() {
 
       client.on('user-unpublished', (remoteUser: any, mediaType: string) => {
         console.log('User unpublished:', remoteUser.uid, mediaType);
+        if (mediaType === 'video' && remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = null;
+        }
       });
 
       client.on('user-left', (remoteUser: any) => {
@@ -443,7 +437,7 @@ function VideoDateContent() {
             muted
             className="w-full h-full object-cover"
           />
-          {!callStarted && partnerImg && (
+          {(!callStarted || !remoteVideoRef.current?.srcObject) && partnerImg && (
             <img 
               src={partnerImg} 
               alt="" 
