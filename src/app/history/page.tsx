@@ -89,7 +89,10 @@ export default function HistoryPage() {
       
       console.log('Profiles loaded:', validProfiles);
 
+      let viewsToSet;
+      
       if (validProfiles.length === 0) {
+        console.log('Using mock profiles');
         // If no profiles loaded due to RLS, create mock profiles with just IDs
         const mockProfiles = profileViews.map(v => ({
           id: v.profile_id,
@@ -101,31 +104,27 @@ export default function HistoryPage() {
         
         const profileMap = new Map(mockProfiles.map(p => [p.id, p]));
         
-        const viewsWithProfiles = profileViews.map(v => ({
+        viewsToSet = profileViews.map(v => ({
           id: v.profile_id,
           profile_id: v.profile_id,
           viewer_id: user.id,
           created_at: v.created_at,
           profile: profileMap.get(v.profile_id)
         }));
-
-        setViews(viewsWithProfiles);
-        setLoading(false);
-        return;
+      } else {
+        const profileMap = new Map(validProfiles.map(p => [p.id, p]));
+        
+        viewsToSet = profileViews.map(v => ({
+          id: v.profile_id,
+          profile_id: v.profile_id,
+          viewer_id: user.id,
+          created_at: v.created_at,
+          profile: profileMap.get(v.profile_id)
+        })).filter(v => v.profile);
       }
 
-      const profileMap = new Map(validProfiles.map(p => [p.id, p]));
-      
-      // Map views with profiles
-      const viewsWithProfiles = profileViews.map(v => ({
-        id: v.profile_id,
-        profile_id: v.profile_id,
-        viewer_id: user.id,
-        created_at: v.created_at,
-        profile: profileMap.get(v.profile_id)
-      }));
-
-      setViews(viewsWithProfiles.filter(v => v.profile));
+      console.log('Setting views:', viewsToSet);
+      setViews(viewsToSet);
     } catch (e) {
       console.error('Error loading history:', e);
     } finally {
