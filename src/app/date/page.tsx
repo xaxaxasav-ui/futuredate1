@@ -484,8 +484,8 @@ function VideoDateContent() {
       </div>
 
       {callStarted && (
-        <div className="h-24 bg-black/40 backdrop-blur-3xl border-t border-white/5 flex items-center justify-between px-8 relative z-50">
-          <div className="flex items-center gap-6">
+        <div className="h-24 bg-black/40 backdrop-blur-3xl border-t border-white/5 flex items-center justify-center px-4 md:px-8 relative z-50 gap-2 md:gap-4">
+          <div className="hidden md:flex items-center gap-6">
             <div className="flex flex-col">
               <span className="text-xs text-muted-foreground font-bold uppercase tracking-tighter">Длительность</span>
               <span className="font-mono text-primary font-bold">{formatDuration(callDuration)}</span>
@@ -497,41 +497,40 @@ function VideoDateContent() {
             </Button>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <Button 
               variant="outline" 
               size="icon" 
-              className={`rounded-full h-12 w-12 glass ${isMuted ? 'text-destructive border-destructive/40' : 'text-white'}`}
+              className={`rounded-full h-10 w-10 md:h-12 md:w-12 glass ${isMuted ? 'text-destructive border-destructive/40' : 'text-white'}`}
               onClick={() => setIsMuted(!isMuted)}
             >
-              {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+              {isMuted ? <MicOff className="w-5 h-5 md:w-6 md:h-6" /> : <Mic className="w-5 h-5 md:w-6 md:h-6" />}
             </Button>
             <Button 
               variant="outline" 
               size="icon" 
-              className={`rounded-full h-12 w-12 glass ${isVideoOff ? 'text-destructive border-destructive/40' : 'text-white'}`}
+              className={`rounded-full h-10 w-10 md:h-12 md:w-12 glass ${isVideoOff ? 'text-destructive border-destructive/40' : 'text-white'}`}
               onClick={() => setIsVideoOff(!isVideoOff)}
             >
-              {isVideoOff ? <VideoOff className="w-6 h-6" /> : <Video className="w-6 h-6" />}
+              {isVideoOff ? <VideoOff className="w-5 h-5 md:w-6 md:h-6" /> : <Video className="w-5 h-5 md:w-6 md:h-6" />}
             </Button>
             <Button 
               variant="destructive" 
               size="icon" 
-              className="rounded-full h-14 w-14 neo-glow-destructive"
+              className="rounded-full h-12 w-12 md:h-14 md:w-14 neo-glow-destructive"
               onClick={endCall}
             >
-              <PhoneOff className="w-6 h-6" />
+              <PhoneOff className="w-5 h-5 md:w-6 md:h-6" />
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-full glass h-10 w-10 md:h-12 md:w-12">
+              <Volume2 className="w-5 h-5 md:w-6 md:h-6" />
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-full glass h-10 w-10 md:h-12 md:w-12">
+              <MessageCircle className="w-5 h-5 md:w-6 md:h-6" />
             </Button>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="rounded-full glass h-12 w-12">
-              <Volume2 className="w-6 h-6" />
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-full glass h-12 w-12">
-              <MessageCircle className="w-6 h-6" />
-            </Button>
-          </div>
+          <div className="hidden md:block w-32" />
         </div>
       )}
     </div>
