@@ -526,6 +526,23 @@ function MessagesContent() {
         is_read: false,
       });
       
+      // Refresh messages
+      const { data: chatMessages } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('match_id', activeChat.id)
+        .order('created_at', { ascending: true });
+      
+      if (chatMessages) {
+        const loadedMessages: ChatMessage[] = chatMessages.map((m: any) => ({
+          role: m.sender_id === user.id ? 'user' : 'partner',
+          text: m.content,
+          time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isRead: m.is_read === true
+        }));
+        setMessages(loadedMessages);
+      }
+      
       const otherUserId = activeChat.id.includes('_') 
         ? activeChat.id.split('_').find(id => id !== user.id) 
         : null;
@@ -718,7 +735,10 @@ function MessagesContent() {
                     group.emojis.map((emoji, idx) => (
                       <button
                         key={`${group.name}-${idx}`}
-                        onClick={() => setInput(prev => prev + emoji)}
+                        onClick={() => {
+                          setInput(prev => prev + emoji);
+                          setShowEmojiPicker(false);
+                        }}
                         className="text-2xl p-1 hover:bg-white/10 rounded transition-colors"
                       >
                         {emoji}
