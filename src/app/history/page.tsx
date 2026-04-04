@@ -74,28 +74,20 @@ export default function HistoryPage() {
         return;
       }
       
-      // Get the user's access token
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
+      // Fetch profiles one by one
+      const profilesPromises = uniqueIds.map(async (id) => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, full_name, age, city, avatar_url')
+          .eq('id', id)
+          .single();
+        return profile;
+      });
       
-      // Use Supabase client with auth
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, age, city, avatar_url')
-        .in('id', uniqueIds);
+      const profiles = await Promise.all(profilesPromises);
+      const validProfiles = profiles.filter(p => p !== null);
       
-      console.log('Profiles loaded:', profiles, 'Error:', profilesError);
-
-      if (!profiles || profiles.length === 0) {
-        // If error, try with auth header
-        if (profilesError) {
-          const { data: authProfiles } = await supabase.auth.getSession();
-          console.log('Retrying with auth...', authProfiles);
-        }
-        setViews([]);
-        setLoading(false);
-        return;
-      }
+      console.log('Profiles loaded:', validProfiles);
 
       const profileMap = new Map(profiles.map(p => [p.id, p]));
       
