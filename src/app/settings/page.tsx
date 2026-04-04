@@ -8,6 +8,8 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+export const dynamic = 'force-dynamic';
+
 export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();

@@ -7,9 +7,9 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    ppr: false,
-  },
+  output: 'standalone',
+  trailingSlash: true,
+  generateBuildId: () => 'build-' + Date.now(),
   async headers() {
     return [
       {

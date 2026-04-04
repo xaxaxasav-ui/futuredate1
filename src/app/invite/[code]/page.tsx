@@ -8,6 +8,8 @@ import { Heart, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = 'force-dynamic';
+
 export default function InvitePage() {
   const router = useRouter();
   const params = useParams();
