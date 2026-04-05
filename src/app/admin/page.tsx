@@ -348,26 +348,28 @@ export default function AdminPage() {
         .eq('id', selectedTicket.id)
         .select();
 
-      console.log('Reply result:', data, 'Error:', error);
+      console.log('Reply result:', data, 'Error:', error, 'Error msg:', error?.message, 'Error details:', error?.details);
       
       if (error) throw error;
 
       // Create notification for user
-      await supabase.from('notifications').insert({
+      const { error: notifError } = await supabase.from('notifications').insert({
         user_id: selectedTicket.user_id,
         type: 'support_reply',
         title: 'Ответ на обращение',
         message: `Администратор ответил на ваше обращение: ${selectedTicket.subject}`,
         from_user_id: user?.id
       });
+      
+      console.log('Notification result:', notifError);
 
       setReplyMessage("");
       setSelectedTicket(null);
       fetchSupportTickets();
       alert("Ответ отправлен!");
-    } catch (error) {
-      console.error("Error sending reply:", error);
-      alert("Ошибка при отправке ответа");
+    } catch (error: any) {
+      console.error("Error sending reply:", error, error?.message, error?.details);
+      alert("Ошибка при отправке ответа: " + (error?.message || ""));
     } finally {
       setSendingReply(false);
     }
