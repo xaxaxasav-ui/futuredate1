@@ -370,6 +370,21 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (!confirm('Вы уверены, что хотите удалить это обращение?')) return;
+    
+    try {
+      await supabase
+        .from('support_tickets')
+        .delete()
+        .eq('id', ticketId);
+      setSelectedTicket(null);
+      fetchSupportTickets();
+    } catch (error) {
+      console.error("Error deleting ticket:", error);
+    }
+  };
+
   const handleVerify = async (profileId: string, approved: boolean) => {
     try {
       await supabase
@@ -931,6 +946,12 @@ export default function AdminPage() {
                               onClick={() => handleCloseTicket(selectedTicket.id)}
                             >
                               Закрыть
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              onClick={() => handleDeleteTicket(selectedTicket.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
