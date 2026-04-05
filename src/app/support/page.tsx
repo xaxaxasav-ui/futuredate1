@@ -119,8 +119,8 @@ export default function SupportPage() {
       setSuccess("Обращение отправлено! Мы ответим в ближайшее время.");
       fetchTickets();
     } catch (err: any) {
-      console.error("Error submitting ticket:", err);
-      setError("Ошибка при отправке. Попробуйте позже.");
+      console.error("Error submitting ticket:", err, err?.message, err?.details);
+      setError("Ошибка при отправке. Попробуйте позже. " + (err?.message || ""));
     } finally {
       setSubmitting(false);
     }
