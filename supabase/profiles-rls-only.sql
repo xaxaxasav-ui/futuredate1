@@ -45,3 +45,31 @@ DROP POLICY IF EXISTS "Users can create support_tickets" ON public.support_ticke
 CREATE POLICY "Users can create support_tickets" ON public.support_tickets
   FOR INSERT
   WITH CHECK (user_id = auth.uid());
+
+-- Allow admins to update support_tickets
+DROP POLICY IF EXISTS "Admins can update support_tickets" ON public.support_tickets;
+CREATE POLICY "Admins can update support_tickets" ON public.support_tickets
+  FOR UPDATE
+  USING (true)
+  WITH CHECK (true);
+
+-- Allow admins to delete support_tickets
+DROP POLICY IF EXISTS "Admins can delete support_tickets" ON public.support_tickets;
+CREATE POLICY "Admins can delete support_tickets" ON public.support_tickets
+  FOR DELETE
+  USING (true);
+
+-- Enable RLS on notifications
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+-- Allow users to read own notifications
+DROP POLICY IF EXISTS "Users can read own notifications" ON public.notifications;
+CREATE POLICY "Users can read own notifications" ON public.notifications
+  FOR SELECT
+  USING (user_id = auth.uid());
+
+-- Allow users to create notifications (for admins)
+DROP POLICY IF EXISTS "Users can create notifications" ON public.notifications;
+CREATE POLICY "Users can create notifications" ON public.notifications
+  FOR INSERT
+  WITH CHECK (true);

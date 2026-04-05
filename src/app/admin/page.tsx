@@ -337,7 +337,7 @@ export default function AdminPage() {
     
     setSendingReply(true);
     try {
-      await supabase
+      const { data, error } = await supabase
         .from('support_tickets')
         .update({
           status: 'answered',
@@ -345,7 +345,21 @@ export default function AdminPage() {
           replied_at: new Date().toISOString(),
           replied_by: user?.email
         })
-        .eq('id', selectedTicket.id);
+        .eq('id', selectedTicket.id)
+        .select();
+
+      console.log('Reply result:', data, 'Error:', error);
+      
+      if (error) throw error;
+
+      // Create notification for user
+      await supabase.from('notifications').insert({
+        user_id: selectedTicket.user_id,
+        type: 'support_reply',
+        title: 'Ответ на обращение',
+        message: `Администратор ответил на ваше обращение: ${selectedTicket.subject}`,
+        from_user_id: user?.id
+      });
 
       setReplyMessage("");
       setSelectedTicket(null);
@@ -353,6 +367,7 @@ export default function AdminPage() {
       alert("Ответ отправлен!");
     } catch (error) {
       console.error("Error sending reply:", error);
+      alert("Ошибка при отправке ответа");
     } finally {
       setSendingReply(false);
     }
