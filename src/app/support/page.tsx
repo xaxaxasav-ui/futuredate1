@@ -106,7 +106,7 @@ export default function SupportPage() {
         .insert({
           user_id: user.id,
           subject: formData.subject,
-          message: formData.message,
+          description: formData.message,
           status: 'pending'
         })
         .select()
