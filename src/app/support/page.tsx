@@ -112,7 +112,10 @@ export default function SupportPage() {
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("Insert error:", insertError);
+        throw insertError;
+      }
 
       setFormData({ subject: "", message: "" });
       setShowForm(false);
