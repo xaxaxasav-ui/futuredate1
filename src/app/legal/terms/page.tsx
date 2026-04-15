@@ -127,7 +127,7 @@ export default function TermsOfServicePage() {
 
               <section>
                 <h2 className="text-lg font-bold text-foreground mb-2">10. Контакты</h2>
-                <p>По вопросам, связанным с Правилами, обращаться: support@svidanie.future</p>
+                <p>По вопросам, связанным с Правилами, обращаться: support@lavmee.ru</p>
               </section>
             </div>
           </ScrollArea>

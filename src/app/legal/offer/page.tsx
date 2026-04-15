@@ -140,7 +140,7 @@ export default function OfferPage() {
                   <li>ООО «Свидание будущего AI»</li>
                   <li>ОГРН: указывается при регистрации</li>
                   <li>ИНН: указывается при регистрации</li>
-                  <li>Email: support@svidanie.future</li>
+                  <li>Email: support@lavmee.ru</li>
                 </ul>
               </section>
             </div>
