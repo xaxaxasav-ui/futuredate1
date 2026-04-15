@@ -67,11 +67,6 @@ export function Footer() {
                   <Globe className="w-4 h-4" /> Политика использования cookies
                 </Link>
               </li>
-              <li>
-                <Link href="/legal/fees" className="hover:text-primary transition-colors flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" /> Политика возврата средств
-                </Link>
-              </li>
             </ul>
           </div>
         </div>
