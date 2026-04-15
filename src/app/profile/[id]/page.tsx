@@ -91,7 +91,7 @@ export default function ViewProfilePage() {
         
         if (user && user.id !== params.id) {
           const { error: viewError } = await supabase.from('profile_views').insert({
-            profile_id: params.id,
+            viewed_id: params.id,
             viewer_id: user.id,
           });
           if (viewError) {
@@ -115,8 +115,8 @@ export default function ViewProfilePage() {
           const { data: likeData } = await supabase
             .from('likes')
             .select('id')
-            .eq('user_id', user.id)
-            .eq('liked_user_id', params.id)
+            .eq('liker_id', user.id)
+            .eq('liked_id', params.id)
             .single();
           setHasLiked(!!likeData);
           
