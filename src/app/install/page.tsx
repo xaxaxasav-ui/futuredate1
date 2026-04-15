@@ -57,7 +57,7 @@ export default function InstallPage() {
             Если <strong>lavmee.ru</strong> не открывается, используйте резервный адрес:
           </p>
           <div className="bg-muted p-4 rounded-lg">
-            <code className="text-primary">https://lavmee.onrender.com</code>
+            <code className="text-primary">https://lavmee-production.up.railway.app</code>
           </div>
         </GlassCard>
 
