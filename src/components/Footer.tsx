@@ -11,7 +11,7 @@ export function Footer() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Heart className="w-6 h-6 text-primary" />
-              <span className="text-xl font-bold font-headline">Свидание будущего AI</span>
+              <span className="text-xl font-bold font-headline">Lavmee</span>
             </div>
             <p className="text-sm text-muted-foreground">
               Знакомства нового поколения с ИИ-оценкой личности и виртуальными свиданиями.
@@ -75,7 +75,7 @@ export function Footer() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Heart className="w-4 h-4 text-primary" />
-              <span>© {new Date().getFullYear()} Свидание будущего AI. Все права защищены.</span>
+              <span>© {new Date().getFullYear()} Lavmee. Все права защищены.</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>ООО &quot;Свидание будущего&quot;</span>

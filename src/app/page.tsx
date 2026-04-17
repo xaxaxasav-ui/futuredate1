@@ -165,9 +165,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            <span className="font-headline font-bold text-lg tracking-tighter">Свидание будущего AI</span>
+            <span className="font-headline font-bold text-lg tracking-tighter">Lavmee</span>
           </div>
-          <p className="text-sm text-muted-foreground">© 2025 Свидание будущего. Создано для эпохи искусственной близости.</p>
+          <p className="text-sm text-muted-foreground">© 2025 Lavmee. Создано для эпохи искусственной близости.</p>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <Link href="/legal/privacy" className="hover:text-primary">Конфиденциальность</Link>
             <Link href="/legal/terms" className="hover:text-primary">Условия</Link>
