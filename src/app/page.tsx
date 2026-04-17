@@ -53,7 +53,7 @@ export default function Home() {
               <Sparkles className="w-3 h-3" /> На базе искусственного интеллекта
             </div>
             <h1 className="text-6xl md:text-8xl font-bold leading-[0.9] text-glow font-headline">
-              Знакомства <br />
+              Свидание <br />
               <span className="text-primary">будущего.</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-lg">

@@ -14,7 +14,7 @@ export function Footer() {
               <span className="text-xl font-bold font-headline">Lavmee</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Знакомства нового поколения с ИИ-оценкой личности и виртуальными свиданиями.
+              Современные знакомства с ИИ-оценкой личности и виртуальными свиданиями.
             </p>
           </div>
 
