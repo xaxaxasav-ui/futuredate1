@@ -1,14 +1,13 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+  trailingSlash: true,
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreBuildErrors: true,
   },
-  trailingSlash: true,
-  generateBuildId: () => 'build-' + Date.now(),
   reactStrictMode: false,
   async headers() {
     return [

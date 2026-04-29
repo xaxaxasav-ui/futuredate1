@@ -28,7 +28,6 @@ export const metadata: Metadata = {
   title: 'Lavmee | AI Знакомства нового поколения',
   description: 'Испытайте новое поколение знакомств с динамической оценкой личности с помощью ИИ и иммерсивными виртуальными свиданиями.',
   metadataBase: new URL('https://lavmee.ru'),
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
   manifest: '/manifest.json',
   icons: {
     icon: '/images/favicon.svg',
@@ -37,6 +36,13 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://lavmee.ru',
   },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
