@@ -36,13 +36,13 @@ export default function ProfileLikesPage() {
   }, [user]);
 
   async function fetchLikers() {
-    if (!user || !supabase) return;
+    if (!user) return;
 
     setLoading(true);
     const { data, error } = await supabase
       .from('likes')
-      .select('liker_id, created_at')
-      .eq('liked_id', user.id)
+      .select('user_id, created_at')
+      .eq('liked_user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -52,18 +52,18 @@ export default function ProfileLikesPage() {
     }
 
     if (data && data.length > 0) {
-      const likerIds = [...new Set(data.map((l: any) => l.liker_id))];
-      const { data: profiles, error: profilesError } = await supabase
+      const likerIds = [...new Set(data.map((l: any) => l.user_id))];
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url, city, birth_date')
         .in('id', likerIds);
 
-      if (!profilesError && profiles) {
+      if (profiles && profiles.length > 0) {
         const likersWithProfiles = data.map((l: any) => {
-          const profile = profiles.find((p: any) => p.id === l.liker_id);
+          const profile = profiles.find((p: any) => p.id === l.user_id);
           const age = profile?.birth_date ? calculateAge(profile.birth_date) : 0;
           return {
-            id: l.liker_id,
+            id: l.user_id,
             name: profile?.full_name || 'Неизвестный',
             age,
             city: profile?.city || '',

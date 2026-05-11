@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { GlassCard } from "@/components/GlassCard";
 import { Star, User, Loader2 } from "lucide-react";
 import { useSupabase } from "@/components/SupabaseProvider";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -17,7 +18,7 @@ interface FavoriteUser {
 }
 
 export default function FavoritesPage() {
-  const { user, loading: authLoading, supabase } = useSupabase();
+  const { user, loading: authLoading } = useSupabase();
   const router = useRouter();
   const [favorites, setFavorites] = useState<FavoriteUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,13 +30,13 @@ export default function FavoritesPage() {
   }, [authLoading, user, router]);
 
   useEffect(() => {
-    if (user && supabase) {
+    if (user) {
       fetchFavorites();
     }
-  }, [user, supabase]);
+  }, [user]);
 
   async function fetchFavorites() {
-    if (!user || !supabase) return;
+    if (!user) return;
 
     setLoading(true);
     const { data, error } = await supabase
@@ -50,17 +51,36 @@ export default function FavoritesPage() {
     }
 
     if (data && data.length > 0) {
-      const userIds = data.map(f => f.favorited_user_id);
-      const { data: profiles, error: profilesError } = await supabase
+      const userIds = data.map((f: any) => f.favorited_user_id);
+      const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, name, age, city, bio, avatar_url')
+        .select('id, full_name, avatar_url, city, birth_date, bio')
         .in('id', userIds);
 
-      if (!profilesError && profiles) {
-        setFavorites(profiles as FavoriteUser[]);
+      if (profiles && profiles.length > 0) {
+        const favoritesWithProfiles = profiles.map((p: any) => ({
+          id: p.id,
+          name: p.full_name || 'Неизвестный',
+          age: p.birth_date ? calculateAge(p.birth_date) : 0,
+          city: p.city || '',
+          bio: p.bio || '',
+          avatar_url: p.avatar_url || ''
+        }));
+        setFavorites(favoritesWithProfiles);
       }
     }
     setLoading(false);
+  }
+
+  function calculateAge(birthDate: string): number {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
   }
 
   if (authLoading || !user) {

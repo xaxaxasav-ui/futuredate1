@@ -36,7 +36,7 @@ export default function ProfileViewsPage() {
   }, [user]);
 
   async function fetchViewers() {
-    if (!user || !supabase) return;
+    if (!user) return;
 
     setLoading(true);
     const { data, error } = await supabase
@@ -53,12 +53,12 @@ export default function ProfileViewsPage() {
 
     if (data && data.length > 0) {
       const viewerIds = [...new Set(data.map((v: any) => v.viewer_id))];
-      const { data: profiles, error: profilesError } = await supabase
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url, city, birth_date')
         .in('id', viewerIds);
 
-      if (!profilesError && profiles) {
+      if (profiles && profiles.length > 0) {
         const viewersWithProfiles = data.map((v: any) => {
           const profile = profiles.find((p: any) => p.id === v.viewer_id);
           const age = profile?.birth_date ? calculateAge(profile.birth_date) : 0;
