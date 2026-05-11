@@ -114,6 +114,7 @@ export default function ProfilePage() {
   const [loadingGifts, setLoadingGifts] = useState(false);
   const [giftsTab, setGiftsTab] = useState<'received' | 'sent'>('received');
   const [giftsError, setGiftsError] = useState<string | null>(null);
+  const [profileChecked, setProfileChecked] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -122,6 +123,25 @@ export default function ProfilePage() {
       loadSentGifts();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user && !profile && !authLoading && !profileChecked) {
+      setProfileChecked(true);
+      supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .limit(1)
+        .then(({ data }) => {
+          if (!data || data.length === 0) {
+            supabase
+              .from('profiles')
+              .upsert({ id: user.id, username: `user_${user.id.slice(0,8)}` })
+              .then(() => refreshProfile());
+          }
+        });
+    }
+  }, [user, profile, authLoading, profileChecked]);
 
   const loadReceivedGifts = async () => {
     if (!user) return;
@@ -630,6 +650,11 @@ useEffect(() => {
     await refreshProfile();
   };
 
+  if (!user) {
+    router.push("/auth");
+    return null;
+  }
+
   if (authLoading) {
     return (
       <div className="min-h-screen relative pt-24 pb-12 px-6 flex items-center justify-center">
@@ -638,33 +663,7 @@ useEffect(() => {
     );
   }
 
-  if (!user) {
-    router.push("/auth");
-    return null;
-  }
-
-  const [profileChecked, setProfileChecked] = useState(false);
-
-  useEffect(() => {
-    if (user && !profile && !authLoading && !profileChecked) {
-      setProfileChecked(true);
-      supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .limit(1)
-        .then(({ data }) => {
-          if (!data || data.length === 0) {
-            supabase
-              .from('profiles')
-              .upsert({ id: user.id, username: `user_${user.id.slice(0,8)}` })
-              .then(() => refreshProfile());
-          }
-        });
-    }
-  }, [user, profile, authLoading, profileChecked]);
-
-  if (!profile && !authLoading) {
+  if (!profile) {
     return (
       <div className="min-h-screen pt-20 pb-6 px-6 flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -695,11 +694,6 @@ useEffect(() => {
     return Math.min(score, 100);
   };
   const completion = profileCompletion();
-
-  if (!user) {
-    router.push("/auth");
-    return null;
-  }
 
   return (
     <div className="min-h-screen relative pt-20 pb-8 px-4">
