@@ -232,11 +232,11 @@ export default function ProfilePage() {
       console.log('Likes query result:', likesResult);
       if (!likesResult.error && likesResult.count !== null) likes = likesResult.count;
       
-      const viewsResult = await supabase.from('profile_views').select('id', { count: 'exact', head: true }).eq('profile_id', user.id);
+      const viewsResult = await supabase.from('profile_views').select('id', { count: 'exact', head: true }).eq('viewed_id', user.id);
       console.log('Views query result:', viewsResult);
       if (!viewsResult.error && viewsResult.count !== null) views = viewsResult.count;
       
-      const matchesResult = await supabase.from('favorites').select('id', { count: 'exact', head: true }).eq('favorited_user_id', user.id);
+      const matchesResult = await supabase.from('matches').select('id', { count: 'exact', head: true }).or(`user_id.eq.${user.id},matched_user_id.eq.${user.id}`).eq('status', 'accepted');
       console.log('Matches query result:', matchesResult);
       if (!matchesResult.error && matchesResult.count !== null) matches = matchesResult.count;
       
@@ -638,6 +638,24 @@ useEffect(() => {
     );
   }
 
+  if (!user) {
+    router.push("/auth");
+    return null;
+  }
+
+  if (!profile && !authLoading) {
+    return (
+      <div className="min-h-screen pt-20 pb-6 px-6 flex flex-col items-center justify-center gap-4">
+        <User className="w-16 h-16 text-muted-foreground" />
+        <h2 className="text-xl font-bold">Профиль не найден</h2>
+        <p className="text-muted-foreground text-center">Заполните информацию о себе</p>
+        <Button onClick={() => setEditing(true)} className="rounded-full neo-glow">
+          <Edit className="w-4 h-4 mr-2" /> Создать профиль
+        </Button>
+      </div>
+    );
+  }
+
   const avatarUrl = profile?.avatar_url 
     ? profile.avatar_url.startsWith('blob:') 
       ? PlaceHolderImages[1].imageUrl 
@@ -660,14 +678,6 @@ useEffect(() => {
     return Math.min(score, 100);
   };
   const completion = profileCompletion();
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen pt-20 pb-6 px-6 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
 
   if (!user) {
     router.push("/auth");
