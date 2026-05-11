@@ -643,29 +643,32 @@ useEffect(() => {
     return null;
   }
 
+  const [profileChecked, setProfileChecked] = useState(false);
+
   useEffect(() => {
-    if (user && !profile && !authLoading) {
-      const createProfile = async () => {
-        try {
-          const { error } = await supabase
-            .from('profiles')
-            .upsert({ id: user.id, username: `user_${user.id.slice(0,8)}` });
-          if (!error) {
-            refreshProfile();
+    if (user && !profile && !authLoading && !profileChecked) {
+      setProfileChecked(true);
+      supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .limit(1)
+        .then(({ data }) => {
+          if (!data || data.length === 0) {
+            supabase
+              .from('profiles')
+              .upsert({ id: user.id, username: `user_${user.id.slice(0,8)}` })
+              .then(() => refreshProfile());
           }
-        } catch (e) {
-          console.error('Auto create profile error:', e);
-        }
-      };
-      createProfile();
+        });
     }
-  }, [user, profile, authLoading]);
+  }, [user, profile, authLoading, profileChecked]);
 
   if (!profile && !authLoading) {
     return (
       <div className="min-h-screen pt-20 pb-6 px-6 flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Создание профиля...</p>
+        <p className="text-muted-foreground">Загрузка профиля...</p>
       </div>
     );
   }
