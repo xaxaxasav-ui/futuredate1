@@ -114,7 +114,6 @@ export default function ProfilePage() {
   const [loadingGifts, setLoadingGifts] = useState(false);
   const [giftsTab, setGiftsTab] = useState<'received' | 'sent'>('received');
   const [giftsError, setGiftsError] = useState<string | null>(null);
-  const [profileChecked, setProfileChecked] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -123,25 +122,6 @@ export default function ProfilePage() {
       loadSentGifts();
     }
   }, [user]);
-
-  useEffect(() => {
-    if (user && !profile && !authLoading && !profileChecked) {
-      setProfileChecked(true);
-      supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .limit(1)
-        .then(({ data }) => {
-          if (!data || data.length === 0) {
-            supabase
-              .from('profiles')
-              .upsert({ id: user.id, username: `user_${user.id.slice(0,8)}` })
-              .then(() => refreshProfile());
-          }
-        });
-    }
-  }, [user, profile, authLoading, profileChecked]);
 
   const loadReceivedGifts = async () => {
     if (!user) return;

@@ -84,41 +84,57 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .limit(1);
-      
-      if (error) {
-        console.warn('Profile fetch error:', error.code, error.message);
-        if (error.code === 'PGRST116') {
-          console.log('Profile not found');
-          return;
-        }
-        if (error.code === '42P01') {
-          console.error('Table profiles does not exist!');
-          return;
-        }
-        if (error.code === '406') {
-          console.log('RLS blocking - trying without single()');
-          const { data: profiles } = await supabase
+    let retries = 0;
+    const maxRetries = 3;
+    
+    const tryFetch = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        
+        if (error && error.code === 'PGRST116') {
+          console.log('Profile not found, creating...');
+          const { error: createError } = await supabase
             .from('profiles')
-            .select('*')
-            .eq('id', userId);
-          if (profiles && profiles.length > 0) {
-            setProfile(profiles[0]);
+            .upsert({ id: userId, username: `user_${userId.slice(0,8)}` });
+          
+          if (!createError) {
+            const retry = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', userId)
+              .single();
+            if (retry.data) setProfile(retry.data);
           }
           return;
         }
+        
+        if (error) {
+          console.warn('Profile fetch error:', error.code, error.message);
+          if (retries < maxRetries) {
+            retries++;
+            console.log(`Retrying profile fetch (${retries}/${maxRetries})...`);
+            setTimeout(() => tryFetch(), 1000 * retries);
+          }
+          return;
+        }
+        
+        if (data) {
+          setProfile(data);
+        }
+      } catch (err) {
+        console.error('Fetch profile exception:', err);
+        if (retries < maxRetries) {
+          retries++;
+          setTimeout(() => tryFetch(), 1000 * retries);
+        }
       }
-      if (data && data.length > 0) {
-        setProfile(data[0]);
-      }
-    } catch (err: any) {
-      console.warn('Fetch profile exception:', err?.message || err);
-    }
+    };
+    
+    tryFetch();
   };
 
   const refreshProfile = async () => {
