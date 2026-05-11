@@ -643,15 +643,29 @@ useEffect(() => {
     return null;
   }
 
+  useEffect(() => {
+    if (user && !profile && !authLoading) {
+      const createProfile = async () => {
+        try {
+          const { error } = await supabase
+            .from('profiles')
+            .upsert({ id: user.id, username: `user_${user.id.slice(0,8)}` });
+          if (!error) {
+            refreshProfile();
+          }
+        } catch (e) {
+          console.error('Auto create profile error:', e);
+        }
+      };
+      createProfile();
+    }
+  }, [user, profile, authLoading]);
+
   if (!profile && !authLoading) {
     return (
       <div className="min-h-screen pt-20 pb-6 px-6 flex flex-col items-center justify-center gap-4">
-        <User className="w-16 h-16 text-muted-foreground" />
-        <h2 className="text-xl font-bold">Профиль не найден</h2>
-        <p className="text-muted-foreground text-center">Заполните информацию о себе</p>
-        <Button onClick={() => setEditing(true)} className="rounded-full neo-glow">
-          <Edit className="w-4 h-4 mr-2" /> Создать профиль
-        </Button>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Создание профиля...</p>
       </div>
     );
   }
