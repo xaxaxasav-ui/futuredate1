@@ -84,10 +84,9 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-    let retries = 0;
     const maxRetries = 3;
     
-    const tryFetch = async () => {
+    const tryFetch = async (attempt: number): Promise<any> => {
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -96,45 +95,49 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
           .single();
         
         if (error && error.code === 'PGRST116') {
-          console.log('Profile not found, creating...');
-          const { error: createError } = await supabase
+          await supabase
             .from('profiles')
             .upsert({ id: userId, username: `user_${userId.slice(0,8)}` });
           
-          if (!createError) {
-            const retry = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', userId)
-              .single();
-            if (retry.data) setProfile(retry.data);
-          }
-          return;
+          const retry = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+          if (retry.data) return retry.data;
+          return null;
         }
         
         if (error) {
-          console.warn('Profile fetch error:', error.code, error.message);
-          if (retries < maxRetries) {
-            retries++;
-            console.log(`Retrying profile fetch (${retries}/${maxRetries})...`);
-            setTimeout(() => tryFetch(), 1000 * retries);
+          if (attempt < maxRetries) {
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+            return tryFetch(attempt + 1);
           }
-          return;
+          return null;
         }
         
-        if (data) {
-          setProfile(data);
-        }
+        return data;
       } catch (err) {
-        console.error('Fetch profile exception:', err);
-        if (retries < maxRetries) {
-          retries++;
-          setTimeout(() => tryFetch(), 1000 * retries);
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          return tryFetch(attempt + 1);
         }
+        return null;
       }
     };
     
-    tryFetch();
+    const result = await tryFetch(1);
+    
+    const fallbackProfile = {
+      id: userId,
+      username: `user_${userId.slice(0,8)}`,
+      full_name: null,
+      avatar_url: null,
+      bio: null,
+      created_at: new Date().toISOString(),
+    };
+    
+    setProfile(result || fallbackProfile);
   };
 
   const refreshProfile = async () => {
@@ -155,17 +158,14 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
         
         setSession(session);
         setUser(session?.user ?? null);
+        setLoading(false);
         
         if (session?.user) {
           await fetchProfile(session.user.id);
         }
       } catch (err) {
-        console.warn('Supabase init error:', err);
         if (!isMounted) return;
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
