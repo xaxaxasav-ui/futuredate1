@@ -13,15 +13,13 @@ import { CookieBanner } from '@/components/CookieBanner';
 const inter = Inter({ 
   subsets: ['latin', 'latin-ext', 'cyrillic'],
   variable: '--font-inter',
-  display: 'swap',
-  preload: false
+  display: 'swap'
 });
 
 const spaceGrotesk = Space_Grotesk({ 
   subsets: ['latin', 'latin-ext', 'vietnamese'],
   variable: '--font-space',
-  display: 'swap',
-  preload: false
+  display: 'swap'
 });
 
 export const metadata: Metadata = {

@@ -52,38 +52,12 @@ export function Navbar() {
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
 
   const showPushNotification = async (title: string, body: string, icon?: string) => {
-    if ('Notification' in window) {
-      console.log('Notification API available, permission:', Notification.permission);
-      
-      if (Notification.permission === 'granted') {
-        console.log('Showing notification (already granted)');
-        new Notification(title, {
-          body,
-          icon: icon || '/images/favicon.svg',
-          tag: 'incoming-call',
-          renotify: true,
-          requireInteraction: true,
-          vibrate: [200, 100, 200]
-        });
-      } else if (Notification.permission === 'denied') {
-        console.log('Notifications blocked by user');
-      } else {
-        console.log('Requesting notification permission...');
-        const permission = await Notification.requestPermission();
-        console.log('Permission result:', permission);
-        if (permission === 'granted') {
-          new Notification(title, {
-            body,
-            icon: icon || '/images/favicon.svg',
-            tag: 'incoming-call',
-            renotify: true,
-            requireInteraction: true,
-            vibrate: [200, 100, 200]
-          });
-        }
-      }
-    } else {
-      console.log('Notification API not available');
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, {
+        body,
+        icon: icon || '/images/favicon.svg',
+        tag: 'incoming-call'
+      });
     }
   };
 
@@ -105,11 +79,7 @@ export function Navbar() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then((registration) => {
-        console.log('Service Worker registered:', registration);
-      }).catch((error) => {
-        console.log('Service Worker registration failed:', error);
-      });
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
   }, []);
 
@@ -117,156 +87,7 @@ export function Navbar() {
     if (user) {
       getUnreadCount(user.id).then(count => setUnreadCount(count));
       getUnreadMessagesCount(user.id).then(count => setUnreadMessagesCount(count));
-      
-      if ('Notification' in window && Notification.permission === 'default') {
-        requestNotificationPermission();
-      }
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (user && 'Notification' in window && Notification.permission === 'default') {
-      const timer = setTimeout(() => {
-        requestNotificationPermission();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [user]);
-
-  const [notificationPermissionStatus, setNotificationPermissionStatus] = useState<'default' | 'granted' | 'denied'>('default');
-
-  const requestNotificationPermission = async () => {
-    if ('Notification' in window) {
-      const currentPermission = Notification.permission;
-      console.log('Current notification permission:', currentPermission);
-      setNotificationPermissionStatus(currentPermission);
-      
-      if (currentPermission === 'granted') {
-        return true;
-      }
-      
-      if (currentPermission === 'denied') {
-        console.log('Notifications denied by user');
-        return false;
-      }
-      
-      console.log('Requesting notification permission...');
-      const result = await Notification.requestPermission();
-      console.log('Permission result:', result);
-      setNotificationPermissionStatus(result);
-      return result === 'granted';
-    }
-    console.log('Notification API not available');
-    return false;
-  };
-
-  const testNotification = () => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Тест уведомления', {
-        body: 'Если вы видите это - уведомления работают!',
-        icon: '/images/favicon.svg',
-        tag: 'test'
-      });
-    } else {
-      requestNotificationPermission();
-    }
-  };
-
-  useEffect(() => {
-    if (user && 'Notification' in window && Notification.permission === 'default') {
-      const timer = setTimeout(() => {
-        requestNotificationPermission();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    
-    console.log('Navbar: checking for calls, user:', user.id);
-    
-    const checkIncomingCalls = async () => {
-      try {
-        setDebugStatus('🔍 Проверка звонков...');
-        console.log('🔍 Polling: checking for calls for user:', user.id);
-        const { data, error } = await supabase
-          .from('calls')
-          .select('id, caller_id, receiver_id, status, created_at')
-          .eq('receiver_id', user.id)
-          .eq('status', 'pending');
-        
-        console.log('📊 Polling result:', { data, error, count: data?.length });
-        console.log('📊 Raw data:', JSON.stringify(data));
-        
-        if (data && data.length > 0 && !incomingCall) {
-          console.log('📲 Polling: incoming call found!', data[0]);
-          setDebugStatus('📲 Звонок найден!');
-          setIncomingCall(data[0]);
-          playRingtone();
-          
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', data[0].caller_id)
-            .single();
-          console.log('👤 Caller profile:', profile);
-          setCallerData(profile);
-          
-          const callerName = profile?.full_name || 'Пользователь';
-          setDebugStatus('✅ Показываю уведомление');
-          showPushNotification('📞 Входящий звонок!', `${callerName} звонит вам`);
-        } else if (data && data.length > 0 && incomingCall) {
-          console.log('⏭️ Polling: call exists but incomingCall already set, skipping');
-          setDebugStatus('⏭️ Уведомление уже показано');
-        } else {
-          console.log('⏭️ Polling: no pending calls');
-          setDebugStatus('⏭️ Нет входящих звонков');
-        }
-      } catch (e) {
-        console.error('❌ Error checking calls:', e);
-        setDebugStatus('❌ Ошибка: ' + (e as Error).message);
-      }
-    };
-    
-    checkIncomingCalls();
-    const interval = setInterval(checkIncomingCalls, 1500);
-    
-    const channel = supabase.channel('calls-realtime')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'calls',
-        filter: `receiver_id=eq.${user.id}`
-      }, (payload) => {
-        console.log('🔔 Realtime incoming call received:', payload);
-        console.log('Payload new:', payload.new);
-        console.log('Payload new status:', payload.new?.status);
-        if (payload.new && payload.new.status === 'pending') {
-          console.log('✅ Setting incoming call from realtime');
-          setDebugStatus('🔔 Получено через realtime!');
-          setIncomingCall(payload.new);
-          playRingtone();
-          supabase.from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', payload.new.caller_id)
-            .single()
-            .then(({ data }) => {
-              console.log('Caller profile loaded:', data);
-              setCallerData(data);
-              const callerName = data?.full_name || 'Пользователь';
-              showPushNotification('📞 Входящий звонок!', `${callerName} звонит вам`);
-            });
-        }
-      })
-      .subscribe((status) => {
-        console.log('📡 Realtime subscription status:', status);
-      });
-    
-    return () => {
-      clearInterval(interval);
-      supabase.removeChannel(channel);
-    };
   }, [user]);
 
   const acceptCall = async () => {
@@ -304,51 +125,6 @@ export function Navbar() {
 
   return (
     <>
-      <div style={{ 
-        position: 'fixed', 
-        inset: 0, 
-        zIndex: 9999, 
-        backgroundColor: 'rgba(0,0,0,0.9)', 
-        display: incomingCall ? 'flex' : 'none', 
-        alignItems: 'center', 
-        justifyContent: 'center' 
-      }}>
-        <div style={{ 
-          padding: 32, 
-          borderRadius: 16, 
-          backgroundColor: '#1a1a1a', 
-          border: '1px solid #333', 
-          textAlign: 'center',
-          color: 'white'
-        }}>
-          {debugStatus && (
-            <div style={{ fontSize: 12, color: '#fbbf24', marginBottom: 12 }}>{debugStatus}</div>
-          )}
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📞</div>
-          <h3 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }}>Входящий звонок!</h3>
-          {callerData?.avatar_url && (
-            <img src={callerData.avatar_url} alt="" style={{ width: 80, height: 80, borderRadius: '50%', margin: '0 auto 16px' }} />
-          )}
-          <p style={{ color: '#888', marginBottom: 16 }}>
-            {callerData?.full_name || 'Пользователь'} звонит вам
-          </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button 
-              onClick={declineCall}
-              style={{ padding: '8px 16px', borderRadius: 20, backgroundColor: '#dc2626', color: 'white', border: 'none', cursor: 'pointer' }}
-            >
-              Отклонить
-            </button>
-            <button 
-              onClick={acceptCall}
-              style={{ padding: '8px 16px', borderRadius: 20, backgroundColor: '#16a34a', color: 'white', border: 'none', cursor: 'pointer' }}
-            >
-              Принять
-            </button>
-          </div>
-        </div>
-      </div>
-
       {incomingCall && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center">
           <div className="p-8 rounded-2xl bg-black/90 border border-white/20 text-center">
@@ -482,17 +258,6 @@ export function Navbar() {
               >
                 {theme === 'dark' ? <Sun className="w-4 h-4 text-white" /> : <Moon className="w-4 h-4 text-gray-900" />}
               </Button>
-              {!user && 'Notification' in window && Notification.permission === 'default' && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => Notification.requestPermission()} 
-                  className="rounded-full"
-                  title="Включить уведомления"
-                >
-                  <Bell className="w-4 h-4 text-yellow-500" />
-                </Button>
-              )}
               
               {user ? (
                 <>
