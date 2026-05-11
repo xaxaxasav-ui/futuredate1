@@ -109,7 +109,7 @@ self.addEventListener('message', (event) => {
   console.log('[SW] Message received:', event.data);
   
   if (event.data && event.data.type === 'SHOW_CALL_NOTIFICATION') {
-    const { callerName, callId, callerId, callerAvatar } = event.data;
+    const { callerName, callId, callerAvatar } = event.data;
     
     const options = {
       body: `${callerName} звонит вам`,
@@ -120,11 +120,11 @@ self.addEventListener('message', (event) => {
       renotify: true,
       requireInteraction: true,
       silent: false,
-      priority: 'high' as const,
+      priority: 'high',
       data: {
         url: `/date?user=${callerId}&call=${callId}`,
         callId,
-        callerId
+        callerId: callerId
       },
       actions: [
         { action: 'answer', title: '📞 Принять' },
