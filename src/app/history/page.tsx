@@ -217,7 +217,7 @@ export default function HistoryPage() {
           <div className="grid gap-4">
             {views.map((view) => (
               <GlassCard key={view.id} className="p-4 flex items-center gap-4 hover:bg-white/5 transition-colors group">
-                <Link href={`/profile/${view.profile_id}`} className="flex items-center gap-4 flex-1">
+                <Link href={`/user/${view.profile_id}`} className="flex items-center gap-4 flex-1">
                   <div className="w-16 h-16 rounded-full overflow-hidden bg-muted">
                     {view.profile?.avatar_url ? (
                       <img 

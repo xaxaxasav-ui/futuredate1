@@ -60,7 +60,7 @@ export default function DashboardPage() {
           fromUserId: user.id,
           fromUserName: user.user_metadata?.full_name || 'Пользователь',
           fromUserAvatar: user.user_metadata?.avatar_url || undefined,
-          link: `/profile/${user.id}`
+          link: `/user/${user.id}`
         });
       } catch (e) {}
       
@@ -125,7 +125,7 @@ export default function DashboardPage() {
 
   const handleViewProfile = (profile: Profile) => {
     trackStats(profile.id, 'view');
-    router.push(`/profile/${profile.id}`);
+    router.push(`/user/${profile.id}`);
   };
 
   const handleRemove = (profile: Profile) => {
@@ -186,7 +186,7 @@ export default function DashboardPage() {
           fromUserId: user.id,
           fromUserName: user.user_metadata?.full_name || 'Пользователь',
           fromUserAvatar: user.user_metadata?.avatar_url || undefined,
-          link: `/profile/${user.id}`
+          link: `/user/${user.id}`
         });
       } catch (e) {}
     }
@@ -392,7 +392,7 @@ export default function DashboardPage() {
                   <Button 
                     variant="outline" 
                     className="w-full rounded-full glass border-primary/20 hover:bg-primary/10 text-xs py-2"
-                    onClick={() => router.push(`/profile/${profile.id}`)}
+                    onClick={() => router.push(`/user/${profile.id}`)}
                   >
                     <Eye className="w-3 h-3 mr-1" /> Профиль
                   </Button>

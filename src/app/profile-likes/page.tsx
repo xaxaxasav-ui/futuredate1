@@ -135,7 +135,7 @@ export default function ProfileLikesPage() {
         ) : (
           <div className="space-y-4">
             {likers.map((liker) => (
-              <Link key={`${liker.id}-${liker.created_at}`} href={`/profile/${liker.id}`}>
+              <Link key={`${liker.id}-${liker.created_at}`} href={`/user/${liker.id}`}>
                 <GlassCard className="p-4 hover:scale-105 transition-transform cursor-pointer">
                   <div className="flex items-center gap-4">
                     {liker.avatar_url ? (

@@ -135,7 +135,7 @@ export default function ProfileViewsPage() {
         ) : (
           <div className="space-y-4">
             {viewers.map((viewer) => (
-              <Link key={`${viewer.id}-${viewer.created_at}`} href={`/profile/${viewer.id}`}>
+              <Link key={`${viewer.id}-${viewer.created_at}`} href={`/user/${viewer.id}`}>
                 <GlassCard className="p-4 hover:scale-105 transition-transform cursor-pointer">
                   <div className="flex items-center gap-4">
                     {viewer.avatar_url ? (

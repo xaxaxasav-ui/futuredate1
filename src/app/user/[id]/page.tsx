@@ -100,7 +100,6 @@ export default function ViewProfilePage() {
             console.log('Profile view saved');
           }
           
-          // Уведомление о просмотре профиля
           createNotification({
             userId: params.id as string,
             type: 'view',
@@ -109,7 +108,7 @@ export default function ViewProfilePage() {
             fromUserId: user.id,
             fromUserName: user.user_metadata?.full_name || 'Пользователь',
             fromUserAvatar: user.user_metadata?.avatar_url || undefined,
-            link: `/profile/${user.id}`
+            link: `/user/${user.id}`
           });
           
           const { data: likeData } = await supabase
