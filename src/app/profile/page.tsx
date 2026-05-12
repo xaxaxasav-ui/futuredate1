@@ -41,12 +41,13 @@ const GENDER_OPTIONS = [
   { value: "other", label: "Другое" },
 ];
 
-const EDUCATION_OPTIONS = ["Среднее", "Среднее специальное", "Незаконченное высшее", "Бакалавр", "Магистр", "Кандидат наук", "Доктор наук"];
+const EDUCATION_OPTIONS = ["Среднее", "Среднее специальное", "Незаконченное высшее", "Бакалавр", "Магистр", "Кандидат наук", "Доктор наук", "Высшее"];
 const RELATIONSHIP_OPTIONS = [
   { value: "single", label: "Не в отношениях" },
   { value: "dating", label: "В отношениях" },
   { value: "engaged", label: "Помолвлен(а)" },
   { value: "married", label: "Женат/Замужем" },
+  { value: "divorced", label: "Разведён(а)" },
   { value: "complicated", label: "Всё сложно" },
 ];
 const CHILDREN_OPTIONS = [
@@ -56,14 +57,14 @@ const CHILDREN_OPTIONS = [
   { value: "three", label: "Трое и более" },
 ];
 const SMOKING_OPTIONS = [
-  { value: "never", label: "Не курю" },
+  { value: "no", label: "Нет" },
+  { value: "yes", label: "Да" },
   { value: "sometimes", label: "Иногда" },
-  { value: "often", label: "Часто" },
 ];
 const ALCOHOL_OPTIONS = [
-  { value: "never", label: "Не пью" },
+  { value: "no", label: "Нет" },
+  { value: "yes", label: "Да" },
   { value: "sometimes", label: "Иногда" },
-  { value: "often", label: "Часто" },
 ];
 const LOOKING_FOR_OPTIONS = ["Серьёзные отношения", "Дружба", "Не определился", "Общение"];
 const LANGUAGE_OPTIONS = ["Русский", "Английский", "Немецкий", "Французский", "Испанский", "Итальянский", "Китайский", "Японский"];
