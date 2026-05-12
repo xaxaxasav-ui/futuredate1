@@ -84,7 +84,7 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-    const maxRetries = 3;
+    const maxRetries = 5;
     
     const tryFetch = async (attempt: number): Promise<any> => {
       try {
@@ -109,8 +109,9 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
         }
         
         if (error) {
+          console.log(`Profile fetch error, attempt ${attempt}/${maxRetries}:`, error.message);
           if (attempt < maxRetries) {
-            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+            await new Promise(r => setTimeout(r, 2000 * attempt));
             return tryFetch(attempt + 1);
           }
           return null;
@@ -118,8 +119,9 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
         
         return data;
       } catch (err) {
+        console.log(`Profile fetch exception, attempt ${attempt}/${maxRetries}`);
         if (attempt < maxRetries) {
-          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          await new Promise(r => setTimeout(r, 2000 * attempt));
           return tryFetch(attempt + 1);
         }
         return null;
