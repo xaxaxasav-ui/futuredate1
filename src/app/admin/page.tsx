@@ -248,6 +248,34 @@ export default function AdminPage() {
     }
   };
 
+  const fetchWithRetry = async <T>(
+    queryFn: () => Promise<{ data: T | null; error: any }>,
+    maxRetries = 3
+  ): Promise<T | null> => {
+    let lastError: any;
+    
+    for (let i = 0; i <= maxRetries; i++) {
+      try {
+        const result = await queryFn();
+        if (!result.error || result.data) {
+          return result.data;
+        }
+        lastError = result.error;
+      } catch (e: any) {
+        lastError = e;
+      }
+      
+      if (i < maxRetries) {
+        const delay = 1000 * Math.pow(2, i);
+        console.log(`Retry ${i + 1}/${maxRetries + 1} after ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    
+    console.warn('Query failed after retries:', lastError?.message);
+    return null;
+  };
+
   const fetchData = async () => {
     setLoading(true);
     setDebugInfo(prev => prev + "\nStarting fetchData...");
@@ -255,24 +283,25 @@ export default function AdminPage() {
       let profilesData: any[] = [];
 
       setDebugInfo(prev => prev + "\n1. Loading profiles list directly...");
-      try {
+      
+      const data = await fetchWithRetry<any[]>(async () => {
         const { data, error } = await supabase
           .from('profiles')
           .select('id, username, full_name, role, verification_photo, verification_status, is_verified, created_at, phone')
           .order('created_at', { ascending: false })
           .limit(100);
         
-        if (error) {
-          setDebugInfo(prev => prev + `\nSelect profiles error: ${error.message}`);
-          console.error("Profiles error:", error);
-        }
-        
-        setDebugInfo(prev => prev + `\nProfiles loaded: ${data?.length || 0}`);
-        console.log("Profiles loaded:", data?.length, data);
-        profilesData = data || [];
-      } catch (e: any) { 
-        setDebugInfo(prev => prev + `\nSelect profiles exception: ${e.message}`);
-        console.error("Profiles exception:", e);
+        if (error) return { data: null, error };
+        return { data, error: null };
+      });
+      
+      if (data) {
+        profilesData = data;
+        setDebugInfo(prev => prev + `\nProfiles loaded: ${profilesData.length}`);
+        console.log("Profiles loaded:", profilesData.length, data);
+      } else {
+        setDebugInfo(prev => prev + `\nProfiles failed to load (all retries failed)`);
+        console.log("Profiles failed to load after retries");
       }
 
       setDebugInfo(prev => prev + "\n2. Setting state...");
