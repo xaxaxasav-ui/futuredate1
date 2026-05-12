@@ -460,8 +460,8 @@ export default function ProfilePage() {
               <div className="text-center mt-3">
                 {!editing ? (
                   <>
-                    <h2 className="text-lg font-bold">{profile?.full_name || "Пользователь"}</h2>
-                    <p className="text-muted-foreground text-xs">@{profile?.username || "username"}</p>
+                    <h2 className="text-lg font-bold">{effectiveProfile.full_name || "Пользователь"}</h2>
+                    <p className="text-muted-foreground text-xs">@{effectiveProfile.username || "username"}</p>
                     {age && <p className="text-muted-foreground text-xs">{age} лет</p>}
                   </>
                 ) : (
@@ -522,13 +522,13 @@ export default function ProfilePage() {
                   {!editing ? (
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
-                        <div><Label className="text-muted-foreground">Имя</Label><p className="font-medium">{profile?.full_name || "Не указано"}</p></div>
-                        <div><Label className="text-muted-foreground">Username</Label><p className="font-medium">@{profile?.username || "Не указан"}</p></div>
+                        <div><Label className="text-muted-foreground">Имя</Label><p className="font-medium">{effectiveProfile.full_name || "Не указано"}</p></div>
+                        <div><Label className="text-muted-foreground">Username</Label><p className="font-medium">@{effectiveProfile.username || "Не указан"}</p></div>
                       </div>
                       {age && <div><Label className="text-muted-foreground">Возраст</Label><p className="font-medium">{age} лет</p></div>}
-                      {profile?.birth_date && <div><Label className="text-muted-foreground">Дата рождения</Label><p className="font-medium">{new Date(profile.birth_date).toLocaleDateString('ru-RU')}</p></div>}
-                      {profile?.gender && <div><Label className="text-muted-foreground">Пол</Label><p className="font-medium">{GENDER_OPTIONS.find(g => g.value === profile.gender)?.label || profile.gender}</p></div>}
-                      <div><Label className="text-muted-foreground">Биография</Label><p className="font-medium">{profile?.bio || "Не указано"}</p></div>
+                      {effectiveProfile.birth_date && <div><Label className="text-muted-foreground">Дата рождения</Label><p className="font-medium">{new Date(effectiveProfile.birth_date).toLocaleDateString('ru-RU')}</p></div>}
+                      {effectiveProfile.gender && <div><Label className="text-muted-foreground">Пол</Label><p className="font-medium">{GENDER_OPTIONS.find(g => g.value === effectiveProfile.gender)?.label || effectiveProfile.gender}</p></div>}
+                      <div><Label className="text-muted-foreground">Биография</Label><p className="font-medium">{effectiveProfile.bio || "Не указано"}</p></div>
                       <div><Label className="text-muted-foreground">Email</Label><p className="font-medium">{user?.email}</p></div>
                     </div>
                   ) : (
@@ -560,17 +560,17 @@ export default function ProfilePage() {
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Sparkles className="w-5 h-5" /> Интересы и увлечения</h3>
                   {!editing ? (
                     <div className="space-y-4">
-                      {profile?.hobbies?.length ? (
+                      {effectiveProfile.hobbies?.length ? (
                         <div><Label className="text-muted-foreground mb-2 block">Хобби</Label>
-                          <div className="flex flex-wrap gap-2">{profile.hobbies.map((h, i) => <Badge key={i} variant="secondary" className="bg-primary/20">{h}</Badge>)}</div>
+                          <div className="flex flex-wrap gap-2">{effectiveProfile.hobbies.map((h, i) => <Badge key={i} variant="secondary" className="bg-primary/20">{h}</Badge>)}</div>
                         </div>
                       ) : <p className="text-muted-foreground text-sm">Хобби не указаны</p>}
-                      {profile?.talents?.length && (
+                      {effectiveProfile.talents?.length && (
                         <div className="mt-4"><Label className="text-muted-foreground mb-2 block">Таланты</Label>
-                          <div className="flex flex-wrap gap-2">{profile.talents.map((t, i) => <Badge key={i} variant="outline" className="border-primary/30 text-primary">⭐ {t}</Badge>)}</div>
+                          <div className="flex flex-wrap gap-2">{effectiveProfile.talents.map((t, i) => <Badge key={i} variant="outline" className="border-primary/30 text-primary">⭐ {t}</Badge>)}</div>
                         </div>
                       )}
-                      {profile?.looking_for && <div className="mt-4"><Label className="text-muted-foreground mb-2 block">Ищу</Label><p>{profile.looking_for}</p></div>}
+                      {effectiveProfile.looking_for && <div className="mt-4"><Label className="text-muted-foreground mb-2 block">Ищу</Label><p>{effectiveProfile.looking_for}</p></div>}
                     </div>
                   ) : (
                     <div className="space-y-6">
@@ -615,15 +615,15 @@ export default function ProfilePage() {
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><User className="w-5 h-5" /> Личные данные</h3>
                   {!editing ? (
                     <div className="space-y-4">
-                      {profile?.height && <div className="flex items-center gap-2"><Ruler className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Рост:</Label><p className="font-medium">{profile.height} см</p></div>}
-                      {profile?.education && <div className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Образование:</Label><p className="font-medium">{profile.education}</p></div>}
-                      {profile?.occupation && <div className="flex items-center gap-2"><Briefcase className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Работа:</Label><p className="font-medium">{profile.occupation}</p></div>}
-                      {profile?.languages && profile.languages.length > 0 && <div><Label className="text-muted-foreground">Языки:</Label><div className="flex flex-wrap gap-2 mt-2">{profile.languages.map((lang, i) => <Badge key={i} variant="secondary" className="glass">{lang}</Badge>)}</div></div>}
-                      {profile?.relationship_status && <div className="flex items-center gap-2"><Heart className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Семейное:</Label><p className="font-medium">{RELATIONSHIP_OPTIONS.find(r => r.value === profile.relationship_status)?.label || profile.relationship_status}</p></div>}
-                      {profile?.children && <div className="flex items-center gap-2"><Baby className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Дети:</Label><p className="font-medium">{CHILDREN_OPTIONS.find(c => c.value === profile.children)?.label || profile.children}</p></div>}
-                      {profile?.smoking && <div className="flex items-center gap-2"><Cigarette className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Курение:</Label><p className="font-medium">{SMOKING_OPTIONS.find(s => s.value === profile.smoking)?.label || profile.smoking}</p></div>}
-                      {profile?.alcohol && <div className="flex items-center gap-2"><Wine className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Алкоголь:</Label><p className="font-medium">{ALCOHOL_OPTIONS.find(a => a.value === profile.alcohol)?.label || profile.alcohol}</p></div>}
-                      {!profile?.height && !profile?.education && <p className="text-muted-foreground">Данные не указаны. Нажмите "Редактировать" для заполнения.</p>}
+                      {effectiveProfile.height && <div className="flex items-center gap-2"><Ruler className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Рост:</Label><p className="font-medium">{effectiveProfile.height} см</p></div>}
+                      {effectiveProfile.education && <div className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Образование:</Label><p className="font-medium">{effectiveProfile.education}</p></div>}
+                      {effectiveProfile.occupation && <div className="flex items-center gap-2"><Briefcase className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Работа:</Label><p className="font-medium">{effectiveProfile.occupation}</p></div>}
+                      {effectiveProfile.languages && effectiveProfile.languages.length > 0 && <div><Label className="text-muted-foreground">Языки:</Label><div className="flex flex-wrap gap-2 mt-2">{effectiveProfile.languages.map((lang, i) => <Badge key={i} variant="secondary" className="glass">{lang}</Badge>)}</div></div>}
+                      {effectiveProfile.relationship_status && <div className="flex items-center gap-2"><Heart className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Семейное:</Label><p className="font-medium">{RELATIONSHIP_OPTIONS.find(r => r.value === effectiveProfile.relationship_status)?.label || effectiveProfile.relationship_status}</p></div>}
+                      {effectiveProfile.children && <div className="flex items-center gap-2"><Baby className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Дети:</Label><p className="font-medium">{CHILDREN_OPTIONS.find(c => c.value === effectiveProfile.children)?.label || effectiveProfile.children}</p></div>}
+                      {effectiveProfile.smoking && <div className="flex items-center gap-2"><Cigarette className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Курение:</Label><p className="font-medium">{SMOKING_OPTIONS.find(s => s.value === effectiveProfile.smoking)?.label || effectiveProfile.smoking}</p></div>}
+                      {effectiveProfile.alcohol && <div className="flex items-center gap-2"><Wine className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Алкоголь:</Label><p className="font-medium">{ALCOHOL_OPTIONS.find(a => a.value === effectiveProfile.alcohol)?.label || effectiveProfile.alcohol}</p></div>}
+                      {!effectiveProfile.height && !effectiveProfile.education && <p className="text-muted-foreground">Данные не указаны. Нажмите "Редактировать" для заполнения.</p>}
                     </div>
                   ) : (
                     <div className="space-y-4">
