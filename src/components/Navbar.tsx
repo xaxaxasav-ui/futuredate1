@@ -84,10 +84,33 @@ export function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      getUnreadCount(user.id).then(count => setUnreadCount(count));
-      getUnreadMessagesCount(user.id).then(count => setUnreadMessagesCount(count));
-    }
+    const fetchCounts = async () => {
+      if (!user) return;
+      try {
+        const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+        const fetchWithRetry = async (fn: () => Promise<any>, attempt = 0): Promise<any> => {
+          try {
+            return await fn();
+          } catch (e: any) {
+            if (attempt < 2) {
+              await delay(500 * Math.pow(2, attempt));
+              return fetchWithRetry(fn, attempt + 1);
+            }
+            return null;
+          }
+        };
+        
+        const [count, messagesCount] = await Promise.all([
+          fetchWithRetry(() => getUnreadCount(user.id)),
+          fetchWithRetry(() => getUnreadMessagesCount(user.id))
+        ]);
+        
+        if (count !== null) setUnreadCount(count);
+        if (messagesCount !== null) setUnreadMessagesCount(messagesCount);
+      } catch {}
+    };
+    
+    fetchCounts();
   }, [user]);
 
   const acceptCall = async () => {

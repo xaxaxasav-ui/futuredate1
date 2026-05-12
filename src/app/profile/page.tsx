@@ -196,56 +196,77 @@ export default function ProfilePage() {
   const fetchStats = async () => {
     if (!user) return;
     try {
+      const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+      const fetchWithRetry = async (query: any, attempt = 0) => {
+        try {
+          return await query;
+        } catch {
+          if (attempt < 2) {
+            await delay(500 * Math.pow(2, attempt));
+            return fetchWithRetry(query, attempt + 1);
+          }
+          return { count: 0 };
+        }
+      };
       const [likes, views, matches] = await Promise.all([
-        supabase.from('likes').select('id', { count: 'exact', head: true }).eq('liked_user_id', user.id),
-        supabase.from('profile_views').select('id', { count: 'exact', head: true }).eq('viewed_id', user.id),
-        supabase.from('matches').select('id', { count: 'exact', head: true }).or(`user_id.eq.${user.id},matched_user_id.eq.${user.id}`).eq('status', 'accepted')
+        fetchWithRetry(supabase.from('likes').select('id', { count: 'exact', head: true }).eq('liked_user_id', user.id)),
+        fetchWithRetry(supabase.from('profile_views').select('id', { count: 'exact', head: true }).eq('viewed_id', user.id)),
+        fetchWithRetry(supabase.from('matches').select('id', { count: 'exact', head: true }).or(`user_id.eq.${user.id},matched_user_id.eq.${user.id}`).eq('status', 'accepted'))
       ]);
       setStats({ views: views.count || 0, likes: likes.count || 0, messages: 0, matches: matches.count || 0 });
     } catch {}
   };
 
+  const fetchWithRetry = async <T>(queryFn: () => Promise<T>, fallback: T, maxRetries = 2): Promise<T> => {
+    for (let i = 0; i <= maxRetries; i++) {
+      try {
+        const result = await queryFn();
+        if (result) return result;
+      } catch {}
+      if (i < maxRetries) await new Promise(r => setTimeout(r, 500 * Math.pow(2, i)));
+    }
+    return fallback;
+  };
+
   const loadReceivedGifts = async () => {
     if (!user) return;
     setLoadingGifts(true);
-    try {
-      const { data, error } = await supabase
-        .from('gifts')
-        .select('*, sender:profiles!receiver_id(full_name)')
-        .eq('receiver_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      
-      if (error) throw error;
-      setReceivedGifts(data || []);
-    } catch (e: any) {
-      console.log('📦 Gifts query error:', e);
-      setGiftsError(e.message);
-    } finally {
-      setLoadingGifts(false);
-    }
+    const data = await fetchWithRetry(
+      async () => {
+        const { data, error } = await supabase
+          .from('gifts')
+          .select('*, sender:profiles!receiver_id(full_name)')
+          .eq('receiver_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
+        if (error) throw error;
+        return data || [];
+      },
+      []
+    );
+    setReceivedGifts(data);
+    setLoadingGifts(false);
   };
 
   const loadSentGifts = async () => {
     if (!user) return;
     setLoadingGifts(true);
     setGiftsError(null);
-    try {
-      const { data, error } = await supabase
-        .from('gifts')
-        .select('*, receiver:profiles!sender_id(full_name)')
-        .eq('sender_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      
-      if (error) throw error;
-      setSentGifts(data || []);
-    } catch (e: any) {
-      console.log('📦 Sent gifts query result:', { data: null, error: e });
-      setGiftsError(e.message);
-    } finally {
-      setLoadingGifts(false);
-    }
+    const data = await fetchWithRetry(
+      async () => {
+        const { data, error } = await supabase
+          .from('gifts')
+          .select('*, receiver:profiles!sender_id(full_name)')
+          .eq('sender_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
+        if (error) throw error;
+        return data || [];
+      },
+      []
+    );
+    setSentGifts(data);
+    setLoadingGifts(false);
   };
 
   useEffect(() => {
