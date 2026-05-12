@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 import { GlassCard } from "@/components/GlassCard";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, Mail, Phone, Calendar, Edit, Save, Shield, Heart, Sparkles, Music, Book, Camera, Gamepad, Code, TreePine, Utensils, Dumbbell, Globe, MapPin, Eye, Share2, Check, CheckCircle, AlertCircle, Zap } from "lucide-react";
+import { Loader2, User, Mail, Edit, Save, Shield, Heart, Sparkles, Music, Book, Camera, Gamepad, Code, TreePine, Utensils, Dumbbell, Globe, MapPin, Eye, Share2, Check, CheckCircle, AlertCircle, Zap } from "lucide-react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useGeolocation } from "@/components/Geolocation";
@@ -53,13 +52,11 @@ function calculateAge(birthDate: string): number {
 }
 
 export default function ProfilePage() {
-  const { user, profile, loading: authLoading, signOut, refreshProfile } = useSupabase();
-  const router = useRouter();
+  const { user, profile, loading: authLoading, refreshProfile } = useSupabase();
   const { latitude, longitude, city, loading: geoLoading } = useGeolocation();
   
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [showCityDialog, setShowCityDialog] = useState(false);
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState({ views: 0, likes: 0, messages: 0, matches: 0 });
   const [editData, setEditData] = useState({
@@ -278,7 +275,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" /><span className="truncate">{user?.email}</span></div>
                 {profile?.city && <div className="flex items-center gap-2 text-muted-foreground"><MapPin className="w-4 h-4" /><span>{profile.city}</span></div>}
                 {city && !profile?.city && <div className="flex items-center gap-2 text-muted-foreground"><MapPin className="w-4 h-4" /><span>{city}</span></div>}
-                <div className="flex items-center gap-2 text-muted-foreground"><Calendar className="w-4 h-4" /><span>Участник с {memberSince}</span></div>
+                <div className="flex items-center gap-2 text-muted-foreground"><User className="w-4 h-4" /><span>Участник с {memberSince}</span></div>
               </div>
 
               {profile && (
