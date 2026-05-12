@@ -68,11 +68,30 @@ export default function ViewProfilePage() {
     const fetchProfile = async () => {
       if (!params.id) return;
       
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', params.id)
-        .single();
+      const fetchWithRetry = async (attempt = 0, maxRetries = 3) => {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', params.id)
+            .single();
+          
+          if (error && attempt < maxRetries) {
+            await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+            return fetchWithRetry(attempt + 1);
+          }
+          
+          return { data, error };
+        } catch {
+          if (attempt < maxRetries) {
+            await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+            return fetchWithRetry(attempt + 1);
+          }
+          return { data: null, error: { message: 'Failed to fetch' } };
+        }
+      };
+      
+      const { data, error } = await fetchWithRetry();
 
       if (!error && data) {
         const cleanBio = data.bio ? data.bio.replace(/🎯?ИИ_АНАЛИЗ_START.+?ИИ_АНАЛИЗ_END/g, '').trim() : null;
