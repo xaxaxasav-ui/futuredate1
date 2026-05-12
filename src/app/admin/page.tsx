@@ -20,6 +20,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { getCache, setCache } from "@/lib/cache";
 
 interface AdminProfile {
   id: string;
@@ -276,11 +277,28 @@ export default function AdminPage() {
     return null;
   };
 
-  const fetchData = async () => {
+  const fetchData = async (forceRefresh: boolean = false) => {
     setLoading(true);
     setDebugInfo(prev => prev + "\nStarting fetchData...");
+    
+    const cacheKey = 'admin_profiles';
+    const cachedData = !forceRefresh ? getCache<any[]>(cacheKey) : null;
+    
     try {
       let profilesData: any[] = [];
+
+      if (cachedData) {
+        profilesData = cachedData;
+        setDebugInfo(prev => prev + `\nLoaded from cache: ${profilesData.length}`);
+        console.log("Profiles loaded from cache:", profilesData.length);
+        setProfiles(profilesData);
+        setStats({
+          totalUsers: profilesData.length,
+          verifiedUsers: profilesData.filter(p => p.is_verified).length,
+          pendingVerifications: profilesData.filter(p => p.verification_status === 'pending').length,
+          totalMessages: 0
+        });
+      }
 
       setDebugInfo(prev => prev + "\n1. Loading profiles list directly...");
       
@@ -297,11 +315,12 @@ export default function AdminPage() {
       
       if (data) {
         profilesData = data;
-        setDebugInfo(prev => prev + `\nProfiles loaded: ${profilesData.length}`);
-        console.log("Profiles loaded:", profilesData.length, data);
-      } else {
-        setDebugInfo(prev => prev + `\nProfiles failed to load (all retries failed)`);
-        console.log("Profiles failed to load after retries");
+        setCache(cacheKey, data, 5 * 60 * 1000);
+        setDebugInfo(prev => prev + `\nProfiles loaded from server: ${profilesData.length}`);
+        console.log("Profiles loaded from server:", profilesData.length, data);
+      } else if (!cachedData) {
+        setDebugInfo(prev => prev + `\nProfiles failed to load (all retries failed, no cache)`);
+        console.log("Profiles failed to load after retries and no cache available");
       }
 
       setDebugInfo(prev => prev + "\n2. Setting state...");
