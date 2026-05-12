@@ -52,6 +52,7 @@ function calculateAge(birthDate: string): number {
 }
 
 export default function ProfilePage() {
+  // User profile page
   const { user, profile, loading: authLoading, refreshProfile } = useSupabase();
   const { latitude, longitude, city, loading: geoLoading } = useGeolocation();
   
