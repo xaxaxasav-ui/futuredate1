@@ -291,24 +291,39 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!user) { alert("Вы не авторизованы"); return; }
     setLoading(true);
+    
+    const saveWithRetry = async (attempt = 0, maxRetries = 3): Promise<any> => {
+      try {
+        const profileData = {
+          full_name: editData.full_name, bio: editData.bio, username: editData.username || `user_${user.id.slice(0,8)}`,
+          hobbies: editData.hobbies, talents: editData.talents, looking_for: editData.looking_for,
+          looking_for_gender: editData.looking_for_gender || null, looking_for_age_min: editData.looking_for_age_min,
+          looking_for_age_max: editData.looking_for_age_max, looking_for_height_min: editData.looking_for_height_min,
+          looking_for_height_max: editData.looking_for_height_max, birth_date: editData.birth_date || null,
+          gender: editData.gender || null, height: editData.height, education: editData.education || null,
+          occupation: editData.occupation || null, languages: editData.languages,
+          relationship_status: editData.relationship_status || null, children: editData.children || null,
+          smoking: editData.smoking || null, alcohol: editData.alcohol || null, photos: editData.photos,
+          photos_visibility: editData.photos_visibility, photos_blocked_users: editData.photos_blocked_users,
+          profile_visibility: editData.profile_visibility, profile_blocked_users: editData.profile_blocked_users,
+          updated_at: new Date().toISOString(),
+        };
+        return await supabase.from('profiles').upsert({ id: user.id, ...profileData }).select();
+      } catch (e) {
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
+          return saveWithRetry(attempt + 1);
+        }
+        throw e;
+      }
+    };
+    
     try {
-      const profileData = {
-        full_name: editData.full_name, bio: editData.bio, username: editData.username || `user_${user.id.slice(0,8)}`,
-        hobbies: editData.hobbies, talents: editData.talents, looking_for: editData.looking_for,
-        looking_for_gender: editData.looking_for_gender || null, looking_for_age_min: editData.looking_for_age_min,
-        looking_for_age_max: editData.looking_for_age_max, looking_for_height_min: editData.looking_for_height_min,
-        looking_for_height_max: editData.looking_for_height_max, birth_date: editData.birth_date || null,
-        gender: editData.gender || null, height: editData.height, education: editData.education || null,
-        occupation: editData.occupation || null, languages: editData.languages,
-        relationship_status: editData.relationship_status || null, children: editData.children || null,
-        smoking: editData.smoking || null, alcohol: editData.alcohol || null, photos: editData.photos,
-        photos_visibility: editData.photos_visibility, photos_blocked_users: editData.photos_blocked_users,
-        profile_visibility: editData.profile_visibility, profile_blocked_users: editData.profile_blocked_users,
-        updated_at: new Date().toISOString(),
-      };
-      const { data, error } = await supabase.from('profiles').upsert({ id: user.id, ...profileData }).select();
+      const { data, error } = await saveWithRetry();
       if (error) throw error;
-      await refreshProfile(); setEditing(false); alert("Профиль сохранен!");
+      await refreshProfile(); 
+      setEditing(false); 
+      alert("Профиль сохранен!");
     } catch (e: any) { alert("Ошибка: " + (e?.message || "Неизвестная ошибка")); }
     finally { setLoading(false); }
   };
