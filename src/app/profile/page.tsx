@@ -110,7 +110,7 @@ interface SentGift {
 }
 
 export default function ProfilePage() {
-  const { user, profile, loading: authLoading, signOut, refreshProfile } = useSupabase();
+  const { user, profile, loading: authLoading, profileLoading, signOut, refreshProfile } = useSupabase();
   const { latitude, longitude, city, loading: geoLoading } = useGeolocation();
   
   const [loading, setLoading] = useState(false);
@@ -379,6 +379,17 @@ export default function ProfilePage() {
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted-foreground">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (profileLoading && !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Загрузка профиля...</p>
         </div>
       </div>
     );

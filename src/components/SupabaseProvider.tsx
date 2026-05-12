@@ -56,6 +56,7 @@ interface SupabaseContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  profileLoading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -65,6 +66,7 @@ const SupabaseContext = createContext<SupabaseContextType>({
   session: null,
   profile: null,
   loading: true,
+  profileLoading: false,
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -82,8 +84,10 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const fetchProfile = async (userId: string) => {
+    setProfileLoading(true);
     const maxRetries = 5;
     
     const tryFetch = async (attempt: number): Promise<any> => {
@@ -129,6 +133,7 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
     };
     
     const result = await tryFetch(1);
+    setProfileLoading(false);
     
     const fallbackProfile = {
       id: userId,
@@ -212,7 +217,7 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
   };
 
   return (
-    <SupabaseContext.Provider value={{ user, session, profile, loading, signOut, refreshProfile }}>
+    <SupabaseContext.Provider value={{ user, session, profile, loading, profileLoading, signOut, refreshProfile }}>
       {children}
     </SupabaseContext.Provider>
   );
