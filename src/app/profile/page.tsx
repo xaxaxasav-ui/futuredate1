@@ -399,9 +399,11 @@ export default function ProfilePage() {
   const assessment = (() => {
     if (profile?.bio && profile.bio.includes('ИИ_АНАЛИЗ_START')) {
       try {
-        const match = profile.bio.match(/ИИ_АНАЛИЗ_START(\{.*?\})ИИ_АНАЛИЗ_END/);
-        if (match) {
-          return JSON.parse(match[1]) as AssessmentResult;
+        const startIdx = profile.bio.indexOf('ИИ_АНАЛИЗ_START') + 'ИИ_АНАЛИЗ_START'.length;
+        const endIdx = profile.bio.indexOf('ИИ_АНАЛИЗ_END', startIdx);
+        if (startIdx > 0 && endIdx > startIdx) {
+          const jsonStr = profile.bio.substring(startIdx, endIdx);
+          return JSON.parse(jsonStr) as AssessmentResult;
         }
       } catch (e) {
         console.error('Error parsing assessment:', e);
