@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import { GlassCard } from "@/components/GlassCard";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, Mail, Edit, Save, Shield, Heart, Sparkles, Music, Book, Camera, Gamepad, Code, TreePine, Utensils, Dumbbell, Globe, MapPin, Eye, Share2, Check, CheckCircle, AlertCircle, Zap } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, User, Mail, Edit, Save, Shield, Heart, Sparkles, Music, Book, Camera, Gamepad, Code, TreePine, Utensils, Dumbbell, Globe, MapPin, Eye, Share2, Check, CheckCircle, AlertCircle, Zap, Upload, X, Gift, Settings, Trash2, Baby, Cigarette, Wine, GraduationCap, Briefcase, Ruler, HeartHandshake, Clock, BrainCircuit, Image as ImageIcon } from "lucide-react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -40,6 +41,33 @@ const GENDER_OPTIONS = [
   { value: "other", label: "Другое" },
 ];
 
+const EDUCATION_OPTIONS = ["Среднее", "Среднее специальное", "Незаконченное высшее", "Бакалавр", "Магистр", "Кандидат наук", "Доктор наук"];
+const RELATIONSHIP_OPTIONS = [
+  { value: "single", label: "Не в отношениях" },
+  { value: "dating", label: "В отношениях" },
+  { value: "engaged", label: "Помолвлен(а)" },
+  { value: "married", label: "Женат/Замужем" },
+  { value: "complicated", label: "Всё сложно" },
+];
+const CHILDREN_OPTIONS = [
+  { value: "none", label: "Нет детей" },
+  { value: "one", label: "Один ребёнок" },
+  { value: "two", label: "Двое детей" },
+  { value: "three", label: "Трое и более" },
+];
+const SMOKING_OPTIONS = [
+  { value: "never", label: "Не курю" },
+  { value: "sometimes", label: "Иногда" },
+  { value: "often", label: "Часто" },
+];
+const ALCOHOL_OPTIONS = [
+  { value: "never", label: "Не пью" },
+  { value: "sometimes", label: "Иногда" },
+  { value: "often", label: "Часто" },
+];
+const LOOKING_FOR_OPTIONS = ["Серьёзные отношения", "Дружба", "Не определился", "Общение"];
+const LANGUAGE_OPTIONS = ["Русский", "Английский", "Немецкий", "Французский", "Испанский", "Итальянский", "Китайский", "Японский"];
+
 function calculateAge(birthDate: string): number {
   const today = new Date();
   const birth = new Date(birthDate);
@@ -51,9 +79,38 @@ function calculateAge(birthDate: string): number {
   return age;
 }
 
+interface AssessmentResult {
+  completedAt: string;
+  personalityType: string;
+  strengths?: string[];
+  idealPartner?: string;
+  datingStyle?: string;
+}
+
+interface GiftData {
+  id: string;
+  name: string;
+  emoji: string;
+}
+
+interface ReceivedGift {
+  id: string;
+  gift_name: string;
+  gift_emoji: string | null;
+  sender: { full_name: string | null } | null;
+  created_at: string;
+}
+
+interface SentGift {
+  id: string;
+  gift_name: string;
+  gift_emoji: string | null;
+  receiver: { full_name: string | null } | null;
+  created_at: string;
+}
+
 export default function ProfilePage() {
-  // User profile page
-  const { user, profile, loading: authLoading, refreshProfile } = useSupabase();
+  const { user, profile, loading: authLoading, signOut, refreshProfile } = useSupabase();
   const { latitude, longitude, city, loading: geoLoading } = useGeolocation();
   
   const [loading, setLoading] = useState(false);
@@ -72,10 +129,21 @@ export default function ProfilePage() {
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [inputName, setInputName] = useState("");
   const [inputUsername, setInputUsername] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [showCityDialog, setShowCityDialog] = useState(false);
+  const [giftsTab, setGiftsTab] = useState<'received' | 'sent'>('received');
+  const [receivedGifts, setReceivedGifts] = useState<ReceivedGift[]>([]);
+  const [sentGifts, setSentGifts] = useState<SentGift[]>([]);
+  const [loadingGifts, setLoadingGifts] = useState(false);
+  const [giftsError, setGiftsError] = useState<string | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
       fetchStats().catch(() => setStats(s => ({ ...s, matches: 0 })));
+      loadReceivedGifts().catch(() => {});
     }
   }, [user]);
 
@@ -103,6 +171,15 @@ export default function ProfilePage() {
       });
       setInputName(profile.full_name || ""); setInputUsername(profile.username || ""); setInitialLoadDone(true);
     }
+  }, [profile, initialLoadDone, refreshProfile]);
+
+  useEffect(() => {
+    if (!initialLoadDone && profile) {
+      setEditData(prev => ({
+        ...prev,
+        photos: profile?.photos || prev.photos
+      }));
+    }
   }, [profile, initialLoadDone]);
 
   useEffect(() => {
@@ -126,6 +203,55 @@ export default function ProfilePage() {
       setStats({ views: views.count || 0, likes: likes.count || 0, messages: 0, matches: matches.count || 0 });
     } catch {}
   };
+
+  const loadReceivedGifts = async () => {
+    if (!user) return;
+    setLoadingGifts(true);
+    try {
+      const { data, error } = await supabase
+        .from('gifts')
+        .select('*, sender:profiles!receiver_id(full_name)')
+        .eq('receiver_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (error) throw error;
+      setReceivedGifts(data || []);
+    } catch (e: any) {
+      console.log('📦 Gifts query error:', e);
+      setGiftsError(e.message);
+    } finally {
+      setLoadingGifts(false);
+    }
+  };
+
+  const loadSentGifts = async () => {
+    if (!user) return;
+    setLoadingGifts(true);
+    setGiftsError(null);
+    try {
+      const { data, error } = await supabase
+        .from('gifts')
+        .select('*, receiver:profiles!sender_id(full_name)')
+        .eq('sender_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (error) throw error;
+      setSentGifts(data || []);
+    } catch (e: any) {
+      console.log('📦 Sent gifts query result:', { data: null, error: e });
+      setGiftsError(e.message);
+    } finally {
+      setLoadingGifts(false);
+    }
+  };
+
+  useEffect(() => {
+    if (giftsTab === 'sent' && sentGifts.length === 0 && !giftsError) {
+      loadSentGifts();
+    }
+  }, [giftsTab]);
 
   const getReferralCode = () => profile?.username || user?.id?.slice(0, 8) || 'user';
   const referralLink = typeof window !== 'undefined' ? `${window.location.origin}/invite/${getReferralCode()}` : '';
@@ -172,6 +298,80 @@ export default function ProfilePage() {
   const toggleTalent = (talent: string) => {
     setEditData(prev => ({ ...prev, talents: prev.talents.includes(talent) ? prev.talents.filter(t => t !== talent) : [...prev.talents, talent] }));
   };
+
+  const toggleLanguage = (lang: string) => {
+    setEditData(prev => ({ ...prev, languages: prev.languages.includes(lang) ? prev.languages.filter(l => l !== lang) : [...prev.languages, lang] }));
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !e.target.files?.[0]) return;
+    setUploadingPhoto(true);
+    const file = e.target.files[0];
+    
+    try {
+      const fileName = `${user.id}/${Date.now()}_${file.name}`;
+      const { data, error } = await supabase.storage.from('avatars').upload(fileName, file);
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      const newPhotoUrl = urlData.publicUrl;
+      
+      const newPhotos = [...editData.photos, newPhotoUrl];
+      setEditData(prev => ({ ...prev, photos: newPhotos }));
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert('Ошибка загрузки фото');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleDeletePhoto = (index: number) => {
+    const newPhotos = editData.photos.filter((_, i) => i !== index);
+    setEditData(prev => ({ ...prev, photos: newPhotos }));
+  };
+
+  const setAvatarFromPhoto = (photoUrl: string, index: number) => {
+    const newPhotos = [photoUrl, ...editData.photos.filter((_, i) => i !== index)];
+    setEditData(prev => ({ ...prev, photos: newPhotos }));
+  };
+
+  const handleSignOut = async () => {
+    if (confirm('Вы уверены, что хотите выйти?')) {
+      await signOut();
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    if (!confirm('Вы уверены? Это действие необратимо!')) return;
+    
+    setLoading(true);
+    try {
+      await supabase.from('profiles').delete().eq('id', user.id);
+      await supabase.auth.admin.deleteUser(user.id);
+      await signOut();
+    } catch (e: any) {
+      alert('Ошибка удаления аккаунта');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const assessment = (() => {
+    if (profile?.bio && profile.bio.includes('ИИ_АНАЛИЗ_START')) {
+      try {
+        const match = profile.bio.match(/ИИ_АНАЛИЗ_START(\{.*?\})ИИ_АНАЛИЗ_END/);
+        if (match) {
+          return JSON.parse(match[1]) as AssessmentResult;
+        }
+      } catch (e) {
+        console.error('Error parsing assessment:', e);
+      }
+    }
+    return null;
+  })();
 
   if (!user) {
     return (
@@ -276,7 +476,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" /><span className="truncate">{user?.email}</span></div>
                 {profile?.city && <div className="flex items-center gap-2 text-muted-foreground"><MapPin className="w-4 h-4" /><span>{profile.city}</span></div>}
                 {city && !profile?.city && <div className="flex items-center gap-2 text-muted-foreground"><MapPin className="w-4 h-4" /><span>{city}</span></div>}
-                <div className="flex items-center gap-2 text-muted-foreground"><User className="w-4 h-4" /><span>Участник с {memberSince}</span></div>
+                <div className="flex items-center gap-2 text-muted-foreground"><Clock className="w-4 h-4" /><span>Участник с {memberSince}</span></div>
               </div>
 
               {profile && (
@@ -310,6 +510,10 @@ export default function ProfilePage() {
                 <TabsTrigger value="info" className="text-xs px-3 py-2">Обо мне</TabsTrigger>
                 <TabsTrigger value="interests" className="text-xs px-3 py-2">Интересы</TabsTrigger>
                 <TabsTrigger value="details" className="text-xs px-3 py-2">Анкета</TabsTrigger>
+                <TabsTrigger value="photos" className="text-xs px-3 py-2">📷 Фото</TabsTrigger>
+                <TabsTrigger value="ai" className="text-xs px-3 py-2">🤖 ИИ</TabsTrigger>
+                <TabsTrigger value="gifts" className="text-xs px-3 py-2">🎁 Подарки</TabsTrigger>
+                <TabsTrigger value="settings" className="text-xs px-3 py-2">⚙️</TabsTrigger>
               </TabsList>
 
               <TabsContent value="info" className="space-y-6 mt-6">
@@ -392,7 +596,14 @@ export default function ProfilePage() {
                       </div>
                       <div className="space-y-2">
                         <Label>Ищу</Label>
-                        <Input value={editData.looking_for} onChange={(e) => setEditData({ ...editData, looking_for: e.target.value })} className="glass" placeholder="Серьёзные отношения, дружба..." />
+                        <div className="flex flex-wrap gap-2">
+                          {LOOKING_FOR_OPTIONS.map(o => (
+                            <button key={o} type="button" onClick={() => setEditData({...editData, looking_for: o})}
+                              className={`px-3 py-2 rounded-lg border text-sm ${editData.looking_for === o ? 'bg-primary/20 border-primary text-primary' : 'border-white/10 hover:border-primary/30'}`}>
+                              {o}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -401,29 +612,320 @@ export default function ProfilePage() {
 
               <TabsContent value="details" className="space-y-6 mt-6">
                 <GlassCard className="p-6">
-                  <h3 className="text-lg font-bold mb-4">Анкета</h3>
-                  {editing ? (
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><User className="w-5 h-5" /> Личные данные</h3>
+                  {!editing ? (
                     <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>Рост (см)</Label><Input type="number" value={editData.height} onChange={(e) => setEditData({ ...editData, height: parseInt(e.target.value) || 170 })} className="glass" /></div>
-                        <div className="space-y-2"><Label>Образование</Label><Input value={editData.education} onChange={(e) => setEditData({ ...editData, education: e.target.value })} className="glass" /></div>
-                      </div>
-                      <div className="space-y-2"><Label>Профессия</Label><Input value={editData.occupation} onChange={(e) => setEditData({ ...editData, occupation: e.target.value })} className="glass" /></div>
+                      {profile?.height && <div className="flex items-center gap-2"><Ruler className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Рост:</Label><p className="font-medium">{profile.height} см</p></div>}
+                      {profile?.education && <div className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Образование:</Label><p className="font-medium">{profile.education}</p></div>}
+                      {profile?.occupation && <div className="flex items-center gap-2"><Briefcase className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Работа:</Label><p className="font-medium">{profile.occupation}</p></div>}
+                      {profile?.languages && profile.languages.length > 0 && <div><Label className="text-muted-foreground">Языки:</Label><div className="flex flex-wrap gap-2 mt-2">{profile.languages.map((lang, i) => <Badge key={i} variant="secondary" className="glass">{lang}</Badge>)}</div></div>}
+                      {profile?.relationship_status && <div className="flex items-center gap-2"><Heart className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Семейное:</Label><p className="font-medium">{RELATIONSHIP_OPTIONS.find(r => r.value === profile.relationship_status)?.label || profile.relationship_status}</p></div>}
+                      {profile?.children && <div className="flex items-center gap-2"><Baby className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Дети:</Label><p className="font-medium">{CHILDREN_OPTIONS.find(c => c.value === profile.children)?.label || profile.children}</p></div>}
+                      {profile?.smoking && <div className="flex items-center gap-2"><Cigarette className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Курение:</Label><p className="font-medium">{SMOKING_OPTIONS.find(s => s.value === profile.smoking)?.label || profile.smoking}</p></div>}
+                      {profile?.alcohol && <div className="flex items-center gap-2"><Wine className="w-4 h-4 text-muted-foreground" /><Label className="text-muted-foreground">Алкоголь:</Label><p className="font-medium">{ALCOHOL_OPTIONS.find(a => a.value === profile.alcohol)?.label || profile.alcohol}</p></div>}
+                      {!profile?.height && !profile?.education && <p className="text-muted-foreground">Данные не указаны. Нажмите "Редактировать" для заполнения.</p>}
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {profile?.height && <div><Label className="text-muted-foreground">Рост</Label><p className="font-medium">{profile.height} см</p></div>}
-                      {profile?.education && <div><Label className="text-muted-foreground">Образование</Label><p className="font-medium">{profile.education}</p></div>}
-                      {profile?.occupation && <div><Label className="text-muted-foreground">Профессия</Label><p className="font-medium">{profile.occupation}</p></div>}
-                      {!profile?.height && !profile?.education && <p className="text-muted-foreground text-sm">Данные не заполнены</p>}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>Рост (см)</Label><Input type="number" min="100" max="220" value={editData.height} onChange={(e) => setEditData({...editData, height: parseInt(e.target.value) || 170})} className="glass" /></div>
+                        <div className="space-y-2">
+                          <Label>Образование</Label>
+                          <select value={editData.education} onChange={(e) => setEditData({...editData, education: e.target.value})} className="w-full rounded-lg px-4 py-3 border bg-background">
+                            <option value="">Выберите...</option>
+                            {EDUCATION_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="space-y-2"><Label>Профессия</Label><Input placeholder="Например: Инженер..." value={editData.occupation} onChange={(e) => setEditData({...editData, occupation: e.target.value})} className="glass" /></div>
+                      <div className="space-y-2">
+                        <Label>Языки</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {LANGUAGE_OPTIONS.map(lang => {
+                            const isSelected = editData.languages.includes(lang);
+                            return (
+                              <button key={lang} type="button" onClick={() => toggleLanguage(lang)}
+                                className={`py-1.5 px-3 rounded-full text-sm border transition-all ${isSelected ? 'bg-primary/20 border-primary text-primary' : 'glass border-white/10 hover:border-primary/50'}`}>
+                                {lang}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Семейное положение</Label>
+                          <select value={editData.relationship_status} onChange={(e) => setEditData({...editData, relationship_status: e.target.value})} className="w-full rounded-lg px-4 py-3 border bg-background">
+                            <option value="">Выберите...</option>
+                            {RELATIONSHIP_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Дети</Label>
+                          <select value={editData.children} onChange={(e) => setEditData({...editData, children: e.target.value})} className="w-full rounded-lg px-4 py-3 border bg-background">
+                            <option value="">Выберите...</option>
+                            {CHILDREN_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Курение</Label>
+                          <select value={editData.smoking} onChange={(e) => setEditData({...editData, smoking: e.target.value})} className="w-full rounded-lg px-4 py-3 border bg-background">
+                            <option value="">Выберите...</option>
+                            {SMOKING_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Алкоголь</Label>
+                          <select value={editData.alcohol} onChange={(e) => setEditData({...editData, alcohol: e.target.value})} className="w-full rounded-lg px-4 py-3 border bg-background">
+                            <option value="">Выберите...</option>
+                            {ALCOHOL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </GlassCard>
+              </TabsContent>
+
+              <TabsContent value="photos" className="space-y-6 mt-6">
+                <GlassCard className="p-6">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><ImageIcon className="w-5 h-5" /> Фотоальбом</h3>
+                  <p className="text-muted-foreground mb-4">Загрузите фотографии, чтобы другие пользователи могли узнать вас лучше.</p>
+                  
+                  {!editing ? (
+                    <div className="mb-4 p-4 rounded-lg bg-card border border-border">
+                      <Label className="text-foreground/70 text-sm">Кто может видеть альбом:</Label>
+                      <p className="font-medium text-foreground mt-1">
+                        {profile?.photos_visibility === 'all' && 'Все пользователи'}
+                        {profile?.photos_visibility === 'matches' && 'Только совпадения'}
+                        {profile?.photos_visibility === 'none' && 'Никто'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mb-4 space-y-2">
+                      <Label className="text-foreground font-medium">Кто может видеть альбом</Label>
+                      <select value={editData.photos_visibility} onChange={(e) => setEditData({...editData, photos_visibility: e.target.value})} className="w-full rounded-lg px-4 py-3 bg-background border border-input text-foreground">
+                        <option value="all">Все пользователи</option>
+                        <option value="matches">Только совпадения</option>
+                        <option value="none">Никто</option>
+                      </select>
+                    </div>
+                  )}
+                  
+                  <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handlePhotoUpload} className="hidden" />
+                  
+                  <Button onClick={() => fileInputRef.current?.click()} disabled={uploadingPhoto} className="mb-4 rounded-full">
+                    {uploadingPhoto ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                    Загрузить фото
+                  </Button>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {(editing ? editData.photos : (profile?.photos || [])).length > 0 ? (
+                      (editing ? editData.photos : (profile?.photos || [])).map((photo, index) => (
+                        <div key={index} className="relative group aspect-square">
+                          <img src={photo} alt={`Фото ${index + 1}`} className="w-full h-full object-cover rounded-lg" loading="lazy" />
+                          {editing && (
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                              <Button variant="secondary" size="sm" onClick={() => setAvatarFromPhoto(photo, index)} className="rounded-full text-xs">
+                                {index === 0 ? 'Аватар' : 'Сделать аватар'}
+                              </Button>
+                              <Button variant="destructive" size="sm" onClick={() => handleDeletePhoto(index)} className="rounded-full">
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-3 py-12 text-center text-muted-foreground">
+                        <ImageIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>Фотографии пока не загружены</p>
+                      </div>
+                    )}
+                  </div>
+                </GlassCard>
+              </TabsContent>
+
+              <TabsContent value="ai" className="space-y-6 mt-6">
+                <GlassCard className="p-6">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><BrainCircuit className="w-5 h-5 text-primary" /> ИИ Анализ личности</h3>
+                  
+                  {!assessment ? (
+                    <div className="text-center py-8">
+                      <BrainCircuit className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                      <p className="text-muted-foreground mb-4">Вы ещё не прошли ИИ тестирование</p>
+                      <Link href="/assessment">
+                        <Button className="rounded-full neo-glow"><Sparkles className="w-4 h-4 mr-2" /> Пройти тест</Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="p-4 rounded-xl bg-gradient-to-r from-primary/20 to-pink-500/20 border border-primary/30">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Sparkles className="w-6 h-6 text-primary" />
+                          <span className="text-lg font-bold">Ваш тип личности</span>
+                        </div>
+                        <p className="text-2xl font-bold text-primary">{assessment.personalityType || "Тип определён"}</p>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-xl bg-muted/50">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Zap className="w-5 h-5 text-yellow-400" />
+                            <span className="font-medium">Сильные стороны</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {(assessment.strengths || []).map((s, i) => (
+                              <Badge key={i} variant="secondary" className="bg-yellow-500/20 text-yellow-400">{s}</Badge>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-muted/50">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Heart className="w-5 h-5 text-pink-400" />
+                            <span className="font-medium">Идеальный партнёр</span>
+                          </div>
+                          <p className="text-sm">{assessment.idealPartner || "Определяется..."}</p>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-muted/50">
+                          <div className="flex items-center gap-2 mb-2">
+                            <HeartHandshake className="w-5 h-5 text-blue-400" />
+                            <span className="font-medium">Стиль свиданий</span>
+                          </div>
+                          <p className="text-sm">{assessment.datingStyle || "Определяется..."}</p>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-muted/50">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Clock className="w-5 h-5 text-green-400" />
+                            <span className="font-medium">Тест пройден</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {assessment.completedAt ? new Date(assessment.completedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Link href="/assessment">
+                        <Button variant="outline" className="w-full rounded-full">
+                          <Sparkles className="w-4 h-4 mr-2" /> Пройти заново
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </GlassCard>
+              </TabsContent>
+
+              <TabsContent value="gifts" className="space-y-6 mt-6">
+                <GlassCard className="p-6">
+                  <div className="flex gap-2 mb-4">
+                    <button onClick={() => setGiftsTab('received')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${giftsTab === 'received' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:text-foreground'}`}>
+                      Полученные ({receivedGifts.length})
+                    </button>
+                    <button onClick={() => setGiftsTab('sent')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${giftsTab === 'sent' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:text-foreground'}`}>
+                      Отправленные ({sentGifts.length})
+                    </button>
+                  </div>
+                  
+                  {loadingGifts ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    </div>
+                  ) : giftsError ? (
+                    <div className="text-center py-8">
+                      <p className="text-red-500 mb-2">Ошибка: {giftsError}</p>
+                      <Button variant="outline" size="sm" onClick={giftsTab === 'received' ? loadReceivedGifts : loadSentGifts}>Повторить</Button>
+                    </div>
+                  ) : giftsTab === 'received' ? (
+                    receivedGifts.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">Подарков пока нет</p>
+                    ) : (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {receivedGifts.map(gift => (
+                          <div key={gift.id} className="p-4 bg-muted/50 rounded-lg text-center">
+                            <div className="text-3xl mb-2">{gift.gift_emoji || '🎁'}</div>
+                            <p className="text-sm font-medium">{gift.gift_name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">от {gift.sender?.full_name || 'неизвестно'}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    sentGifts.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">Вы ещё не отправляли подарки</p>
+                    ) : (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {sentGifts.map(gift => (
+                          <div key={gift.id} className="p-4 bg-muted/50 rounded-lg text-center">
+                            <div className="text-3xl mb-2">{gift.gift_emoji || '🎁'}</div>
+                            <p className="text-sm font-medium">{gift.gift_name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">для {gift.receiver?.full_name || 'неизвестно'}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  )}
+                </GlassCard>
+              </TabsContent>
+
+              <TabsContent value="settings" className="space-y-6 mt-6">
+                <GlassCard className="p-6">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Eye className="w-5 h-5" /> Видимость профиля</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Выберите, кто может видеть ваш профиль.</p>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="font-medium">Кто может видеть мой профиль</Label>
+                      <select value={editing ? editData.profile_visibility : profile?.profile_visibility || "all"} onChange={(e) => { if (editing) setEditData({...editData, profile_visibility: e.target.value}); }} className="w-full rounded-lg px-4 py-3 bg-background border border-input">
+                        <option value="all">🌎 Все пользователи</option>
+                        <option value="matches">💕 Только взаимные лайки</option>
+                        <option value="none">🔒 Только я</option>
+                      </select>
+                    </div>
+                  </div>
+                </GlassCard>
+
+                <GlassCard className="p-6">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Settings className="w-5 h-5" /> Настройки аккаунта</h3>
+                  <div className="space-y-4">
+                    <Button variant="outline" className="w-full justify-start rounded-lg glass" asChild>
+                      <Link href="/legal/privacy"><Shield className="w-4 h-4 mr-2" /> Политика конфиденциальности</Link>
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start rounded-lg glass" asChild>
+                      <Link href="/legal/terms"><Shield className="w-4 h-4 mr-2" /> Правила сервиса</Link>
+                    </Button>
+                  </div>
+                </GlassCard>
+
+                <GlassCard className="p-6 border-destructive/30">
+                  <h3 className="text-lg font-bold mb-4 text-destructive flex items-center gap-2"><Trash2 className="w-5 h-5" /> Опасная зона</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Удаление аккаунта приведёт к безвозвратной потере всех данных.</p>
+                  <Button variant="destructive" onClick={handleDeleteAccount} disabled={loading} className="w-full rounded-lg">
+                    {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                    Удалить аккаунт
+                  </Button>
+                </GlassCard>
+
+                <Button variant="outline" onClick={handleSignOut} className="w-full rounded-lg">Выйти из аккаунта</Button>
               </TabsContent>
             </Tabs>
           </div>
         </div>
       </div>
+
+      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
+        <DialogContent className="max-w-4xl p-0 bg-transparent border-none">
+          <div className="relative">
+            <button onClick={() => setSelectedPhoto(null)} className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70">
+              <X className="w-5 h-5" />
+            </button>
+            {selectedPhoto && <img src={selectedPhoto} alt="Фото" className="w-full h-auto max-h-[90vh] object-contain rounded-lg" />}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

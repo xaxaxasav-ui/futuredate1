@@ -65,7 +65,7 @@ export default function AssessmentPage() {
             .eq('id', user.id)
             .single();
 
-          const assessmentMarker = "🎯ИИ_АНАЛИЗ_START" + JSON.stringify(results) + "ИИ_АНАЛИЗ_END";
+          const assessmentMarker = "ИИ_АНАЛИЗ_START" + JSON.stringify(results) + "ИИ_АНАЛИЗ_END";
           
           let newBio = assessmentMarker;
           if (existingProfile?.bio && !existingProfile.bio.includes("ИИ_АНАЛИЗ_START")) {
