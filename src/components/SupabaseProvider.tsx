@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
 
@@ -57,6 +57,7 @@ interface SupabaseContextType {
   profile: Profile | null;
   loading: boolean;
   profileLoading: boolean;
+  isOnline: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -67,6 +68,7 @@ const SupabaseContext = createContext<SupabaseContextType>({
   profile: null,
   loading: true,
   profileLoading: false,
+  isOnline: true,
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -79,83 +81,172 @@ interface SupabaseProviderProps {
   children: ReactNode;
 }
 
+const FALLBACK_PROFILE = {
+  id: '',
+  username: null,
+  full_name: null,
+  avatar_url: null,
+  bio: null,
+  phone: null,
+  traits: null,
+  hobbies: null,
+  talents: null,
+  looking_for: null,
+  looking_for_gender: null,
+  looking_for_age_min: null,
+  looking_for_age_max: null,
+  looking_for_height_min: null,
+  looking_for_height_max: null,
+  preferences: null,
+  latitude: null,
+  longitude: null,
+  city: null,
+  birth_date: null,
+  gender: null,
+  height: null,
+  education: null,
+  occupation: null,
+  languages: null,
+  relationship_status: null,
+  children: null,
+  smoking: null,
+  alcohol: null,
+  photos: null,
+  photos_visibility: null,
+  photos_blocked_users: null,
+  profile_visibility: null,
+  profile_blocked_users: null,
+  views_count: null,
+  likes_count: null,
+  favorites_count: null,
+  matches_count: null,
+  assessment_results: null,
+  assessment_completed: null,
+  is_verified: null,
+  verification_photo: null,
+  verification_status: null,
+  created_at: new Date().toISOString(),
+};
+
+async function fetchProfileWithRetry(
+  userId: string,
+  signal?: AbortSignal
+): Promise<Profile | null> {
+  const maxRetries = 3;
+  const baseDelay = 1000;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    if (signal?.aborted) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (signal?.aborted) return null;
+
+      if (error && error.code === 'PGRST116') {
+        if (signal?.aborted) return null;
+        
+        await supabase
+          .from('profiles')
+          .upsert({ id: userId, username: `user_${userId.slice(0, 8)}` });
+
+        const retry = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        
+        if (retry.data) return retry.data;
+        return null;
+      }
+
+      if (error) {
+        console.warn(`Profile fetch error, attempt ${attempt}/${maxRetries}:`, error.message);
+        if (attempt < maxRetries) {
+          const delay = baseDelay * Math.pow(2, attempt - 1);
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => resolve(undefined), delay);
+            signal?.addEventListener('abort', () => {
+              clearTimeout(timeout);
+              reject(new DOMException('Aborted', 'AbortError'));
+            });
+          });
+        }
+        continue;
+      }
+
+      return data;
+    } catch (err: any) {
+      if (err.name === 'AbortError') return null;
+      console.warn(`Profile fetch exception, attempt ${attempt}/${maxRetries}:`, err.message);
+      if (attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  return null;
+}
+
 export function SupabaseProvider({ children }: SupabaseProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    abortControllerRef.current = new AbortController();
     setProfileLoading(true);
-    const maxRetries = 5;
-    
-    const tryFetch = async (attempt: number): Promise<any> => {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
-        
-        if (error && error.code === 'PGRST116') {
-          await supabase
-            .from('profiles')
-            .upsert({ id: userId, username: `user_${userId.slice(0,8)}` });
-          
-          const retry = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-          if (retry.data) return retry.data;
-          return null;
-        }
-        
-        if (error) {
-          console.log(`Profile fetch error, attempt ${attempt}/${maxRetries}:`, error.message);
-          if (attempt < maxRetries) {
-            await new Promise(r => setTimeout(r, 2000 * attempt));
-            return tryFetch(attempt + 1);
-          }
-          return null;
-        }
-        
-        return data;
-      } catch (err) {
-        console.log(`Profile fetch exception, attempt ${attempt}/${maxRetries}`);
-        if (attempt < maxRetries) {
-          await new Promise(r => setTimeout(r, 2000 * attempt));
-          return tryFetch(attempt + 1);
-        }
-        return null;
-      }
-    };
-    
-    const result = await tryFetch(1);
-    setProfileLoading(false);
-    
-    const fallbackProfile = {
-      id: userId,
-      username: `user_${userId.slice(0,8)}`,
-      full_name: null,
-      avatar_url: null,
-      bio: null,
-      created_at: new Date().toISOString(),
-    };
-    
-    setProfile(result || fallbackProfile);
-  };
 
-  const refreshProfile = async () => {
+    const result = await fetchProfileWithRetry(userId, abortControllerRef.current.signal);
+    setProfileLoading(false);
+
+    if (result) {
+      setProfile(result);
+    } else {
+      setProfile({
+        ...FALLBACK_PROFILE,
+        id: userId,
+        username: `user_${userId.slice(0, 8)}`,
+      });
+    }
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
     if (user) {
       await fetchProfile(user.id);
     }
-  };
+  }, [user, fetchProfile]);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
     let loadingTimeout: NodeJS.Timeout;
+    let authTimeout: NodeJS.Timeout;
 
     const initSupabase = async () => {
       try {
@@ -167,9 +258,12 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        }
+        clearTimeout(authTimeout);
+        authTimeout = setTimeout(() => {
+          if (isMounted && session?.user) {
+            fetchProfile(session.user.id);
+          }
+        }, 100);
       } catch (err) {
         if (!isMounted) return;
         setLoading(false);
@@ -205,11 +299,18 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
     return () => {
       isMounted = false;
       if (loadingTimeout) clearTimeout(loadingTimeout);
+      if (authTimeout) clearTimeout(authTimeout);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
 
   const signOut = async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -217,7 +318,7 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
   };
 
   return (
-    <SupabaseContext.Provider value={{ user, session, profile, loading, profileLoading, signOut, refreshProfile }}>
+    <SupabaseContext.Provider value={{ user, session, profile, loading, profileLoading, isOnline, signOut, refreshProfile }}>
       {children}
     </SupabaseContext.Provider>
   );

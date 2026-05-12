@@ -16,14 +16,42 @@ export const DEFAULT_GIFTS = [
   { id: 'crown', name: 'Корона', emoji: '👑', is_active: true },
 ];
 
-export async function getGifts() {
-  const { data } = await supabase
-    .from('gifts_catalog')
-    .select('*')
-    .eq('is_active', true)
-    .order('id');
+async function queryWithRetry<T>(
+  queryFn: () => Promise<{ data: T | null; error: any }>,
+  maxRetries = 2
+): Promise<T | null> {
+  let lastError: any;
   
-  return data && data.length > 0 ? data : DEFAULT_GIFTS.map(g => ({ ...g, is_active: true }));
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      const result = await queryFn();
+      if (!result.error || result.data) {
+        return result.data;
+      }
+      lastError = result.error;
+    } catch (e) {
+      lastError = e;
+    }
+    
+    if (i < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, i)));
+    }
+  }
+  
+  console.warn('Query failed after retries:', lastError?.message);
+  return null;
+}
+
+export async function getGifts() {
+  return queryWithRetry(async () => {
+    const { data } = await supabase
+      .from('gifts_catalog')
+      .select('*')
+      .eq('is_active', true)
+      .order('id');
+    
+    return { data: data && data.length > 0 ? data : null, error: null };
+  }).then(data => data || DEFAULT_GIFTS.map(g => ({ ...g, is_active: true })));
 }
 
 export async function sendGift({
@@ -41,7 +69,7 @@ export async function sendGift({
   const gift = gifts.find((g: any) => g.id === giftId);
   if (!gift) throw new Error('Gift not found');
   
-  try {
+  return queryWithRetry(async () => {
     const { data, error } = await supabase.from('gifts').insert({
       sender_id: senderId,
       receiver_id: receiverId,
@@ -51,10 +79,7 @@ export async function sendGift({
       message: message || null,
     }).select();
 
-    if (error) {
-      console.error('Error inserting gift:', error);
-      throw error;
-    }
+    if (error) return { data: null, error };
     
     createNotification({
       userId: receiverId,
@@ -67,29 +92,33 @@ export async function sendGift({
       link: `/profile/${senderId}`
     });
     
-    return { success: true };
-  } catch (e) {
-    console.error('Error sending gift:', e);
-    throw e;
-  }
+    return { data: { success: true }, error: null };
+  }).then(result => {
+    if (!result) throw new Error('Failed to send gift');
+    return result;
+  });
 }
 
 export async function getSentGifts(userId: string) {
-  const { data } = await supabase
-    .from('gifts')
-    .select('*, receiver:profiles!gifts_receiver_id_fk(id, full_name, avatar_url)')
-    .eq('sender_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(20);
-  return data || [];
+  return queryWithRetry(async () => {
+    const { data, error } = await supabase
+      .from('gifts')
+      .select('*, receiver:profiles!gifts_receiver_id_fk(id, full_name, avatar_url)')
+      .eq('sender_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    return { data, error };
+  }).then(data => data || []);
 }
 
 export async function getReceivedGifts(userId: string) {
-  const { data } = await supabase
-    .from('gifts')
-    .select('*, sender:profiles!gifts_sender_id_fk(id, full_name, avatar_url)')
-    .eq('receiver_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(20);
-  return data || [];
+  return queryWithRetry(async () => {
+    const { data, error } = await supabase
+      .from('gifts')
+      .select('*, sender:profiles!gifts_sender_id_fk(id, full_name, avatar_url)')
+      .eq('receiver_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    return { data, error };
+  }).then(data => data || []);
 }
