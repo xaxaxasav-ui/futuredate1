@@ -39,11 +39,26 @@ export default function ProfileLikesPage() {
     if (!user) return;
 
     setLoading(true);
-    const { data, error } = await supabase
-      .from('likes')
-      .select('user_id, created_at')
-      .eq('liked_user_id', user.id)
-      .order('created_at', { ascending: false });
+    
+    const fetchWithRetry = async (fn: () => Promise<any>, attempt = 0) => {
+      try {
+        return await fn();
+      } catch {
+        if (attempt < 2) {
+          await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)));
+          return fetchWithRetry(fn, attempt + 1);
+        }
+        return { data: null, error: { message: 'Failed' } };
+      }
+    };
+    
+    const { data, error } = await fetchWithRetry(async () =>
+      supabase
+        .from('likes')
+        .select('user_id, created_at')
+        .eq('liked_user_id', user.id)
+        .order('created_at', { ascending: false })
+    );
 
     if (error) {
       console.error('Error fetching likers:', error);
@@ -53,10 +68,12 @@ export default function ProfileLikesPage() {
 
     if (data && data.length > 0) {
       const likerIds = [...new Set(data.map((l: any) => l.user_id))];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, city, birth_date')
-        .in('id', likerIds);
+      const { data: profiles } = await fetchWithRetry(async () =>
+        supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, city, birth_date')
+          .in('id', likerIds)
+      );
 
       if (profiles && profiles.length > 0) {
         const likersWithProfiles = data.map((l: any) => {
