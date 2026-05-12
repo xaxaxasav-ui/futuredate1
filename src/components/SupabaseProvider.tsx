@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
+import { getCache, setCache, clearCache } from '@/lib/cache';
 
 interface Profile {
   id: string;
@@ -130,9 +131,10 @@ const FALLBACK_PROFILE = {
 
 async function fetchProfileWithRetry(
   userId: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  isBackgroundRefresh: boolean = false
 ): Promise<Profile | null> {
-  const maxRetries = 3;
+  const maxRetries = isBackgroundRefresh ? 1 : 3;
   const baseDelay = 1000;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -210,11 +212,29 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
     abortControllerRef.current = new AbortController();
     setProfileLoading(true);
 
+    const cacheKey = `profile_${userId}`;
+    const cachedProfile = getCache<Profile>(cacheKey);
+    
+    if (cachedProfile) {
+      setProfile(cachedProfile);
+      setProfileLoading(false);
+      
+      fetchProfileWithRetry(userId, abortControllerRef.current.signal, true).then(result => {
+        if (result) {
+          setProfile(result);
+          setCache(cacheKey, result, 5 * 60 * 1000);
+        }
+      });
+      
+      return;
+    }
+
     const result = await fetchProfileWithRetry(userId, abortControllerRef.current.signal);
     setProfileLoading(false);
 
     if (result) {
       setProfile(result);
+      setCache(cacheKey, result, 5 * 60 * 1000);
     } else {
       setProfile({
         ...FALLBACK_PROFILE,

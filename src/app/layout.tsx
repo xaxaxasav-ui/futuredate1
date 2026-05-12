@@ -9,6 +9,7 @@ import { ClientThemeProvider } from '@/components/ClientThemeProvider';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { CookieBanner } from '@/components/CookieBanner';
+import { NetworkStatusIndicator } from '@/hooks/use-network';
 
 const inter = Inter({ 
   subsets: ['latin', 'latin-ext', 'cyrillic'],
@@ -60,6 +61,7 @@ export default function RootLayout({
             <Footer />
             <CookieBanner />
             <Toaster />
+            <NetworkStatusIndicator />
           </SupabaseProvider>
         </ClientThemeProvider>
       </body>
