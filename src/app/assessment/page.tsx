@@ -58,40 +58,69 @@ export default function AssessmentPage() {
           datingStyle: getDatingStyle(answers),
         };
         
-        try {
-          const { data: existingProfile } = await supabase
-            .from('profiles')
-            .select('id, bio')
-            .eq('id', user.id)
-            .single();
+        const saveWithRetry = async (attempt = 0, maxRetries = 3): Promise<boolean> => {
+          try {
+            console.log(`Assessment save attempt ${attempt + 1}/${maxRetries + 1}...`);
+            
+            const { data: existingProfile } = await supabase
+              .from('profiles')
+              .select('id, bio')
+              .eq('id', user.id)
+              .single();
 
-          const assessmentMarker = "ИИ_АНАЛИЗ_START" + JSON.stringify(results) + "ИИ_АНАЛИЗ_END";
-          
-          let newBio = assessmentMarker;
-          if (existingProfile?.bio && !existingProfile.bio.includes("ИИ_АНАЛИЗ_START")) {
-            newBio = existingProfile.bio + "\n\n" + assessmentMarker;
-          }
+            const assessmentMarker = "ИИ_АНАЛИЗ_START" + JSON.stringify(results) + "ИИ_АНАЛИЗ_END";
+            
+            let newBio = assessmentMarker;
+            if (existingProfile?.bio && !existingProfile.bio.includes("ИИ_АНАЛИЗ_START")) {
+              newBio = existingProfile.bio + "\n\n" + assessmentMarker;
+            }
 
-          if (existingProfile) {
-            await supabase.from('profiles').update({ 
-              bio: newBio,
-              updated_at: new Date().toISOString() 
-            }).eq('id', user.id);
-          } else {
-            await supabase.from('profiles').insert({ 
-              id: user.id, 
-              bio: newBio,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString() 
-            });
+            let updateResult;
+            if (existingProfile) {
+              updateResult = await supabase.from('profiles').update({ 
+                bio: newBio,
+                assessment_completed: true,
+                updated_at: new Date().toISOString() 
+              }).eq('id', user.id);
+            } else {
+              updateResult = await supabase.from('profiles').insert({ 
+                id: user.id, 
+                bio: newBio,
+                assessment_completed: true,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString() 
+              });
+            }
+            
+            console.log('Assessment save result:', updateResult);
+            
+            if (updateResult.error) {
+              throw new Error(updateResult.error.message);
+            }
+            
+            return true;
+          } catch (error: any) {
+            console.warn(`Assessment save exception attempt ${attempt + 1}:`, error.message || error);
+            if (attempt < maxRetries) {
+              const delay = 1000 * Math.pow(2, attempt);
+              console.log(`Retrying assessment save in ${delay}ms...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              return saveWithRetry(attempt + 1);
+            }
+            return false;
           }
+        };
+        
+        const success = await saveWithRetry();
+        
+        if (success) {
           console.log("Assessment results saved successfully");
-          await refreshProfile();
-          // Small delay to ensure data is saved
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (error) {
-          console.error("Error saving assessment results:", error);
+        } else {
+          console.error("Assessment save failed after all retries");
         }
+        
+        await refreshProfile();
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
   };
