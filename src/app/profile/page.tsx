@@ -292,8 +292,9 @@ export default function ProfilePage() {
     if (!user) { alert("Вы не авторизованы"); return; }
     setLoading(true);
     
-    const saveWithRetry = async (attempt = 0, maxRetries = 3): Promise<any> => {
+    const saveWithRetry = async (attempt = 0, maxRetries = 4): Promise<any> => {
       try {
+        console.log(`Save attempt ${attempt + 1}/${maxRetries + 1}...`);
         const profileData = {
           full_name: editData.full_name, bio: editData.bio, username: editData.username || `user_${user.id.slice(0,8)}`,
           hobbies: editData.hobbies, talents: editData.talents, looking_for: editData.looking_for,
@@ -308,10 +309,15 @@ export default function ProfilePage() {
           profile_visibility: editData.profile_visibility, profile_blocked_users: editData.profile_blocked_users,
           updated_at: new Date().toISOString(),
         };
-        return await supabase.from('profiles').upsert({ id: user.id, ...profileData }).select();
-      } catch (e) {
+        const result = await supabase.from('profiles').upsert({ id: user.id, ...profileData }).select();
+        console.log('Save result:', result);
+        return result;
+      } catch (e: any) {
+        console.warn(`Save exception attempt ${attempt + 1}:`, e.message || e);
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
+          const delay = 1000 * Math.pow(2, attempt);
+          console.log(`Retrying save in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
           return saveWithRetry(attempt + 1);
         }
         throw e;
@@ -320,11 +326,20 @@ export default function ProfilePage() {
     
     try {
       const { data, error } = await saveWithRetry();
-      if (error) throw error;
+      console.log('Final save result:', { data, error });
+      
+      if (error) {
+        console.error('Save error:', error);
+        throw error;
+      }
+      
       await refreshProfile(); 
       setEditing(false); 
       alert("Профиль сохранен!");
-    } catch (e: any) { alert("Ошибка: " + (e?.message || "Неизвестная ошибка")); }
+    } catch (e: any) { 
+      console.error('Save failed:', e);
+      alert("Ошибка: " + (e?.message || "Неизвестная ошибка")); 
+    }
     finally { setLoading(false); }
   };
 
