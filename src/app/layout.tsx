@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { SupabaseProvider } from '@/components/SupabaseProvider';
+import { FirebaseProvider } from '@/components/FirebaseProvider';
 import { ClientThemeProvider } from '@/components/ClientThemeProvider';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -53,7 +53,7 @@ export default function RootLayout({
     <html lang="ru" suppressHydrationWarning className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="font-body antialiased bg-background text-foreground overflow-x-hidden flex flex-col min-h-screen">
         <ClientThemeProvider>
-          <SupabaseProvider>
+          <FirebaseProvider>
             <Navbar />
             <main className="flex-1 pt-16">
               {children}
@@ -62,7 +62,7 @@ export default function RootLayout({
             <CookieBanner />
             <Toaster />
             <NetworkStatusIndicator />
-          </SupabaseProvider>
+          </FirebaseProvider>
         </ClientThemeProvider>
       </body>
     </html>
