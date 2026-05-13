@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { GlassCard } from "@/components/GlassCard";
 import { Star, User, Loader2 } from "lucide-react";
 import { useSupabase } from "@/components/SupabaseProvider";
-import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -39,48 +38,32 @@ export default function FavoritesPage() {
     if (!user) return;
 
     setLoading(true);
-    const { data, error } = await supabase
-      .from('favorites')
-      .select('favorited_user_id')
-      .eq('user_id', user.id);
-
-    if (error) {
-      console.error('Error fetching favorites:', error);
-      setLoading(false);
-      return;
-    }
-
-    if (data && data.length > 0) {
-      const userIds = data.map((f: any) => f.favorited_user_id);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, city, birth_date, bio')
-        .in('id', userIds);
-
-      if (profiles && profiles.length > 0) {
-        const favoritesWithProfiles = profiles.map((p: any) => ({
-          id: p.id,
-          name: p.full_name || 'Неизвестный',
-          age: p.birth_date ? calculateAge(p.birth_date) : 0,
-          city: p.city || '',
-          bio: p.bio || '',
-          avatar_url: p.avatar_url || ''
-        }));
-        setFavorites(favoritesWithProfiles);
+    
+    const maxRetries = 3;
+    let lastError = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await fetch(`/api/favorites?userId=${user.id}`);
+        const result = await response.json();
+        
+        if (response.ok && result.favorites) {
+          setFavorites(result.favorites);
+          setLoading(false);
+          return;
+        }
+        
+        lastError = result.error || 'Failed to fetch favorites';
+      } catch (err) {
+        lastError = err;
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+        }
       }
     }
+    
+    console.error('Error fetching favorites:', lastError);
     setLoading(false);
-  }
-
-  function calculateAge(birthDate: string): number {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    return age;
   }
 
   if (authLoading || !user) {
