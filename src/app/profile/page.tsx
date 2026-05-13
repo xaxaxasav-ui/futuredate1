@@ -593,7 +593,7 @@ export default function ProfilePage() {
                       {age && <div><Label className="text-muted-foreground">Возраст</Label><p className="font-medium">{age} лет</p></div>}
                       {effectiveProfile.birth_date && <div><Label className="text-muted-foreground">Дата рождения</Label><p className="font-medium">{new Date(effectiveProfile.birth_date).toLocaleDateString('ru-RU')}</p></div>}
                       {effectiveProfile.gender && <div><Label className="text-muted-foreground">Пол</Label><p className="font-medium">{GENDER_OPTIONS.find(g => g.value === effectiveProfile.gender)?.label || effectiveProfile.gender}</p></div>}
-                      <div><Label className="text-muted-foreground">Биография</Label><p className="font-medium">{effectiveProfile.bio || "Не указано"}</p></div>
+                      <div><Label className="text-muted-foreground">Биография</Label><p className="font-medium">{effectiveProfile.bio ? effectiveProfile.bio.replace(/ИИ_АНАЛИЗ_START.+?ИИ_АНАЛИЗ_END/g, '').trim() || 'Не указано' : 'Не указано'}</p></div>
                       <div><Label className="text-muted-foreground">Email</Label><p className="font-medium">{user?.email}</p></div>
                     </div>
                   ) : (
