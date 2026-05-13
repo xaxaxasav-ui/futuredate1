@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export const dynamic = 'force-dynamic';
 
@@ -13,16 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { getFirebaseAuth } from "@/lib/firebase";
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  updateProfile
-} from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { getFirebaseDb } from "@/lib/firebase";
 
 const COUNTRY_CODES = [
   { code: "+7", country: "RU", mask: "(___) ___-__-__" },
@@ -71,15 +63,34 @@ function AuthForm() {
   const canRegister = agreedToTerms && agreedToPrivacy && agreedToOffer && agreedToProcessing;
 
   useEffect(() => {
-    const auth = getFirebaseAuth();
+    let isMounted = true;
+    const timeoutId = setTimeout(() => {
+      if (!isMounted) return;
+      console.log('Session check timeout');
+    }, 5000);
     
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        router.push("/dashboard");
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        if (session) {
+          router.push("/dashboard");
+        }
+      } catch (e) {
+        console.warn('Session check error:', e);
+      } finally {
+        if (isMounted) {
+          clearTimeout(timeoutId);
+        }
       }
-    });
-
-    return () => unsubscribe();
+    };
+    
+    checkSession();
+    
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [router]);
 
   const formatPhoneNumber = (value: string) => {
@@ -108,31 +119,27 @@ function AuthForm() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      console.log("Attempting Firebase sign in with:", loginEmail);
+      console.log("Attempting sign in with:", loginEmail);
       if (rememberMe) {
         localStorage.setItem("rememberEmail", loginEmail);
       } else {
         localStorage.removeItem("rememberEmail");
       }
-      
-      const auth = getFirebaseAuth();
-      const result = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
-      
-      if (result.user) {
-        router.push("/dashboard");
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+      if (error) {
+        console.error("Sign in error:", error);
+        throw error;
       }
+      router.push("/dashboard");
     } catch (error: any) {
-      console.error("Firebase sign in error:", error);
+      console.error("Full error:", error);
       let message = error.message || "Неизвестная ошибка";
-      
-      if (message.includes("invalid-credential") || message.includes("wrong-password") || message.includes("user-not-found")) {
-        message = "Неверный email или пароль";
-      } else if (message.includes("too-many-requests")) {
-        message = "Слишком много попыток. Попробуйте позже.";
-      } else if (message.includes("network-request-failed")) {
-        message = "Нет соединения с интернетом";
+      if (message.includes("Failed to fetch") || message.includes("fetch")) {
+        message = "Не удалось连接到 серверу. Проверьте интернет-соединение.";
       }
-      
       toast({
         title: "Ошибка входа",
         description: message,
@@ -145,7 +152,7 @@ function AuthForm() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Attempting Firebase sign up with:", signupEmail);
+    console.log("Attempting sign up with:", signupEmail);
 
     if (honeypotRef.current?.value) {
       console.log("Bot detected");
@@ -181,49 +188,43 @@ function AuthForm() {
 
     setIsLoading(true);
     try {
-      const auth = getFirebaseAuth();
-      const db = getFirebaseDb();
+      setIsLoading(true);
       
-      const result = await createUserWithEmailAndPassword(auth, signupEmail, signupPassword);
+      const { data, error } = await supabase.auth.signUp({
+        email: signupEmail,
+        password: signupPassword,
+      });
       
-      if (result.user) {
-        const username = signupName.toLowerCase().replace(/\s/g, '_') + '_' + result.user.uid.slice(0, 8);
-        
-        await updateProfile(result.user, {
-          displayName: signupName
+      if (error) {
+        console.error('Sign up error:', error);
+        toast({
+          title: "Ошибка регистрации",
+          description: error.message || "Попробуйте позже",
+          variant: "destructive",
         });
+        return;
+      }
+      
+      if (data.user) {
+        const username = signupName.toLowerCase().replace(/\s/g, '_') + '_' + data.user.id.slice(0, 8);
         
-        const profileDoc = doc(db, 'profiles', result.user.uid);
-        await setDoc(profileDoc, {
+        await supabase.from('profiles').insert({
+          id: data.user.id,
           username: username,
           full_name: signupName,
-          phone: signupPhone,
-          created_at: serverTimestamp(),
-          updated_at: serverTimestamp(),
         });
       }
       
       toast({
         title: "Успешно",
-        description: "Аккаунт создан! Добро пожаловать!",
+        description: "Проверьте email для подтверждения",
       });
       
-      router.push("/dashboard");
+      document.querySelector('[data-state][value="signin"]')?.click();
     } catch (error: any) {
-      console.error("Firebase sign up error:", error);
-      let message = error.message || "Попробуйте позже";
-      
-      if (message.includes("email-already-in-use")) {
-        message = "Этот email уже зарегистрирован";
-      } else if (message.includes("weak-password")) {
-        message = "Пароль слишком слабый";
-      } else if (message.includes("invalid-email")) {
-        message = "Неверный формат email";
-      }
-      
       toast({
         title: "Ошибка регистрации",
-        description: message,
+        description: error.message || "Попробуйте позже",
         variant: "destructive",
       });
     } finally {
