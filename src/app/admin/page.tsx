@@ -71,6 +71,13 @@ export default function AdminPage() {
     pendingVerifications: 0,
     totalMessages: 0
   });
+  const [visitStats, setVisitStats] = useState({
+    total: 0,
+    today: 0,
+    uniqueUsers: 0,
+    visits: [] as any[]
+  });
+  const [loadingStats, setLoadingStats] = useState(false);
   const [supportTickets, setSupportTickets] = useState<any[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [replyMessage, setReplyMessage] = useState("");
@@ -337,6 +344,27 @@ export default function AdminPage() {
       setDebugInfo(prev => prev + `\nfetchData exception: ${error.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchVisitStats = async () => {
+    setLoadingStats(true);
+    try {
+      const response = await fetch('/api/visits');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setVisitStats({
+          total: data.total || 0,
+          today: data.today || 0,
+          uniqueUsers: data.uniqueUsers || 0,
+          visits: data.visits || []
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching visit stats:", error);
+    } finally {
+      setLoadingStats(false);
     }
   };
 
@@ -685,7 +713,7 @@ export default function AdminPage() {
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="users">
               <Users className="w-4 h-4 mr-2" />
               Пользователи
@@ -715,6 +743,10 @@ export default function AdminPage() {
             <TabsTrigger value="gifts">
               <Gift className="w-4 h-4 mr-2" />
               Подарки
+            </TabsTrigger>
+            <TabsTrigger value="stats">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Статистика
             </TabsTrigger>
           </TabsList>
 
@@ -1183,6 +1215,65 @@ export default function AdminPage() {
                   <Plus className="w-4 h-4 mr-2" />
                   Добавить
                 </Button>
+              </div>
+            </GlassCard>
+          </TabsContent>
+
+          <TabsContent value="stats" className="space-y-4">
+            <GlassCard className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Статистика посещений
+                </h3>
+                <Button size="sm" variant="outline" onClick={fetchVisitStats}>
+                  <Loader2 className={`w-4 h-4 mr-1 ${loadingStats ? 'animate-spin' : ''}`} />
+                  Обновить
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="p-4 bg-primary/10 border border-primary/30 rounded-lg text-center">
+                  <p className="text-3xl font-bold text-primary">{visitStats.total}</p>
+                  <p className="text-xs text-muted-foreground">Всего посещений</p>
+                </div>
+                <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-center">
+                  <p className="text-3xl font-bold text-green-400">{visitStats.today}</p>
+                  <p className="text-xs text-muted-foreground">Сегодня</p>
+                </div>
+                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg text-center">
+                  <p className="text-3xl font-bold text-blue-400">{visitStats.uniqueUsers}</p>
+                  <p className="text-xs text-muted-foreground">Уникальных пользователей</p>
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <h4 className="font-medium mb-3">Последние посещения</h4>
+                {loadingStats ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                ) : visitStats.visits.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">Нет данных о посещениях</p>
+                ) : (
+                  <div className="max-h-[400px] overflow-y-auto space-y-2">
+                    {visitStats.visits.slice(0, 50).map((visit: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                        <div>
+                          <p className="font-medium text-sm">{visit.page || '/'}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {visit.visitor_id ? `ID: ${visit.visitor_id.slice(0, 8)}...` : 'Анонимный'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(visit.created_at).toLocaleString("ru-RU")}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </GlassCard>
           </TabsContent>
